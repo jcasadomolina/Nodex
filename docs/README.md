@@ -11,11 +11,12 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Flujo de la aplicación](05-flujo-de-la-aplicacion.md) | Pantallas y recorridos del usuario | Pendiente |
 | [Sistema de backend](06-sistema-backend.md) | Arquitectura, endpoints e integraciones | Pendiente |
 | [Brief de diseño](07-brief-de-diseno.md) | Estilo visual, color, tipografía, bocetos | Pendiente |
+| [Base de datos](08-base-de-datos.md) | PostgreSQL en Neon, tablas, relaciones y reglas de evolución | Completo |
 
 ## Glosario
 
 - **Nodex**: la unidad básica de contenido (una nota o un enlace). En plural, "Nodexs".
-- **Grupo**: colección de Nodexs. Se muestran en un panel central, con sus Nodexs relacionados visualmente.
-- **Huérfano**: Nodex sin grupo. La IA puede asignarlo a un grupo existente o sugerir uno nuevo.
-- **Asociación a WhatsApp**: vínculo con un chat de contacto o de grupo. Un enlace enviado a ese chat crea un Nodex.
+- **Grupo**: colección de Nodexs. Se muestran en un panel central, con sus Nodexs relacionados visualmente. Un Nodex puede estar en varios grupos.
+- **Huérfano**: Nodex sin grupo. La IA puede sugerir asignarlo a un grupo existente o crear uno nuevo; el usuario confirma.
+- **Asociación a WhatsApp** *(ampliación futura)*: vínculo con WhatsApp para que un enlace enviado a Nodex cree un Nodex.
 - **HU / RF / RNF**: Historia de Usuario / Requisito Funcional / Requisito No Funcional. Al citar requisitos se usa su código (p. ej. `RF-05.3`).

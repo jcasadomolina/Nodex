@@ -1,0 +1,21 @@
+# Variables de entorno: secretos y cadenas de conexión (RNF-9.1)
+.env
+.env.*
+!.env.example
+
+# Dependencias
+node_modules/
+
+# Builds
+.next/
+dist/
+build/
+
+# Logs
+*.log
+
+# Sistema e IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

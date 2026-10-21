@@ -18,9 +18,11 @@
 - **RF-02.2**: El sistema debe permitir modificar el nombre de usuario.
 - **RF-02.3**: El sistema debe permitir modificar la imagen de perfil del usuario.
 - **RF-02.4**: El sistema debe mostrar el correo electrónico del usuario en la pantalla de perfil.
-- **RF-02.5**: El sistema debe permitir modificar la sesión al número de WhatsApp asociado.
+- **RF-02.5** *(ampliación futura)*: El sistema debe permitir modificar la sesión al número de WhatsApp asociado.
 
-### HU-03: Gestión de la asociación a WhatsApp
+### HU-03: Gestión de la asociación a WhatsApp *(ampliación futura)*
+
+> Aplazada por la incertidumbre sobre los costes de la API de WhatsApp. El diseño previsto (un número único de Nodex al que cada usuario envía sus enlaces) está en [Base de datos](08-base-de-datos.md#ampliaciones-futuras).
 
 - **RF-03.1**: El sistema debe asociarse a un chat de contacto o de grupo a través del número indicado por el usuario.
 - **RF-03.2**: El sistema debe poder cerrar la asociación al número indicado en cualquier momento.
@@ -35,10 +37,11 @@
 ### HU-05: Gestión de Nodexs
 
 - **RF-05.1**: El sistema permitirá crear, editar y eliminar un Nodex.
-- **RF-05.2**: El sistema permitirá asociar un Nodex a un Grupo existente.
-- **RF-05.3**: El sistema debe poder crear un Nodex a partir de un enlace enviado al chat de contacto o grupo de WhatsApp asociado al usuario.
+- **RF-05.2**: El sistema permitirá asociar un Nodex a uno o varios Grupos existentes.
+- **RF-05.3** *(ampliación futura)*: El sistema debe poder crear un Nodex a partir de un enlace enviado al chat de contacto o grupo de WhatsApp asociado al usuario.
 - **RF-05.4**: El sistema debe poder mostrar, mediante IA, información de Internet sobre el contenido del Nodex creado.
 - **RF-05.5**: El sistema debe poder recomendar, mediante IA, secciones o apartados sobre el contenido del Nodex creado.
+- **RF-05.6**: El sistema debe permitir crear un Nodex compartiendo un enlace desde el menú Compartir del dispositivo, con la PWA instalada (fase 2 de la hoja de ruta).
 
 ## 2. Requisitos no funcionales
 

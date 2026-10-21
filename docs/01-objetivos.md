@@ -9,8 +9,10 @@ También debe ser moderna tecnológicamente: diseño actual, uso de IA y funcion
 ## Hoja de ruta
 
 1. **Web**: alojada en Internet de forma gratuita, sin tener que lanzarla manualmente.
-2. **Aplicación de escritorio**: ejecutable que cualquier usuario pueda descargar e instalar en su ordenador.
-3. **Aplicación móvil**: Android y/o iOS, para tenerla a mano en el teléfono. Si el proyecto sale bien, publicarla en Google Play Store o App Store.
+2. **PWA para móviles**: la misma web, instalable en el teléfono desde el navegador, sin pasar por tiendas. Aquí entra compartir enlaces directamente con Nodex desde el menú Compartir del dispositivo (`RF-05.6`). Si el paso desde la web es rápido, se implementa junto a ella.
+3. **App nativa**: `.apk` para móvil y `.exe` para ordenador, que cualquier usuario pueda descargar e instalar. Si el proyecto sale bien, publicarla en Google Play Store o App Store.
+
+Las integraciones de mensajería (WhatsApp, HU-03) quedan como ampliación futura.
 
 Si algún paso requiere pagos (alojamiento, implementación nativa, permisos, licencias…), se consulta antes y no se implementa nada.
 
