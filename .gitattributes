@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Las migraciones de Prisma se validan con un checksum: siempre con LF
+backend/prisma/migrations/**/*.sql text eol=lf
