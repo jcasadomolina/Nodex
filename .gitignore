@@ -19,3 +19,6 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+
+# Cliente generado por Prisma (se regenera con npm run db:generate)
+generated/

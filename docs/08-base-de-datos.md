@@ -153,12 +153,15 @@ Un usuario nunca puede ver ni tocar los datos de otro (ver [Requisitos técnicos
 1. **Backend:** todas las consultas filtran por el `user_id` de la sesión.
 2. **Base de datos:** `group_nodexs` usa claves foráneas compuestas, `(group_id, user_id)` → `groups(id, user_id)` y `(nodex_id, user_id)` → `nodexs(id, user_id)`. Así es imposible meter un Nodex en el grupo de otro usuario, aunque el código tenga un fallo.
 
+En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcional y se vacía al borrarse, algo que Prisma no permite combinar con una clave compuesta. Ahí el aislamiento depende del backend, que solo sugiere grupos del propio usuario.
+
 ## Índices
 
 | Índice | Para qué |
 |--------|----------|
-| `nodexs (user_id, created_at DESC)`, sin los borrados | Listar los Nodexs de un usuario, los más recientes primero |
+| `nodexs (user_id, created_at DESC)` | Listar los Nodexs de un usuario, los más recientes primero |
 | `groups (user_id)` | Cargar los grupos del panel central |
+| `groups (user_id, name)` único, solo donde `deleted_at IS NULL` | Impedir dos grupos con el mismo nombre. Es un **índice parcial**: los grupos borrados no cuentan, así que se puede crear otro con el nombre de uno que está en la papelera. Usa la función en vista previa `partialIndexes` de Prisma |
 | `group_nodexs (nodex_id)` | Saber en qué grupos está un Nodex y encontrar huérfanos |
 | `ai_suggestions (user_id, status)` | Mostrar las sugerencias pendientes |
 | `sessions (expire)` | Borrar sesiones caducadas |
@@ -172,6 +175,14 @@ Un usuario nunca puede ver ni tocar los datos de otro (ver [Requisitos técnicos
 5. **`metadata` (JSONB)** para probar datos nuevos sin migración. Si un dato se consolida, pasa a ser una columna.
 6. **Borrado lógico** en `nodexs` y `groups`: borrar rellena `deleted_at` en vez de eliminar la fila, lo que deja la puerta abierta a una papelera.
 7. **Ramas de Neon:** cada migración se prueba primero en una copia de la base (una rama) antes de aplicarse a la principal.
+
+## Implementación
+
+- Esquema: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma). Los modelos usan PascalCase y los campos camelCase, como es habitual en TypeScript; `@@map` y `@map` los traducen a nombres en snake_case en la base.
+- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas.
+- Configuración de la CLI: [`backend/prisma.config.ts`](../backend/prisma.config.ts). Carga el `.env` de la raíz y usa `DIRECT_URL` para las migraciones. La aplicación se conectará con `DATABASE_URL` (pooling) en el bloque de backend.
+- Prisma fijado en la versión estable **7.10.1**. En npm, la etiqueta `latest` apuntaba a una versión preliminar (8.0.0-rc).
+- `updated_at` lo rellena Prisma en cada escritura (`@updatedAt`). Si se insertan filas con SQL a mano, hay que darle valor.
 
 ## Ampliaciones futuras
 
