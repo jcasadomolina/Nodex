@@ -8,7 +8,7 @@ Idioma de trabajo: **español**, tanto en las notas como en las respuestas.
 
 - Es el primer proyecto de Jose como Desarrollador de Software Junior. Su objetivo es el **portfolio** y el **aprendizaje**, no el negocio.
 - Reparto de roles: Claude escribe la mayor parte del código y trabaja como un fullstack senior. Jose supervisa, aprende e implementa algunas partes él mismo.
-- Hoja de ruta: web alojada gratis en Internet → aplicación de escritorio instalable → app móvil (Android y/o iOS, quizá publicada en las tiendas).
+- Hoja de ruta: web alojada gratis en Internet → PWA para móviles (con compartir enlaces, `RF-05.6`) → app nativa (`.apk` y `.exe`, quizá publicada en las tiendas). WhatsApp (HU-03) queda como ampliación futura.
 
 ## Notas del vault
 
@@ -53,7 +53,7 @@ Las notas vacías se rellenarán más adelante. No inventes su contenido: propon
 
 - Backend: **Express.js** (Node.js)
 - Frontend: **Next.js**
-- Base de datos: en la nube con plan gratuito, y con acceso de administrador para Jose. Nada de bases locales. Los datos de cada usuario quedan aislados de los demás.
+- Base de datos (**aprobada**): PostgreSQL en Neon (plan gratuito) con Prisma. Diseño y reglas de evolución en `docs/08-base-de-datos.md`. Los datos de cada usuario quedan aislados de los demás.
 - Cualquier otro componente se consulta antes de añadirlo.
 
 ## Requisitos transversales a tener presentes

@@ -1,0 +1,161 @@
+// Esquema de la base de datos de Nodex.
+// Diseño explicado en docs/08-base-de-datos.md.
+//
+// Convenciones:
+// - Modelos en PascalCase y campos en camelCase (TypeScript); en la base,
+//   tablas y columnas en snake_case gracias a @@map y @map.
+// - Tipos y estados como texto (no ENUM): los valores válidos se comprueban
+//   en el backend y añadir uno nuevo no exige migración.
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  // Índices parciales (con WHERE): se usan para el nombre único de grupo
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  email        String   @unique // se guarda siempre en minúsculas
+  passwordHash String?  @map("password_hash") // null si solo entra con Google o GitHub
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  oauthAccounts OAuthAccount[]
+  groups        Group[]
+  nodexs        Nodex[]
+  aiSuggestions AiSuggestion[]
+
+  @@map("users")
+}
+
+model OAuthAccount {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  provider          String // google | github
+  providerAccountId String   @map("provider_account_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+// Sesiones de express-session. Las columnas se ajustarán a la librería de
+// sesiones que se elija en el bloque de backend.
+model Session {
+  sid    String   @id
+  sess   Json
+  expire DateTime @db.Timestamptz(6)
+
+  @@index([expire])
+  @@map("sessions")
+}
+
+model Group {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  name        String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodexs        GroupNodex[]
+  aiSuggestions AiSuggestion[]
+
+  // Necesario para la clave foránea compuesta de GroupNodex
+  @@unique([id, userId])
+  // Nombre único por usuario, sin contar los grupos borrados
+  @@unique([userId, name], where: raw("deleted_at IS NULL"))
+  @@index([userId])
+  @@map("groups")
+}
+
+model Nodex {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String // note | link
+  title     String
+  content   String?
+  url       String?
+  source    String    @default("manual") // manual | share
+  metadata  Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groups        GroupNodex[]
+  enrichment    NodexEnrichment?
+  aiSuggestions AiSuggestion[]
+
+  @@unique([id, userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("nodexs")
+}
+
+// Qué Nodexs hay en cada grupo. Un Nodex sin filas aquí es un huérfano.
+// Las claves foráneas compuestas (grupo + usuario, Nodex + usuario) impiden
+// meter un Nodex en el grupo de otro usuario.
+model GroupNodex {
+  groupId   String   @map("group_id") @db.Uuid
+  nodexId   String   @map("nodex_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  addedBy   String   @default("user") @map("added_by") // user | ai
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  group Group @relation(fields: [groupId, userId], references: [id, userId], onDelete: Cascade)
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@id([groupId, nodexId])
+  @@index([nodexId])
+  @@map("group_nodexs")
+}
+
+// Información de Internet y apartados recomendados por la IA. Se genera en
+// segundo plano: si la API falla, queda en "failed" y se puede reintentar.
+model NodexEnrichment {
+  nodexId   String   @id @map("nodex_id") @db.Uuid
+  status    String   @default("pending") // pending | done | failed
+  summary   String?
+  sections  Json?
+  sources   Json?
+  error     String?
+  attempts  Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nodex Nodex @relation(fields: [nodexId], references: [id], onDelete: Cascade)
+
+  @@map("nodex_enrichments")
+}
+
+// La IA sugiere y el usuario confirma.
+model AiSuggestion {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  nodexId       String    @map("nodex_id") @db.Uuid
+  kind          String // assign_group | new_group
+  groupId       String?   @map("group_id") @db.Uuid
+  suggestedName String?   @map("suggested_name")
+  status        String    @default("pending") // pending | accepted | rejected
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedAt    DateTime? @map("resolved_at") @db.Timestamptz(6)
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodex Nodex  @relation(fields: [nodexId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([nodexId])
+  @@map("ai_suggestions")
+}

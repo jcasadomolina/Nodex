@@ -8,7 +8,7 @@ El stack debe estar formado por tecnologías modernas, robustas y eficientes. No
 |------|-----------|
 | Backend | Express.js (Node.js) |
 | Frontend | Next.js |
-| Base de datos | En la nube, con plan gratuito (por decidir) |
+| Base de datos | **PostgreSQL en Neon** (plan gratuito) con Prisma. Aprobado: ver [Base de datos](08-base-de-datos.md) |
 
 Cualquier otro componente del stack se consulta antes de añadirlo.
 
@@ -19,4 +19,4 @@ Cualquier otro componente del stack se consulta antes de añadirlo.
 - **Acceso de administrador.** Jose debe tener permisos para controlar lo que sucede en la base de datos.
 - **Datos aislados por usuario.** Un usuario A no puede ver, conocer ni interactuar con los Nodexs, enlaces o datos de un usuario B.
 
-Ver también: [Requisitos de producto](03-requisitos-producto.md) y [Sistema de backend](06-sistema-backend.md).
+Ver también: [Requisitos de producto](03-requisitos-producto.md), [Sistema de backend](06-sistema-backend.md) y [Base de datos](08-base-de-datos.md).
