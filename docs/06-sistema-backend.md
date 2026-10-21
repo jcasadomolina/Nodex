@@ -46,6 +46,20 @@ Cada rama sale de `develop` y vuelve a `develop` con un pull request.
 | `feature/perfil` | Pantalla de perfil: nombre e imagen | HU-02 |
 | `feature/ia` | Sugerencias de grupo y enriquecimiento | `RF-04.2`, `RF-04.3`, `RF-05.4`, `RF-05.5` |
 
+## Cómo funciona una petición
+
+```
+Petición → helmet (cabeceras seguras) → express.json (lee el cuerpo)
+         → ruta del módulo (/api/...) → respuesta
+                    │
+                    └─ si algo lanza un error → errorHandler → JSON { error }
+```
+
+- **Middleware:** función por la que pasa cada petición antes de llegar a la ruta, por ejemplo para añadir cabeceras o comprobar la sesión. Se ejecutan en el orden en que se registran en `app.ts`.
+- **Gestión de errores centralizada:** las rutas no capturan cada error por su cuenta. Lanzan un `HttpError` (o Zod lanza un `ZodError`) y un único middleware, `errorHandler`, decide la respuesta: `400`, `404` o `500`. A un `500` nunca se le añaden detalles internos, que podrían dar pistas a un atacante.
+- **Validación del entorno:** `config/env.ts` comprueba las variables al arrancar. Si falta `DATABASE_URL`, el servidor no arranca en lugar de fallar más tarde en mitad de una petición.
+- **`/api/health`:** permite comprobar que el servidor y la base responden. Si la base cae, el servidor sigue en pie y responde `503` (`RNF-08.2`).
+
 ## Pendiente de decidir
 
 - **Proveedor de IA** (en `feature/ia`). Candidato propuesto por Jose: **Kev**, modelos de decisión open source y entrenables. Hay que resolver dónde se ejecuta, porque necesita una GPU o un Mac.
