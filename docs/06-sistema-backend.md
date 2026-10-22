@@ -43,6 +43,7 @@ Cada rama sale de `develop` y vuelve a `develop` con un pull request.
 | `feature/auth` | Registro, login, logout y sesiones | `RF-01.1`, `RF-01.3`–`RF-01.7` |
 | `feature/oauth` | Login con Google y GitHub | `RF-01.2` |
 | `feature/grupos-nodexs` | CRUD de grupos y Nodexs, y asignación de Nodexs a grupos | `RF-04.1`, `RF-04.4`, `RF-05.1`, `RF-05.2` |
+| `feature/tutorial` | Guardar qué versión del tutorial ha visto cada usuario | `RF-10.4`, `RF-10.5` |
 | `feature/perfil` | Pantalla de perfil: nombre e imagen | HU-02 |
 | `feature/ia` | Sugerencias de grupo y enriquecimiento | `RF-04.2`, `RF-04.3`, `RF-05.4`, `RF-05.5` |
 
@@ -169,8 +170,27 @@ Endpoints bajo `/api/groups`, `/api/nodexs` y `/api/board`; el detalle está en 
 
 Cada consulta filtra por `userId` de la sesión. Además, la tabla `group_nodexs` tiene claves foráneas compuestas (ver [Base de datos](08-base-de-datos.md#aislamiento-entre-usuarios)): aunque el código tuviera un fallo, la base rechazaría meter un Nodex en el grupo de otro usuario.
 
+## Tutorial (`feature/tutorial`)
+
+El contenido del tutorial (textos y pasos) vive en el frontend, porque es igual para todos. El backend solo recuerda **qué versión ha visto cada usuario**, en la columna `users.tutorial_completed_version`:
+
+| Valor guardado | Versión actual del tutorial (frontend) | Qué muestra el frontend |
+|----------------|----------------------------------------|-------------------------|
+| `null` | `1` | El tutorial completo (`RF-10.1`) |
+| `1` | `1` | Nada |
+| `1` | `2` | Solo las novedades (`RF-10.5`) |
+
+- `GET /api/auth/me` devuelve `tutorialCompletedVersion`.
+- `PUT /api/me/tutorial` con `{ version }` se llama al terminar o al saltar el tutorial (`RF-10.2`). Como se guarda en la base, vale para todos los dispositivos (`RF-10.4`).
+- Volver a verlo (`RF-10.3`) es cosa del frontend: no cambia nada en el backend.
+
+Es la primera migración que **amplía** la base: añade una columna opcional sin tocar nada de lo anterior, como marcan las [reglas de evolución](08-base-de-datos.md#reglas-para-que-la-base-acepte-cambios).
+
+## Decisiones tomadas
+
+- **Almacenamiento de imágenes:** **Cloudinary**, plan gratuito sin tarjeta (25 créditos al mes compartidos entre almacenamiento, tráfico y transformaciones). Las fotos se reducen a 256×256 en WebP (unos 15 KB). Todo el acceso irá en un único archivo, `lib/storage.ts`, para poder pasar a Cloudflare R2 si el tráfico crece. Las fotos de Google y GitHub no se guardan: solo su URL.
+
 ## Pendiente de decidir
 
 - **Proveedor de IA** (en `feature/ia`). Candidato propuesto por Jose: **Kev**, modelos de decisión open source y entrenables. Hay que resolver dónde se ejecuta, porque necesita una GPU o un Mac.
 - **Alojamiento del backend** (antes de publicar). La idea es que el navegador solo vea un dominio: Next.js reenvía las llamadas `/api/*` al backend, y así las cookies de sesión funcionan sin configuración entre dominios.
-- **Almacenamiento de imágenes** (en `feature/perfil`).

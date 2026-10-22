@@ -43,6 +43,16 @@
 - **RF-05.5**: El sistema debe poder recomendar, mediante IA, secciones o apartados sobre el contenido del Nodex creado.
 - **RF-05.6**: El sistema debe permitir crear un Nodex compartiendo un enlace desde el menú Compartir del dispositivo, con la PWA instalada (fase 2 de la hoja de ruta).
 
+### HU-10: Tutorial de bienvenida
+
+> Añadida después de HU-09; por eso su número va tras los requisitos no funcionales.
+
+- **RF-10.1**: El sistema debe mostrar un tutorial que explique Nodex y cómo navegar por él la primera vez que el usuario inicia sesión.
+- **RF-10.2**: El sistema debe permitir saltar o cerrar el tutorial en cualquier momento.
+- **RF-10.3**: El sistema debe permitir volver a ver el tutorial desde la aplicación.
+- **RF-10.4**: El sistema debe recordar, por usuario y en cualquier dispositivo, si ya ha visto el tutorial.
+- **RF-10.5**: El sistema debe mostrar las novedades cuando el tutorial se amplíe con funcionalidades nuevas.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos

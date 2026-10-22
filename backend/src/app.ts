@@ -9,6 +9,7 @@ import { oauthRouter } from "./modules/auth/oauth.routes.js";
 import { boardRouter } from "./modules/board/board.routes.js";
 import { groupsRouter } from "./modules/groups/groups.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
+import { meRouter } from "./modules/me/me.routes.js";
 import { nodexsRouter } from "./modules/nodexs/nodexs.routes.js";
 
 export const app = express();
@@ -25,6 +26,7 @@ app.use(passport.initialize());
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/auth", oauthRouter);
+app.use("/api/me", meRouter);
 app.use("/api/groups", groupsRouter);
 app.use("/api/nodexs", nodexsRouter);
 app.use("/api/board", boardRouter);

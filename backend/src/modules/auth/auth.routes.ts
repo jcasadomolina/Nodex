@@ -10,7 +10,13 @@ import { loginSchema, registerSchema } from "./auth.schemas.js";
 
 export const authRouter = Router();
 
-const publicUser = { id: true, name: true, email: true, avatarUrl: true } as const;
+export const publicUser = {
+  id: true,
+  name: true,
+  email: true,
+  avatarUrl: true,
+  tutorialCompletedVersion: true,
+} as const;
 
 const dummyHash = await argon2.hash("nodex-dummy-password");
 
@@ -43,15 +49,19 @@ authRouter.post("/register", authLimiter, async (req, res) => {
 
 authRouter.post("/login", authLimiter, async (req, res) => {
   const { email, password } = loginSchema.parse(req.body);
-  const user = await prisma.user.findUnique({ where: { email } });
+  const found = await prisma.user.findUnique({
+    where: { email },
+    select: { ...publicUser, passwordHash: true },
+  });
 
-  const valid = await argon2.verify(user?.passwordHash ?? dummyHash, password);
-  if (!user?.passwordHash || !valid) {
+  const valid = await argon2.verify(found?.passwordHash ?? dummyHash, password);
+  if (!found?.passwordHash || !valid) {
     throw new HttpError(401, "Email o contraseña incorrectos");
   }
 
+  const { passwordHash, ...user } = found;
   await startSession(req, user.id);
-  res.json({ user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl } });
+  res.json({ user });
 });
 
 authRouter.post("/logout", (req, res, next) => {
