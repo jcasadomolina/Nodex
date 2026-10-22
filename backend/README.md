@@ -79,6 +79,25 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `GET /api/auth/google` · `GET /api/auth/github` | Redirige al login del proveedor. `503` si no está configurado |
 | `GET /api/auth/google/callback` · `GET /api/auth/github/callback` | El proveedor vuelve aquí. Inicia sesión y redirige a `APP_URL`, o a `APP_URL/login?error=<proveedor>` si falla |
 
+### Grupos, Nodexs y panel (requieren sesión)
+
+| Método y ruta | Respuesta |
+|---------------|-----------|
+| `GET /api/groups` | `200 { groups }`, cada uno con `nodexCount` |
+| `POST /api/groups` | Body `{ name, description? }`. `201 { group }`. `409` si ya tienes un grupo con ese nombre |
+| `PATCH /api/groups/:id` | Body `{ name?, description? }`. `200 { group }` |
+| `DELETE /api/groups/:id` | `204`. Lo envía a la papelera; sus Nodexs no se borran |
+| `POST /api/groups/:id/nodexs` | Body `{ nodexId }`. `204`. Si ya estaba en el grupo, no hace nada |
+| `DELETE /api/groups/:id/nodexs/:nodexId` | `204`. Saca el Nodex del grupo |
+| `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `limit` (1–100, 50 por defecto) y `cursor` |
+| `POST /api/nodexs` | Body `{ type, title, content?, url?, groupIds? }`. `201 { nodex }`. Los enlaces necesitan `url` (`http` o `https`) |
+| `GET /api/nodexs/:id` | `200 { nodex }` |
+| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url? }`. `200 { nodex }` |
+| `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
+| `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
+
+Cada `nodex` incluye `groupIds`: los grupos (no borrados) en los que está. Un grupo o Nodex de otro usuario, o un ID con formato incorrecto, responde `404`.
+
 `user` siempre tiene la forma `{ id, name, email, avatarUrl }`; nunca incluye la contraseña. `register` y `login` admiten 10 intentos cada 15 minutos por IP; a partir de ahí responden `429`.
 
 Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válidos), `401` (sin sesión o credenciales incorrectas), `404` (ruta no encontrada), `409` (conflicto), `429` (demasiados intentos) o `500` (error interno, sin detalles para el cliente).
@@ -96,6 +115,9 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/types/express-session.d.ts`: le dice a TypeScript que la sesión guarda `userId`.
 - `src/types/passport.d.ts`: le dice a TypeScript que `req.user` tiene `id`.
 - `src/modules/auth/oauth.routes.ts`: login con Google y GitHub (Passport).
+- `src/modules/groups/`, `src/modules/nodexs/`, `src/modules/board/`: grupos, Nodexs y panel central.
+- `src/lib/params.ts`: `parseId`, que convierte un ID mal formado en un `404`.
+- `src/lib/db-errors.ts`: `isUniqueViolation`, para detectar valores duplicados (código `P2002` de Prisma).
 - `src/modules/`: una carpeta por funcionalidad.
 - `prisma/schema.prisma`: definición de las tablas.
 - `prisma/migrations/`: historial de cambios en la base, en SQL. Nunca se editan una vez aplicadas.

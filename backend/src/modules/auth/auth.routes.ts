@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
-import { Prisma } from "../../../generated/prisma/client.js";
+import { isUniqueViolation } from "../../lib/db-errors.js";
 import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { SESSION_COOKIE, startSession } from "../../lib/session.js";
@@ -34,7 +34,7 @@ authRouter.post("/register", authLimiter, async (req, res) => {
     await startSession(req, user.id);
     res.status(201).json({ user });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    if (isUniqueViolation(err)) {
       throw new HttpError(409, "Ya existe una cuenta con ese email");
     }
     throw err;

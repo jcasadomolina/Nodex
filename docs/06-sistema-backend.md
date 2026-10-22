@@ -152,6 +152,23 @@ Ambos son gratuitos. Con las URLs de abajo funciona en local; para producción s
 
 Para probar: arranca con `npm run dev` y abre `http://localhost:4000/api/auth/google` en el navegador. Tras aceptar, acabarás en `http://localhost:4000/`, que responde `404` porque aún no hay frontend. Es normal: comprueba la sesión abriendo `http://localhost:4000/api/auth/me`.
 
+## Grupos y Nodexs (`feature/grupos-nodexs`)
+
+Endpoints bajo `/api/groups`, `/api/nodexs` y `/api/board`; el detalle está en el [README del backend](../backend/README.md#grupos-nodexs-y-panel-requieren-sesión). Todas las rutas usan `requireAuth`.
+
+### Conceptos
+
+- **Borrado lógico:** `DELETE` no elimina la fila, sino que rellena `deleted_at`. Todas las consultas filtran `deletedAt: null`, así que para el usuario ha desaparecido, pero los datos siguen ahí para una futura papelera. Por eso, al borrar un grupo, se puede crear otro con el mismo nombre: el índice único parcial solo cuenta los grupos no borrados.
+- **Huérfano:** Nodex que no está en ningún grupo *activo*. Si se borra el único grupo de un Nodex, este pasa a ser huérfano automáticamente, sin tocar la tabla `group_nodexs`.
+- **Paginación por cursor:** en lugar de "dame la página 3", el cliente dice "dame los 50 siguientes después de este ID" (`nextCursor`). Es más rápido que saltar filas con `OFFSET` y no repite ni salta Nodexs si se crean nuevos mientras se pagina.
+- **`404` en vez de `403`:** si un usuario pide un recurso de otro, la API responde como si no existiera. Un `403` ("no tienes permiso") confirmaría que ese ID existe.
+- **Asignar dos veces no falla:** `POST /api/groups/:id/nodexs` usa `skipDuplicates`, así que repetir la petición deja todo igual. A esto se le llama operación *idempotente*, y facilita el trabajo del frontend (por ejemplo, con un doble clic).
+- **`/api/board`:** el panel central necesita grupos, Nodexs y sus relaciones a la vez. Una sola petición que lo devuelve todo evita que el frontend tenga que hacer varias y unirlas. Por ahora trae todos los Nodexs del usuario; si algún día son demasiados, se paginará.
+
+### Cómo se protege el aislamiento
+
+Cada consulta filtra por `userId` de la sesión. Además, la tabla `group_nodexs` tiene claves foráneas compuestas (ver [Base de datos](08-base-de-datos.md#aislamiento-entre-usuarios)): aunque el código tuviera un fallo, la base rechazaría meter un Nodex en el grupo de otro usuario.
+
 ## Pendiente de decidir
 
 - **Proveedor de IA** (en `feature/ia`). Candidato propuesto por Jose: **Kev**, modelos de decisión open source y entrenables. Hay que resolver dónde se ejecuta, porque necesita una GPU o un Mac.
