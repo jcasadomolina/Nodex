@@ -103,10 +103,10 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `DELETE /api/groups/:id` | `204`. Lo envía a la papelera; sus Nodexs no se borran |
 | `POST /api/groups/:id/nodexs` | Body `{ nodexId }`. `204`. Si ya estaba en el grupo, no hace nada |
 | `DELETE /api/groups/:id/nodexs/:nodexId` | `204`. Saca el Nodex del grupo |
-| `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `limit` (1–100, 50 por defecto) y `cursor` |
-| `POST /api/nodexs` | Body `{ type, title, content?, url?, groupIds? }`. `201 { nodex }`. Los enlaces necesitan `url` (`http` o `https`) |
+| `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `priority=low\|medium\|high\|urgent`, `limit` (1–100, 50 por defecto) y `cursor`. Orden: `sort=recent` (por defecto) o `sort=priority` (más prioritarios primero; sin prioridad al final) |
+| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds? }`. `201 { nodex }`. Los enlaces necesitan `url` (`http` o `https`) |
 | `GET /api/nodexs/:id` | `200 { nodex }` |
-| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url? }`. `200 { nodex }` |
+| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority? }` (`priority: null` la quita). `200 { nodex }` |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
 

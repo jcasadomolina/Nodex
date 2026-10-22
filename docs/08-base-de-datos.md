@@ -101,6 +101,7 @@ El nombre es único por usuario entre los grupos no borrados.
 | `content` | text | Texto de la nota, opcional |
 | `url` | text | Solo en enlaces |
 | `source` | text | Origen: `manual` o `share` (menú Compartir de la PWA). Por defecto `manual` |
+| `priority` | smallint | Prioridad subjetiva (HU-11): 1 baja, 2 media, 3 alta, 4 urgente; `null` sin prioridad. En la API se usan los nombres (`low`…`urgent`) |
 | `metadata` | jsonb | Datos extra flexibles (miniatura, autor…). Por defecto `{}` |
 | `embedding` | vector(384) | Vector que representa el significado del Nodex, calculado por la IA. `null` hasta que se calcula |
 | `created_at`, `updated_at` | timestamptz | |
@@ -181,7 +182,8 @@ En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcio
 ## Implementación
 
 - Esquema: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma). Los modelos usan PascalCase y los campos camelCase, como es habitual en TypeScript; `@@map` y `@map` los traducen a nombres en snake_case en la base.
-- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`.
+- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`.
+- `priority` es la única excepción a la regla de "texto en vez de ENUM": se guarda como número para poder **ordenar** por ella (urgente > alta > media > baja). Con texto, el orden sería alfabético, que aquí no tiene sentido.
 - `embedding` es de un tipo que Prisma no conoce (`vector`), así que en el esquema aparece como `Unsupported("vector(384)")` y se lee y escribe con SQL (`$queryRaw` / `$executeRaw`).
 - Configuración de la CLI: [`backend/prisma.config.ts`](../backend/prisma.config.ts). Carga el `.env` de la raíz y usa `DIRECT_URL` para las migraciones. La aplicación se conectará con `DATABASE_URL` (pooling) en el bloque de backend.
 - Prisma fijado en la versión estable **7.10.1**. En npm, la etiqueta `latest` apuntaba a una versión preliminar (8.0.0-rc).

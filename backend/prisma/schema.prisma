@@ -90,6 +90,7 @@ model Nodex {
   content   String?
   url       String?
   source    String                      @default("manual") // manual | share
+  priority  Int?                        @db.SmallInt
   metadata  Json                        @default("{}")
   embedding Unsupported("vector(384)")?
   createdAt DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)

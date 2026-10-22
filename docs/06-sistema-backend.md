@@ -45,7 +45,28 @@ Cada rama sale de `develop` y vuelve a `develop` con un pull request.
 | `feature/grupos-nodexs` | CRUD de grupos y Nodexs, y asignación de Nodexs a grupos | `RF-04.1`, `RF-04.4`, `RF-05.1`, `RF-05.2` |
 | `feature/tutorial` | Guardar qué versión del tutorial ha visto cada usuario | `RF-10.4`, `RF-10.5` |
 | `feature/perfil` | Pantalla de perfil: nombre e imagen | HU-02 |
-| `feature/ia` | Sugerencias de grupo y enriquecimiento | `RF-04.2`, `RF-04.3`, `RF-05.4`, `RF-05.5` |
+| `feature/ia` | Vectores de IA y sugerencias de grupo | `RF-04.2` |
+| `feature/prioridad` | Prioridad subjetiva de cada Nodex | HU-11 |
+| `feature/tareas` | Personalidad tarea: estado, fecha límite, calendario y tablero | `RF-12.4`–`RF-12.6` |
+| `feature/recordatorios` | Personalidad recordatorio y notificaciones push | `RF-12.7` |
+| `feature/enlaces` | Vista previa de enlaces y comprobación de enlaces rotos | `RF-12.3` |
+| `feature/ia-busqueda` | Búsqueda por significado, relacionados y duplicados | `RF-05.7`–`RF-05.9` |
+| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos | `RF-04.3` |
+
+## Personalidades (HU-12): diseño
+
+Cada personalidad es **una tabla propia** enlazada a `nodexs` (una fila por Nodex como máximo), siguiendo la regla de "una tabla por funcionalidad". Un Nodex tiene una personalidad si tiene fila en esa tabla, así que se pueden combinar libremente: añadir o quitar una es crear o borrar su fila, sin tocar las demás.
+
+| Personalidad | Dónde vive | Campos principales |
+|--------------|------------|--------------------|
+| Apunte | Es el Nodex sin más: `title` y `content` | — |
+| Enlace | `nodexs.url` y una tabla `link_previews` | Título, descripción e imagen de la página; fecha de la última comprobación y si el enlace sigue vivo |
+| Tarea | Tabla `tasks` | `status` (`todo`, `doing`, `done`), `due_at` opcional, `position` para el orden dentro de cada columna del tablero, `completed_at` |
+| Recordatorio | Tabla `reminders` | `remind_at`, `sent_at` (para no avisar dos veces) |
+
+Las notificaciones de los recordatorios serán **push de la PWA** (Web Push): gratis y sin servicios de terceros de pago. El backend necesitará una tabla con las suscripciones de cada dispositivo y un proceso que, cada minuto, busque los recordatorios vencidos y los envíe. Llegarán de verdad cuando el frontend registre la PWA.
+
+La **prioridad** no es una personalidad: cualquier Nodex puede tenerla, sea apunte, enlace o tarea.
 
 ## Cómo funciona una petición
 

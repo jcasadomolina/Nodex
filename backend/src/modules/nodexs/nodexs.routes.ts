@@ -5,7 +5,7 @@ import { parseId } from "../../lib/params.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { processInBackground } from "../ai/ai.service.js";
-import { createNodexSchema, listNodexsSchema, updateNodexSchema } from "./nodexs.schemas.js";
+import { createNodexSchema, listNodexsSchema, priorityToName, updateNodexSchema } from "./nodexs.schemas.js";
 
 export const nodexsRouter = Router();
 
@@ -20,6 +20,7 @@ export const nodexFields = {
   content: true,
   url: true,
   source: true,
+  priority: true,
   metadata: true,
   createdAt: true,
   updatedAt: true,
@@ -28,8 +29,8 @@ export const nodexFields = {
 
 type NodexRow = Prisma.NodexGetPayload<{ select: typeof nodexFields }>;
 
-export function toNodex({ groups, ...nodex }: NodexRow) {
-  return { ...nodex, groupIds: groups.map((g) => g.groupId) };
+export function toNodex({ groups, priority, ...nodex }: NodexRow) {
+  return { ...nodex, priority: priorityToName(priority), groupIds: groups.map((g) => g.groupId) };
 }
 
 async function findNodex(userId: string, id: string) {
@@ -41,7 +42,7 @@ async function findNodex(userId: string, id: string) {
 }
 
 nodexsRouter.get("/", async (req, res) => {
-  const { groupId, orphan, type, cursor, limit } = listNodexsSchema.parse(req.query);
+  const { groupId, orphan, type, priority, sort, cursor, limit } = listNodexsSchema.parse(req.query);
   const activeGroup = { group: { deletedAt: null } };
 
   const nodexs = await prisma.nodex.findMany({
@@ -49,9 +50,14 @@ nodexsRouter.get("/", async (req, res) => {
       userId: req.session.userId!,
       deletedAt: null,
       type,
+      priority,
       groups: groupId ? { some: { groupId, ...activeGroup } } : orphan ? { none: activeGroup } : undefined,
     },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    orderBy: [
+      ...(sort === "priority" ? [{ priority: { sort: "desc", nulls: "last" } } as const] : []),
+      { createdAt: "desc" },
+      { id: "desc" },
+    ],
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     select: nodexFields,
