@@ -4,6 +4,7 @@ import { HttpError } from "../../lib/http-error.js";
 import { parseId } from "../../lib/params.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
+import { processInBackground } from "../ai/ai.service.js";
 import { createNodexSchema, listNodexsSchema, updateNodexSchema } from "./nodexs.schemas.js";
 
 export const nodexsRouter = Router();
@@ -85,6 +86,7 @@ nodexsRouter.post("/", async (req, res) => {
     },
     select: nodexFields,
   });
+  processInBackground(userId, nodex.id);
   res.status(201).json({ nodex: toNodex(nodex) });
 });
 
@@ -104,6 +106,9 @@ nodexsRouter.patch("/:id", async (req, res) => {
   }
 
   const nodex = await prisma.nodex.update({ where: { id }, data, select: nodexFields });
+  if (data.title !== undefined || data.content !== undefined || data.url !== undefined) {
+    processInBackground(req.session.userId!, id);
+  }
   res.json({ nodex: toNodex(nodex) });
 });
 

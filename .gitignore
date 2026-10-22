@@ -22,3 +22,6 @@ Thumbs.db
 
 # Cliente generado por Prisma (se regenera con npm run db:generate)
 generated/
+
+# Modelos de IA descargados (se bajan solos la primera vez)
+.cache/

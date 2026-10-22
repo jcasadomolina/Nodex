@@ -35,6 +35,7 @@
 - **RF-04.2**: El sistema debe poder asignar, mediante IA, los enlaces y/o notas huérfanos a alguno de los grupos existentes.
 - **RF-04.3**: El sistema debe poder recomendar, mediante IA, la creación de nuevos grupos para los enlaces y/o notas huérfanos.
 - **RF-04.4**: El sistema debe mostrar todos los grupos del usuario en un panel central, con sus Nodexs visualmente relacionados con ellos.
+- **RF-04.5**: El sistema debe poder colocar los Nodexs en un mapa visual según el parecido de su contenido, de modo que los temas cercanos aparezcan juntos.
 
 ### HU-05: Gestión de Nodexs
 
@@ -44,6 +45,9 @@
 - **RF-05.4**: El sistema debe poder mostrar, mediante IA, información de Internet sobre el contenido del Nodex creado.
 - **RF-05.5**: El sistema debe poder recomendar, mediante IA, secciones o apartados sobre el contenido del Nodex creado.
 - **RF-05.6**: El sistema debe permitir crear un Nodex compartiendo un enlace desde el menú Compartir del dispositivo, con la PWA instalada (fase 2 de la hoja de ruta).
+- **RF-05.7**: El sistema debe permitir buscar Nodexs por significado, aunque no compartan palabras con la búsqueda.
+- **RF-05.8**: El sistema debe mostrar, al abrir un Nodex, otros Nodexs relacionados con su contenido.
+- **RF-05.9**: El sistema debe avisar cuando un Nodex nuevo sea igual o casi igual a otro ya guardado.
 
 ### HU-10: Tutorial de bienvenida
 

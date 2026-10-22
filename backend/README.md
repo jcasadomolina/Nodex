@@ -55,6 +55,9 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
 | `npm run build` | Compila TypeScript a JavaScript en `dist/` |
 | `npm start` | Arranca la versión compilada (producción) |
 | `npm run typecheck` | Comprueba los tipos sin generar archivos |
+| `npm run ai:backfill` | Calcula el vector de IA de los Nodexs que no lo tengan (antiguos o con error) |
+
+La primera vez que se usa la IA, el modelo (118 MB) se descarga en `.cache/models`, que no se sube a Git.
 
 En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En producción no hay archivo: el alojamiento define las variables directamente.
 
@@ -81,6 +84,10 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `PUT /api/me/avatar` | Formulario `multipart/form-data` con el campo `avatar` (JPG, PNG, WebP o GIF, máx. 5 MB). `200 { user }`. `413` si pesa demasiado, `502` si Cloudinary falla, `503` si no está configurado |
 | `DELETE /api/me/avatar` | `200 { user }` con `avatarUrl: null` |
 | `DELETE /api/me/providers/:provider` | `204`. Desvincula `google` o `github`. `409` si es el único método de inicio de sesión |
+| `GET /api/suggestions` | `200 { suggestions }`: sugerencias de la IA pendientes, con el Nodex y el grupo propuesto |
+| `POST /api/suggestions/refresh` | Calcula los vectores que falten y revisa todos los huérfanos. `200 { reviewed, pending }` |
+| `POST /api/suggestions/:id/accept` | `204`. Mete el Nodex en el grupo sugerido |
+| `POST /api/suggestions/:id/reject` | `204`. Descarta la sugerencia; ese grupo no se vuelve a proponer para ese Nodex |
 | `PUT /api/me/tutorial` | Body `{ version }` (entero ≥ 1). `200 { tutorialCompletedVersion }`. Marca qué versión del tutorial ha visto el usuario |
 | `GET /api/auth/google` · `GET /api/auth/github` | Redirige al login del proveedor. `503` si no está configurado |
 | `GET /api/auth/google/callback` · `GET /api/auth/github/callback` | El proveedor vuelve aquí. Inicia sesión y redirige a `APP_URL`, o a `APP_URL/login?error=<proveedor>` si falla |
@@ -125,6 +132,9 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/modules/groups/`, `src/modules/nodexs/`, `src/modules/board/`: grupos, Nodexs y panel central.
 - `src/modules/me/`: datos del propio usuario (por ahora, el tutorial).
 - `src/lib/params.ts`: `parseId`, que convierte un ID mal formado en un `404`.
+- `src/lib/embeddings.ts`: carga el modelo de IA y convierte texto en vectores.
+- `src/modules/ai/`: cálculo de vectores, sugerencias de grupo y sus endpoints.
+- `src/scripts/ai-backfill.ts`: script de `npm run ai:backfill`.
 - `src/lib/storage.ts`: subida y borrado de fotos en Cloudinary. Es el único archivo que conoce Cloudinary.
 - `src/lib/db-errors.ts`: `isUniqueViolation`, para detectar valores duplicados (código `P2002` de Prisma).
 - `src/modules/`: una carpeta por funcionalidad.
