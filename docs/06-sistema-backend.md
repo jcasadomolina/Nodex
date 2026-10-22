@@ -186,6 +186,54 @@ El contenido del tutorial (textos y pasos) vive en el frontend, porque es igual 
 
 Es la primera migración que **amplía** la base: añade una columna opcional sin tocar nada de lo anterior, como marcan las [reglas de evolución](08-base-de-datos.md#reglas-para-que-la-base-acepte-cambios).
 
+## Perfil (`feature/perfil`)
+
+Endpoints bajo `/api/me` (HU-02). `GET /api/me` devuelve el perfil con el email (`RF-02.4`) y las cuentas vinculadas (`providers`), `PATCH /api/me` cambia el nombre (`RF-02.2`) y `/api/me/avatar` sube o borra la foto (`RF-02.3`). `RF-02.5` (WhatsApp) queda como ampliación futura.
+
+### Cómo se sube una foto
+
+```
+Navegador ── multipart/form-data (campo "avatar") ──▶ multer
+   multer: la guarda en memoria, comprueba tipo (JPG/PNG/WebP/GIF) y tamaño (≤ 5 MB)
+        ──▶ lib/storage.ts ──▶ Cloudinary
+   Cloudinary: recorta a 256×256 centrando en la cara, la convierte a WebP
+               y devuelve la URL pública
+        ──▶ se guarda la URL en users.avatar_url
+```
+
+- **multipart/form-data:** el formato que usan los formularios para enviar archivos. JSON no sirve para binarios, por eso hace falta **multer**, que lee ese formato en Express.
+- **En memoria, no en disco:** la imagen pesa como mucho 5 MB y va directa a Cloudinary, así que no hace falta guardarla en el servidor. Además, los alojamientos gratuitos suelen tener un disco que se borra en cada reinicio.
+- **Un archivo por usuario:** se guarda siempre como `nodex/avatars/<userId>`. Subir una foto nueva sobrescribe la anterior, así que no se acumulan fotos viejas que gasten cuota.
+- **Tolerancia a fallos (`RNF-08.2`):** si Cloudinary no responde, la petición devuelve `502` con un mensaje claro, el error queda registrado en el servidor y la aplicación sigue funcionando. Sin `CLOUDINARY_URL`, la subida responde `503`.
+- **Fotos de Google y GitHub:** si el usuario entró con OAuth, `avatar_url` apunta a la foto del proveedor. Subir una propia la sustituye, y borrarla deja el perfil sin foto.
+
+### Vincular y desvincular cuentas (`RF-02.6`, `RF-02.7`)
+
+Sirve para que una misma persona entre con Google o con GitHub aunque usen emails distintos.
+
+```
+1. Con sesión iniciada: GET /api/auth/github/link
+   → se guarda en la sesión linkUserId = tu usuario y se va a GitHub como en un login normal
+2. GitHub vuelve al mismo callback de siempre (no hay que registrar otra URL)
+   → como hay linkUserId, en vez de buscar o crear usuario, se vincula la cuenta al tuyo
+3. Redirige a /perfil?linked=github (o /perfil?error=github si no se pudo)
+```
+
+Al vincular, la cuenta de GitHub puede estar ya unida a **otro** usuario de Nodex:
+
+| Ese otro usuario… | Resultado |
+|-------------------|-----------|
+| Está vacío: sin contraseña, sin otras cuentas, sin grupos ni Nodexs | La cuenta se pasa a tu usuario y el usuario vacío se borra, todo en una transacción |
+| Tiene datos o más formas de entrar | No se vincula (`/perfil?error=github`). Así nunca se pierden datos de nadie |
+
+Una **transacción** agrupa varias operaciones para que se hagan todas o ninguna: si fallase el borrado del usuario vacío, la cuenta tampoco cambiaría de dueño.
+
+Al desvincular (`DELETE /api/me/providers/:provider`), el backend comprueba que te quede otra forma de entrar (una contraseña u otra cuenta). Si no, responde `409`, para que nadie se quede fuera de su propia cuenta.
+
+### Mensajes de validación en español
+
+`config/env.ts` activa `z.config(z.locales.es())`. Desde ahí, los mensajes por defecto de Zod salen en español (por ejemplo, *"Entrada inválida: se esperaba número, recibido texto"*). Los mensajes personalizados, como *"El nombre es obligatorio"*, se mantienen.
+
 ## Decisiones tomadas
 
 - **Almacenamiento de imágenes:** **Cloudinary**, plan gratuito sin tarjeta (25 créditos al mes compartidos entre almacenamiento, tráfico y transformaciones). Las fotos se reducen a 256×256 en WebP (unos 15 KB). Todo el acceso irá en un único archivo, `lib/storage.ts`, para poder pasar a Cloudflare R2 si el tráfico crece. Las fotos de Google y GitHub no se guardan: solo su URL.

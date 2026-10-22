@@ -1,4 +1,4 @@
-import { Router, type RequestHandler } from "express";
+import { Router, type Request, type RequestHandler } from "express";
 import passport from "passport";
 import { Strategy as GitHubStrategy } from "passport-github2";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
@@ -6,8 +6,11 @@ import { env } from "../../config/env.js";
 import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { startSession } from "../../lib/session.js";
+import { requireAuth } from "../../middleware/require-auth.js";
 
-type Provider = "google" | "github";
+export const PROVIDERS = ["google", "github"] as const;
+
+type Provider = (typeof PROVIDERS)[number];
 
 type OAuthProfile = {
   provider: Provider;
@@ -53,10 +56,42 @@ async function findOrCreateUser(profile: OAuthProfile) {
   return user.id;
 }
 
-function verify(profile: OAuthProfile, done: Done) {
-  findOrCreateUser(profile)
-    .then((userId) => done(null, userId ? { id: userId } : false))
-    .catch(done);
+async function linkAccount(userId: string, { provider, providerAccountId }: OAuthProfile) {
+  const account = await prisma.oAuthAccount.findUnique({
+    where: { provider_providerAccountId: { provider, providerAccountId } },
+  });
+
+  if (!account) {
+    await prisma.oAuthAccount.create({ data: { userId, provider, providerAccountId } });
+    return userId;
+  }
+  if (account.userId === userId) return userId;
+
+  const owner = await prisma.user.findUnique({
+    where: { id: account.userId },
+    select: { passwordHash: true, _count: { select: { oauthAccounts: true, groups: true, nodexs: true } } },
+  });
+  const ownerIsEmpty =
+    owner &&
+    !owner.passwordHash &&
+    owner._count.oauthAccounts === 1 &&
+    owner._count.groups === 0 &&
+    owner._count.nodexs === 0;
+
+  if (!ownerIsEmpty) return null;
+
+  await prisma.$transaction([
+    prisma.oAuthAccount.update({ where: { id: account.id }, data: { userId } }),
+    prisma.user.delete({ where: { id: account.userId } }),
+  ]);
+  return userId;
+}
+
+function verify(req: Request, profile: OAuthProfile, done: Done) {
+  const linkUserId = req.session.linkUserId;
+  const result = linkUserId ? linkAccount(linkUserId, profile) : findOrCreateUser(profile);
+
+  result.then((userId) => done(null, userId ? { id: userId } : false)).catch(done);
 }
 
 function callbackUrl(provider: Provider) {
@@ -72,10 +107,12 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
         callbackURL: callbackUrl("google"),
         scope: ["profile", "email"],
         state: true,
+        passReqToCallback: true,
       },
-      (_accessToken, _refreshToken, profile, done) => {
+      (req, _accessToken, _refreshToken, profile, done) => {
         const email = profile.emails?.find((e) => e.verified)?.value;
         verify(
+          req,
           {
             provider: "google",
             providerAccountId: profile.id,
@@ -101,11 +138,19 @@ if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
         scope: ["user:email"],
         allRawEmails: true,
         state: true as unknown as string,
+        passReqToCallback: true,
       },
-      (_accessToken: string, _refreshToken: string, profile: passport.Profile & { username?: string }, done: Done) => {
+      (
+        req: Request,
+        _accessToken: string,
+        _refreshToken: string,
+        profile: passport.Profile & { username?: string },
+        done: Done,
+      ) => {
         const emails = (profile.emails ?? []) as GitHubEmail[];
         const email = emails.find((e) => e.primary && e.verified)?.value;
         verify(
+          req,
           {
             provider: "github",
             providerAccountId: profile.id,
@@ -130,21 +175,31 @@ function requireProvider(provider: Provider): RequestHandler {
   };
 }
 
-const finishLogin: RequestHandler = async (req, res) => {
-  await startSession(req, req.user!.id);
-  res.redirect(`${env.APP_URL}/`);
-};
+for (const provider of PROVIDERS) {
+  oauthRouter.get(`/${provider}`, requireProvider(provider), (req, res, next) => {
+    delete req.session.linkUserId;
+    passport.authenticate(provider, { session: false })(req, res, next);
+  });
 
-for (const provider of ["google", "github"] as const) {
-  oauthRouter.get(`/${provider}`, requireProvider(provider), passport.authenticate(provider, { session: false }));
+  oauthRouter.get(`/${provider}/link`, requireAuth, requireProvider(provider), (req, res, next) => {
+    req.session.linkUserId = req.session.userId!;
+    passport.authenticate(provider, { session: false })(req, res, next);
+  });
 
   oauthRouter.get(
     `/${provider}/callback`,
     requireProvider(provider),
-    passport.authenticate(provider, {
-      session: false,
-      failureRedirect: `${env.APP_URL}/login?error=${provider}`,
-    }),
-    finishLogin,
+    (req, res, next) => {
+      const page = req.session.linkUserId ? "perfil" : "login";
+      passport.authenticate(provider, {
+        session: false,
+        failureRedirect: `${env.APP_URL}/${page}?error=${provider}`,
+      })(req, res, next);
+    },
+    async (req, res) => {
+      const linked = Boolean(req.session.linkUserId);
+      await startSession(req, req.user!.id);
+      res.redirect(linked ? `${env.APP_URL}/perfil?linked=${provider}` : `${env.APP_URL}/`);
+    },
   );
 }

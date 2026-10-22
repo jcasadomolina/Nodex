@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
+import multer from "multer";
 import { ZodError, z } from "zod";
 import { HttpError } from "../lib/http-error.js";
 
@@ -17,6 +18,12 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
   if (err instanceof HttpError) {
     res.status(err.status).json({ error: err.message });
+    return;
+  }
+
+  if (err instanceof multer.MulterError) {
+    const tooLarge = err.code === "LIMIT_FILE_SIZE";
+    res.status(tooLarge ? 413 : 400).json({ error: tooLarge ? "La imagen no puede superar 5 MB" : "Archivo no válido" });
     return;
   }
 
