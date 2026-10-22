@@ -19,7 +19,14 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
    DIRECT_URL="...?sslmode=verify-full"     # directa: la usan las migraciones
    SESSION_SECRET="..."                     # mínimo 32 caracteres aleatorios
    PORT=4000                                # opcional, 4000 por defecto
+   APP_URL="http://localhost:4000"          # URL pública que ve el navegador
+   GOOGLE_CLIENT_ID="..."                   # opcionales: sin ellas, el login con Google
+   GOOGLE_CLIENT_SECRET="..."               #   o GitHub responde 503
+   GITHUB_CLIENT_ID="..."
+   GITHUB_CLIENT_SECRET="..."
    ```
+
+   Cómo conseguir las credenciales de Google y GitHub: [docs/06-sistema-backend.md](../docs/06-sistema-backend.md#registrar-nodex-en-google-y-github).
 
    Tienes la plantilla en [`.env.example`](../.env.example). Para generar un `SESSION_SECRET` seguro:
 
@@ -69,6 +76,8 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/auth/login` | Body `{ email, password }`. `200 { user }` e inicia sesión. `401` si las credenciales no son válidas |
 | `POST /api/auth/logout` | `204`. Cierra la sesión y borra la cookie |
 | `GET /api/auth/me` | `200 { user }` con el usuario de la sesión, o `401` |
+| `GET /api/auth/google` · `GET /api/auth/github` | Redirige al login del proveedor. `503` si no está configurado |
+| `GET /api/auth/google/callback` · `GET /api/auth/github/callback` | El proveedor vuelve aquí. Inicia sesión y redirige a `APP_URL`, o a `APP_URL/login?error=<proveedor>` si falla |
 
 `user` siempre tiene la forma `{ id, name, email, avatarUrl }`; nunca incluye la contraseña. `register` y `login` admiten 10 intentos cada 15 minutos por IP; a partir de ahí responden `429`.
 
@@ -85,6 +94,8 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/middleware/error-handler.ts`: convierte cualquier error en una respuesta JSON.
 - `src/middleware/require-auth.ts`: corta con `401` las peticiones sin sesión.
 - `src/types/express-session.d.ts`: le dice a TypeScript que la sesión guarda `userId`.
+- `src/types/passport.d.ts`: le dice a TypeScript que `req.user` tiene `id`.
+- `src/modules/auth/oauth.routes.ts`: login con Google y GitHub (Passport).
 - `src/modules/`: una carpeta por funcionalidad.
 - `prisma/schema.prisma`: definición de las tablas.
 - `prisma/migrations/`: historial de cambios en la base, en SQL. Nunca se editan una vez aplicadas.

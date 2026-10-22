@@ -93,6 +93,65 @@ La cookie solo contiene un identificador. Los datos de la sesión se quedan en e
 
 Si el email ya existe, el registro responde `409`. Se detecta con el error de clave única de la base (código `P2002` de Prisma) y no con una consulta previa, así se cubre también el caso de dos registros simultáneos.
 
+## Login con Google y GitHub (`feature/oauth`)
+
+### Qué es OAuth
+
+OAuth permite entrar en Nodex con una cuenta de Google o GitHub sin crear una contraseña. Nodex nunca ve la contraseña de Google: Google confirma quién eres y le pasa a Nodex tu nombre, email y foto.
+
+```
+1. GET /api/auth/google           → Nodex redirige a Google con un "state" aleatorio
+2. El usuario acepta en Google    → Google redirige a /api/auth/google/callback?code=...&state=...
+3. Passport comprueba el state    → evita que otra web inyecte un login falso (CSRF)
+   y cambia el code por el perfil del usuario, hablando directamente con Google
+4. Nodex busca o crea el usuario  → inicia sesión (igual que el login normal) y redirige a APP_URL
+```
+
+### Cómo se decide qué usuario es
+
+1. Si ya existe una fila en `oauth_accounts` con ese proveedor e ID, es ese usuario.
+2. Si no, y el proveedor da un **email verificado** que ya tiene cuenta en Nodex, se vincula a esa cuenta. Así, quien se registró con email y contraseña puede entrar después con Google.
+3. Si no, se crea un usuario nuevo con nombre, email y foto del proveedor, sin contraseña.
+
+Solo se usa el email si el proveedor confirma que está **verificado**. Si no fuese así, alguien podría crear una cuenta de GitHub con tu email sin verificarlo y entrar en tu cuenta de Nodex. Si no hay email verificado, el login falla y redirige a `/login?error=<proveedor>`.
+
+### Detalles
+
+- Las credenciales son **opcionales**: si faltan en el `.env`, el servidor arranca igual y esos endpoints responden `503`. Así se puede desarrollar sin haberlas creado.
+- `APP_URL` es la dirección que ve el navegador. Ahora es el backend (`http://localhost:4000`). Cuando exista el frontend será la de Next.js, que reenviará `/api/*` al backend, y habrá que actualizar las URLs de callback en Google y GitHub.
+- Los tipos de `passport-github2` no aceptan `state: true`, aunque la librería sí lo soporta. Por eso aparece `state: true as unknown as string`: es un ajuste solo para TypeScript, no cambia nada al ejecutar.
+
+### Registrar Nodex en Google y GitHub
+
+Ambos son gratuitos. Con las URLs de abajo funciona en local; para producción se añadirán las del dominio final.
+
+**Google**
+1. Entra en [console.cloud.google.com](https://console.cloud.google.com) y crea un proyecto llamado `Nodex`.
+2. Abre **Google Auth Platform** y configura la pantalla de consentimiento: nombre `Nodex`, tu email de soporte y tipo de usuario **Externo**.
+3. Mientras la app esté en modo **prueba**, solo pueden entrar los usuarios que añadas en **Audiencia → Usuarios de prueba**. Añade tu cuenta.
+4. En **Clientes**, crea un cliente de tipo **Aplicación web** con este URI de redirección autorizado:
+   `http://localhost:4000/api/auth/google/callback`
+5. Copia el ID y el secreto del cliente en `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+
+**GitHub**
+1. Ve a **Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Rellena: nombre `Nodex`, Homepage URL `http://localhost:4000`, Authorization callback URL:
+   `http://localhost:4000/api/auth/github/callback`
+3. Pulsa **Generate a new client secret**.
+4. Copia el Client ID y el secreto en `GITHUB_CLIENT_ID` y `GITHUB_CLIENT_SECRET`.
+
+**Problemas habituales**
+
+| Síntoma | Causa | Solución |
+|---------|-------|----------|
+| `404` en la página de GitHub | GitHub no reconoce el Client ID | Cópialo con el botón de copiar de la OAuth App; suele tener 20 caracteres |
+| GitHub o Google rechazan la redirección (`redirect_uri_mismatch`) | El callback registrado no coincide exactamente | Comprueba que sea `/api/auth/github/callback` en GitHub y `/api/auth/google/callback` en Google |
+| El servidor sigue usando un valor antiguo aunque el `.env` esté bien | `--env-file` de Node no sustituye variables que ya existen en el entorno, y algunas extensiones de VS Code cargan el `.env` en la terminal al abrirla | Cierra la terminal y abre una nueva. Para comprobarlo: `echo %GITHUB_CLIENT_ID%` (cmd) |
+| Tras cambiar el `.env` no cambia nada | Node solo lee el `.env` al arrancar; `watch` recarga con cambios de código, no del `.env` | Para el servidor (`Ctrl+C`) y vuelve a lanzar `npm run dev` |
+| Google muestra "Acceso bloqueado" | La app está en modo prueba y esa cuenta no es usuario de prueba | Añádela en **Audiencia → Usuarios de prueba** |
+
+Para probar: arranca con `npm run dev` y abre `http://localhost:4000/api/auth/google` en el navegador. Tras aceptar, acabarás en `http://localhost:4000/`, que responde `404` porque aún no hay frontend. Es normal: comprueba la sesión abriendo `http://localhost:4000/api/auth/me`.
+
 ## Pendiente de decidir
 
 - **Proveedor de IA** (en `feature/ia`). Candidato propuesto por Jose: **Kev**, modelos de decisión open source y entrenables. Hay que resolver dónde se ejecuta, porque necesita una GPU o un Mac.

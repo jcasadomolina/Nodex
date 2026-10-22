@@ -1,10 +1,10 @@
 import argon2 from "argon2";
-import { Router, type Request } from "express";
+import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { Prisma } from "../../../generated/prisma/client.js";
 import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
-import { SESSION_COOKIE } from "../../lib/session.js";
+import { SESSION_COOKIE, startSession } from "../../lib/session.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { loginSchema, registerSchema } from "./auth.schemas.js";
 
@@ -21,16 +21,6 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Demasiados intentos, prueba de nuevo en unos minutos" },
 });
-
-function startSession(req: Request, userId: string) {
-  return new Promise<void>((resolve, reject) => {
-    req.session.regenerate((err) => {
-      if (err) return reject(err);
-      req.session.userId = userId;
-      req.session.save((err) => (err ? reject(err) : resolve()));
-    });
-  });
-}
 
 authRouter.post("/register", authLimiter, async (req, res) => {
   const { name, email, password } = registerSchema.parse(req.body);

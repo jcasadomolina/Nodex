@@ -1,4 +1,5 @@
 import connectPgSimple from "connect-pg-simple";
+import type { Request } from "express";
 import session from "express-session";
 import { env } from "../config/env.js";
 
@@ -19,3 +20,13 @@ export const sessionMiddleware = session({
     maxAge: 30 * 24 * 60 * 60 * 1000,
   },
 });
+
+export function startSession(req: Request, userId: string) {
+  return new Promise<void>((resolve, reject) => {
+    req.session.regenerate((err) => {
+      if (err) return reject(err);
+      req.session.userId = userId;
+      req.session.save((err) => (err ? reject(err) : resolve()));
+    });
+  });
+}
