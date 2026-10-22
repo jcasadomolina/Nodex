@@ -17,7 +17,14 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
    ```
    DATABASE_URL="...?sslmode=verify-full"   # con pooling (host con "-pooler"): la usa la aplicación
    DIRECT_URL="...?sslmode=verify-full"     # directa: la usan las migraciones
+   SESSION_SECRET="..."                     # mínimo 32 caracteres aleatorios
    PORT=4000                                # opcional, 4000 por defecto
+   ```
+
+   Tienes la plantilla en [`.env.example`](../.env.example). Para generar un `SESSION_SECRET` seguro:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
    ```
 
 3. Aplica las migraciones y genera el cliente de Prisma:
@@ -58,8 +65,14 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | Método y ruta | Respuesta |
 |---------------|-----------|
 | `GET /api/health` | `200 {"status":"ok","database":"ok"}`, o `503` si la base no responde (el servidor sigue en pie) |
+| `POST /api/auth/register` | Body `{ name, email, password }`. `201 { user }` e inicia sesión. `409` si el email ya existe |
+| `POST /api/auth/login` | Body `{ email, password }`. `200 { user }` e inicia sesión. `401` si las credenciales no son válidas |
+| `POST /api/auth/logout` | `204`. Cierra la sesión y borra la cookie |
+| `GET /api/auth/me` | `200 { user }` con el usuario de la sesión, o `401` |
 
-Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válidos), `404` (ruta no encontrada) o `500` (error interno, sin detalles para el cliente).
+`user` siempre tiene la forma `{ id, name, email, avatarUrl }`; nunca incluye la contraseña. `register` y `login` admiten 10 intentos cada 15 minutos por IP; a partir de ahí responden `429`.
+
+Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válidos), `401` (sin sesión o credenciales incorrectas), `404` (ruta no encontrada), `409` (conflicto), `429` (demasiados intentos) o `500` (error interno, sin detalles para el cliente).
 
 ## Archivos
 
@@ -68,7 +81,10 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/config/env.ts`: valida las variables de entorno con Zod; si falta alguna, el servidor no arranca.
 - `src/lib/prisma.ts`: única conexión a la base, con el adaptador `@prisma/adapter-pg`.
 - `src/lib/http-error.ts`: `HttpError`, para lanzar errores con código HTTP desde cualquier ruta.
+- `src/lib/session.ts`: configuración de las sesiones y la cookie `nodex.sid`.
 - `src/middleware/error-handler.ts`: convierte cualquier error en una respuesta JSON.
+- `src/middleware/require-auth.ts`: corta con `401` las peticiones sin sesión.
+- `src/types/express-session.d.ts`: le dice a TypeScript que la sesión guarda `userId`.
 - `src/modules/`: una carpeta por funcionalidad.
 - `prisma/schema.prisma`: definición de las tablas.
 - `prisma/migrations/`: historial de cambios en la base, en SQL. Nunca se editan una vez aplicadas.

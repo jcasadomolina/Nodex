@@ -60,6 +60,39 @@ Petición → helmet (cabeceras seguras) → express.json (lee el cuerpo)
 - **Validación del entorno:** `config/env.ts` comprueba las variables al arrancar. Si falta `DATABASE_URL`, el servidor no arranca en lugar de fallar más tarde en mitad de una petición.
 - **`/api/health`:** permite comprobar que el servidor y la base responden. Si la base cae, el servidor sigue en pie y responde `503` (`RNF-08.2`).
 
+## Autenticación (`feature/auth`)
+
+Endpoints bajo `/api/auth`: `register`, `login`, `logout` y `me`. El detalle de cada uno está en el [README del backend](../backend/README.md#endpoints).
+
+### Cómo funciona una sesión
+
+```
+1. login correcto  → el servidor crea una fila en la tabla sessions: { userId }
+                   → responde con la cookie nodex.sid = ID de esa fila, firmado
+2. cada petición   → el navegador envía la cookie
+                   → express-session comprueba la firma, lee la fila y rellena req.session.userId
+3. logout          → se borra la fila y la cookie
+```
+
+La cookie solo contiene un identificador. Los datos de la sesión se quedan en el servidor, así que no se pueden leer ni modificar desde el navegador (`RNF-9.2`).
+
+### Decisiones de seguridad
+
+| Medida | Qué evita |
+|--------|-----------|
+| Contraseña con **argon2id** (`RF-01.4`) | Si alguien roba la base, no puede recuperar las contraseñas: un hash solo se puede comprobar, no deshacer, y argon2 está diseñado para que probar millones de contraseñas sea lentísimo |
+| Cookie **firmada** con `SESSION_SECRET` | Que alguien fabrique una cookie válida. Sin el secreto no se puede firmar |
+| Cookie **`httpOnly`** | Que un script malicioso inyectado en la página lea la cookie |
+| Cookie **`sameSite: lax`** | Que otra web haga peticiones en tu nombre (ataque CSRF) |
+| Cookie **`secure`** en producción | Que viaje sin cifrar: solo se envía por HTTPS |
+| **`session.regenerate`** al entrar | Que un atacante te haga usar una sesión que él ya conoce (*session fixation*). Cada login crea un ID nuevo |
+| **Mismo mensaje** si el email no existe o la contraseña es incorrecta | Que se pueda averiguar qué emails tienen cuenta |
+| **Hash "señuelo"** cuando el email no existe | Lo mismo, pero midiendo tiempos: sin él, la respuesta sería más rápida para un email inexistente, porque no habría hash que comprobar |
+| **Límite de 10 intentos / 15 min** por IP | Que se prueben contraseñas por fuerza bruta |
+| **Emails en minúsculas** (`RF-01.3`) | Que `Ana@x.com` y `ana@x.com` sean dos cuentas distintas |
+
+Si el email ya existe, el registro responde `409`. Se detecta con el error de clave única de la base (código `P2002` de Prisma) y no con una consulta previa, así se cubre también el caso de dos registros simultáneos.
+
 ## Pendiente de decidir
 
 - **Proveedor de IA** (en `feature/ia`). Candidato propuesto por Jose: **Kev**, modelos de decisión open source y entrenables. Hay que resolver dónde se ejecuta, porque necesita una GPU o un Mac.
