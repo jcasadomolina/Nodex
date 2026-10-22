@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-// Variables de entorno que necesita el backend. Si falta alguna o tiene un
-// formato incorrecto, el servidor no arranca: mejor fallar al inicio que a
-// mitad de una petición.
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),

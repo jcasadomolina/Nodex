@@ -6,8 +6,7 @@ const server = app.listen(env.PORT, () => {
   console.log(`Backend de Nodex escuchando en http://localhost:${env.PORT}`);
 });
 
-// Al parar el servidor (Ctrl+C o el alojamiento al reiniciar), se terminan las
-// peticiones en curso y se cierra la conexión con la base antes de salir
+// Cerrar el servidor y desconectar de la base de datos
 function shutdown() {
   server.close(async () => {
     await prisma.$disconnect();

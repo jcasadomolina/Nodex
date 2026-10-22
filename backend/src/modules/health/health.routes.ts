@@ -3,8 +3,7 @@ import { prisma } from "../../lib/prisma.js";
 
 export const healthRouter = Router();
 
-// Comprueba que el servidor responde y que llega a la base de datos.
-// Si la base falla, el servidor sigue vivo y lo indica con un 503 (RNF-08.2).
+
 healthRouter.get("/", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
