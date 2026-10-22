@@ -19,6 +19,8 @@
 - **RF-02.3**: El sistema debe permitir modificar la imagen de perfil del usuario.
 - **RF-02.4**: El sistema debe mostrar el correo electrónico del usuario en la pantalla de perfil.
 - **RF-02.5** *(ampliación futura)*: El sistema debe permitir modificar la sesión al número de WhatsApp asociado.
+- **RF-02.6**: El sistema debe permitir vincular una cuenta de Google o GitHub al usuario autenticado, para poder iniciar sesión con cualquiera de ellas.
+- **RF-02.7**: El sistema debe permitir desvincular una cuenta de Google o GitHub, siempre que el usuario conserve al menos un método de inicio de sesión.
 
 ### HU-03: Gestión de la asociación a WhatsApp *(ampliación futura)*
 

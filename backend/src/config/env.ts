@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+z.config(z.locales.es());
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
@@ -10,6 +12,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
+  CLOUDINARY_URL: z.string().startsWith("cloudinary://").optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

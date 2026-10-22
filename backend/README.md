@@ -76,9 +76,15 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/auth/login` | Body `{ email, password }`. `200 { user }` e inicia sesión. `401` si las credenciales no son válidas |
 | `POST /api/auth/logout` | `204`. Cierra la sesión y borra la cookie |
 | `GET /api/auth/me` | `200 { user }` con el usuario de la sesión, o `401` |
+| `GET /api/me` | `200 { user }` con el perfil y `providers` (cuentas vinculadas: `google`, `github`) |
+| `PATCH /api/me` | Body `{ name }`. `200 { user }` |
+| `PUT /api/me/avatar` | Formulario `multipart/form-data` con el campo `avatar` (JPG, PNG, WebP o GIF, máx. 5 MB). `200 { user }`. `413` si pesa demasiado, `502` si Cloudinary falla, `503` si no está configurado |
+| `DELETE /api/me/avatar` | `200 { user }` con `avatarUrl: null` |
+| `DELETE /api/me/providers/:provider` | `204`. Desvincula `google` o `github`. `409` si es el único método de inicio de sesión |
 | `PUT /api/me/tutorial` | Body `{ version }` (entero ≥ 1). `200 { tutorialCompletedVersion }`. Marca qué versión del tutorial ha visto el usuario |
 | `GET /api/auth/google` · `GET /api/auth/github` | Redirige al login del proveedor. `503` si no está configurado |
 | `GET /api/auth/google/callback` · `GET /api/auth/github/callback` | El proveedor vuelve aquí. Inicia sesión y redirige a `APP_URL`, o a `APP_URL/login?error=<proveedor>` si falla |
+| `GET /api/auth/google/link` · `GET /api/auth/github/link` | Requiere sesión. Vincula esa cuenta al usuario actual y redirige a `APP_URL/perfil?linked=<proveedor>`, o a `APP_URL/perfil?error=<proveedor>` si no se puede |
 
 ### Grupos, Nodexs y panel (requieren sesión)
 
@@ -119,6 +125,7 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/modules/groups/`, `src/modules/nodexs/`, `src/modules/board/`: grupos, Nodexs y panel central.
 - `src/modules/me/`: datos del propio usuario (por ahora, el tutorial).
 - `src/lib/params.ts`: `parseId`, que convierte un ID mal formado en un `404`.
+- `src/lib/storage.ts`: subida y borrado de fotos en Cloudinary. Es el único archivo que conoce Cloudinary.
 - `src/lib/db-errors.ts`: `isUniqueViolation`, para detectar valores duplicados (código `P2002` de Prisma).
 - `src/modules/`: una carpeta por funcionalidad.
 - `prisma/schema.prisma`: definición de las tablas.
