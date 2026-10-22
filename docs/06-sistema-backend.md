@@ -234,11 +234,52 @@ Al desvincular (`DELETE /api/me/providers/:provider`), el backend comprueba que 
 
 `config/env.ts` activa `z.config(z.locales.es())`. Desde ahí, los mensajes por defecto de Zod salen en español (por ejemplo, *"Entrada inválida: se esperaba número, recibido texto"*). Los mensajes personalizados, como *"El nombre es obligatorio"*, se mantienen.
 
+## Inteligencia artificial (`feature/ia`)
+
+### Qué es un embedding
+
+Un **embedding** es una lista de números (aquí, 384) que representa el **significado** de un texto. Dos textos que hablan de lo mismo tienen vectores parecidos, aunque no compartan palabras: "receta de lentejas" y "guiso de garbanzos" quedan cerca; "tutorial de React", lejos. El parecido se mide con la **similitud coseno**: 1 es idéntico y 0 es que no tienen nada que ver.
+
+### Piezas
+
+| Pieza | Qué es |
+|-------|--------|
+| `@huggingface/transformers` | Ejecuta el modelo dentro de Node, en la CPU, sin Python ni GPU |
+| Modelo `paraphrase-multilingual-MiniLM-L12-v2` (cuantizado) | Convierte texto en un vector de 384 números. Entiende español. 118 MB, licencia Apache-2.0. Se descarga solo la primera vez en `backend/.cache/models` (ignorada por Git) |
+| pgvector | Extensión de PostgreSQL para guardar vectores (`nodexs.embedding`) y compararlos con el operador `<=>` |
+| `lib/embeddings.ts` | Carga el modelo una sola vez y expone `embed(texto)` |
+| `modules/ai/ai.service.ts` | Calcula vectores y genera sugerencias |
+
+**Por qué este modelo y no `multilingual-e5-small`**, el que se propuso primero: en una prueba con textos en español, e5 daba a todo una similitud de alrededor de 0,85–0,90, hasta el punto de que "lentejas" se parecía más a "Introducción a TypeScript" que a "guiso de garbanzos". Este modelo separa bien los temas (0,56 frente a 0,10–0,23). Tienen el mismo tamaño y las mismas dimensiones.
+
+### Cómo funciona una sugerencia (`RF-04.2`)
+
+```
+Crear o editar un Nodex
+  → la respuesta sale al momento
+  → en segundo plano: título + contenido + palabras de la URL → vector → nodexs.embedding
+  → si es huérfano:
+      perfil de cada grupo = media de los vectores de sus Nodexs
+      se compara el Nodex con cada perfil
+      si el mejor grupo supera los umbrales → sugerencia "¿Mover a Cocina?"
+```
+
+- **Umbrales** (`MIN_SIMILARITY = 0.35`, `MIN_MARGIN = 0.1`): el mejor grupo debe parecerse al menos 0,35, y 0,10 más que el segundo. Se calibraron con 3 grupos de 4 Nodexs y 10 huérfanos: los temas sin grupo (vuelos, la renta, jazz) no pasaban de 0,26, y los que sí encajaban estaban entre 0,39 y 0,66. Resultado: 6 sugerencias, todas correctas, ninguna equivocada. Se escapó una ("Buenas prácticas con PostgreSQL", 0,23): es preferible no sugerir a sugerir mal.
+- **Aprendizaje personal:** el perfil de cada grupo sale de los Nodexs **de ese usuario**. Cada vez que acepta una sugerencia o coloca un Nodex a mano, el perfil cambia y las siguientes sugerencias se ajustan a su forma de organizar. Los rechazos se recuerdan: no se vuelve a proponer el mismo grupo para el mismo Nodex.
+- **El usuario decide:** la IA nunca mueve nada sola. Aceptar mete el Nodex en el grupo con `added_by = 'ai'`.
+- **Tolerancia a fallos (`RNF-08`):** el cálculo va en segundo plano. Si falla, se registra el error y el Nodex queda sin vector; `POST /api/suggestions/refresh` o `npm run ai:backfill` lo recalculan después.
+
+### Coste y rendimiento
+
+- **Dinero:** cero. El modelo corre en el propio servidor.
+- **Velocidad:** la primera vez que se usa, el modelo tarda unos segundos en cargarse. Después, unos **8 ms por Nodex**.
+- **Memoria:** con el modelo cargado, el proceso usa unos **570 MB de RAM**. Hay que tenerlo en cuenta al elegir el alojamiento: algunos planes gratuitos solo dan 512 MB.
+
 ## Decisiones tomadas
 
 - **Almacenamiento de imágenes:** **Cloudinary**, plan gratuito sin tarjeta (25 créditos al mes compartidos entre almacenamiento, tráfico y transformaciones). Las fotos se reducen a 256×256 en WebP (unos 15 KB). Todo el acceso irá en un único archivo, `lib/storage.ts`, para poder pasar a Cloudflare R2 si el tráfico crece. Las fotos de Google y GitHub no se guardan: solo su URL.
+- **IA:** embeddings propios con `@huggingface/transformers` y pgvector, gratis y en la CPU. Kev se descartó porque necesita una GPU NVIDIA o un Mac, y alojar una GPU no es gratis.
 
 ## Pendiente de decidir
 
-- **Proveedor de IA** (en `feature/ia`). Candidato propuesto por Jose: **Kev**, modelos de decisión open source y entrenables. Hay que resolver dónde se ejecuta, porque necesita una GPU o un Mac.
 - **Alojamiento del backend** (antes de publicar). La idea es que el navegador solo vea un dominio: Next.js reenvía las llamadas `/api/*` al backend, y así las cookies de sesión funcionan sin configuración entre dominios.

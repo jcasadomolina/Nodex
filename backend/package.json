@@ -9,7 +9,8 @@
     "dev": "tsx watch --env-file-if-exists=../.env src/server.ts",
     "build": "tsc",
     "start": "node --env-file-if-exists=../.env dist/src/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ai:backfill": "tsx --env-file-if-exists=../.env src/scripts/ai-backfill.ts"
   },
   "type": "module",
   "private": true,
@@ -27,6 +28,7 @@
     "typescript": "7.0.2"
   },
   "dependencies": {
+    "@huggingface/transformers": "4.3.1",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "argon2": "0.45.1",
@@ -47,6 +49,8 @@
     "prisma@7.10.1": true,
     "@prisma/engines@7.10.1": true,
     "esbuild": false,
-    "argon2": false
+    "argon2": false,
+    "onnxruntime-node": false,
+    "protobufjs": false
   }
 }
