@@ -76,6 +76,7 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/auth/login` | Body `{ email, password }`. `200 { user }` e inicia sesión. `401` si las credenciales no son válidas |
 | `POST /api/auth/logout` | `204`. Cierra la sesión y borra la cookie |
 | `GET /api/auth/me` | `200 { user }` con el usuario de la sesión, o `401` |
+| `PUT /api/me/tutorial` | Body `{ version }` (entero ≥ 1). `200 { tutorialCompletedVersion }`. Marca qué versión del tutorial ha visto el usuario |
 | `GET /api/auth/google` · `GET /api/auth/github` | Redirige al login del proveedor. `503` si no está configurado |
 | `GET /api/auth/google/callback` · `GET /api/auth/github/callback` | El proveedor vuelve aquí. Inicia sesión y redirige a `APP_URL`, o a `APP_URL/login?error=<proveedor>` si falla |
 
@@ -98,7 +99,7 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 
 Cada `nodex` incluye `groupIds`: los grupos (no borrados) en los que está. Un grupo o Nodex de otro usuario, o un ID con formato incorrecto, responde `404`.
 
-`user` siempre tiene la forma `{ id, name, email, avatarUrl }`; nunca incluye la contraseña. `register` y `login` admiten 10 intentos cada 15 minutos por IP; a partir de ahí responden `429`.
+`user` siempre tiene la forma `{ id, name, email, avatarUrl, tutorialCompletedVersion }`; nunca incluye la contraseña. `register` y `login` admiten 10 intentos cada 15 minutos por IP; a partir de ahí responden `429`.
 
 Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válidos), `401` (sin sesión o credenciales incorrectas), `404` (ruta no encontrada), `409` (conflicto), `429` (demasiados intentos) o `500` (error interno, sin detalles para el cliente).
 
@@ -116,6 +117,7 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/types/passport.d.ts`: le dice a TypeScript que `req.user` tiene `id`.
 - `src/modules/auth/oauth.routes.ts`: login con Google y GitHub (Passport).
 - `src/modules/groups/`, `src/modules/nodexs/`, `src/modules/board/`: grupos, Nodexs y panel central.
+- `src/modules/me/`: datos del propio usuario (por ahora, el tutorial).
 - `src/lib/params.ts`: `parseId`, que convierte un ID mal formado en un `404`.
 - `src/lib/db-errors.ts`: `isUniqueViolation`, para detectar valores duplicados (código `P2002` de Prisma).
 - `src/modules/`: una carpeta por funcionalidad.

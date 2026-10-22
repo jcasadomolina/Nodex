@@ -50,6 +50,7 @@ Todas las fechas son `timestamptz` (fecha y hora con zona horaria). `created_at`
 | `email` | text | Obligatorio, único, guardado en minúsculas (`RF-01.3`) |
 | `password_hash` | text | Contraseña cifrada (`RF-01.4`). Vacío si el usuario entra solo con Google o GitHub |
 | `avatar_url` | text | Opcional (`RF-02.3`) |
+| `tutorial_completed_version` | integer | Última versión del tutorial que ha visto (`RF-10.4`). `null` si nunca lo ha visto |
 | `created_at`, `updated_at` | timestamptz | |
 
 ### `oauth_accounts` (`RF-01.2`)
@@ -179,7 +180,7 @@ En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcio
 ## Implementación
 
 - Esquema: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma). Los modelos usan PascalCase y los campos camelCase, como es habitual en TypeScript; `@@map` y `@map` los traducen a nombres en snake_case en la base.
-- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas.
+- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial.
 - Configuración de la CLI: [`backend/prisma.config.ts`](../backend/prisma.config.ts). Carga el `.env` de la raíz y usa `DIRECT_URL` para las migraciones. La aplicación se conectará con `DATABASE_URL` (pooling) en el bloque de backend.
 - Prisma fijado en la versión estable **7.10.1**. En npm, la etiqueta `latest` apuntaba a una versión preliminar (8.0.0-rc).
 - `updated_at` lo rellena Prisma en cada escritura (`@updatedAt`). Si se insertan filas con SQL a mano, hay que darle valor.
