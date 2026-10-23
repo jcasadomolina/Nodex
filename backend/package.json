@@ -10,7 +10,8 @@
     "build": "tsc",
     "start": "node --env-file-if-exists=../.env dist/src/server.js",
     "typecheck": "tsc --noEmit",
-    "ai:backfill": "tsx --env-file-if-exists=../.env src/scripts/ai-backfill.ts"
+    "ai:backfill": "tsx --env-file-if-exists=../.env src/scripts/ai-backfill.ts",
+    "push:keys": "web-push generate-vapid-keys"
   },
   "type": "module",
   "private": true,
@@ -23,6 +24,7 @@
     "@types/passport": "1.0.17",
     "@types/passport-github2": "1.2.9",
     "@types/passport-google-oauth20": "2.0.17",
+    "@types/web-push": "3.6.4",
     "prisma": "7.10.1",
     "tsx": "4.23.15",
     "typescript": "7.0.2"
@@ -43,6 +45,7 @@
     "passport": "0.7.0",
     "passport-github2": "0.1.12",
     "passport-google-oauth20": "2.0.0",
+    "web-push": "3.6.7",
     "zod": "4.6.7"
   },
   "allowScripts": {

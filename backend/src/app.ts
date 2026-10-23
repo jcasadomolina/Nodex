@@ -12,6 +12,8 @@ import { groupsRouter } from "./modules/groups/groups.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { meRouter } from "./modules/me/me.routes.js";
 import { nodexsRouter } from "./modules/nodexs/nodexs.routes.js";
+import { pushRouter } from "./modules/push/push.routes.js";
+import { remindersRouter } from "./modules/reminders/reminders.routes.js";
 import { tasksRouter } from "./modules/tasks/tasks.routes.js";
 
 export const app = express();
@@ -34,6 +36,8 @@ app.use("/api/nodexs", nodexsRouter);
 app.use("/api/board", boardRouter);
 app.use("/api/suggestions", suggestionsRouter);
 app.use("/api/tasks", tasksRouter);
+app.use("/api/reminders", remindersRouter);
+app.use("/api/push", pushRouter);
 
 app.use(notFound);
 app.use(errorHandler);

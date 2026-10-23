@@ -278,6 +278,45 @@ Solo se actualiza la tarea que se mueve, así que cada movimiento es una sola es
 - **Prioridad en el tablero y el calendario:** cada tarjeta incluye la prioridad del Nodex, para poder resaltarla.
 - **Aislamiento:** `tasks` tiene la misma clave foránea compuesta que `group_nodexs`; además, cada consulta filtra por usuario. Un Nodex borrado desaparece del tablero y del calendario.
 
+## Recordatorios y notificaciones push (`feature/recordatorios`)
+
+### Qué es Web Push
+
+Es el estándar que permite a una web enviar notificaciones al móvil o al ordenador aunque esté cerrada, igual que una app nativa. Intervienen tres actores:
+
+```
+1. El navegador del usuario acepta las notificaciones
+   → le da a Nodex una "suscripción": una dirección del servicio push de su navegador
+     (Google para Chrome, Mozilla para Firefox, Apple para Safari) y unas claves
+   → el frontend la envía a POST /api/push/subscriptions
+
+2. Llega la hora de un recordatorio
+   → el backend cifra el mensaje con las claves del navegador, lo firma con su clave VAPID
+     y lo envía a esa dirección
+
+3. El servicio push lo entrega al dispositivo, que muestra la notificación
+```
+
+- **Claves VAPID:** son la "firma" de Nodex. El servicio push comprueba que el aviso lo envía de verdad nuestro servidor. Se generan una vez con `npm run push:keys`; la privada va al `.env` y nunca se comparte (`RNF-9.1`).
+- **Cifrado de extremo a extremo:** Google, Mozilla o Apple transportan el aviso, pero no pueden leer su contenido. Solo el dispositivo del usuario puede descifrarlo.
+- **Coste:** gratis. No hace falta ningún servicio de pago.
+
+### El proceso de envío
+
+`reminders.worker.ts` se arranca junto al servidor y, **cada minuto**, busca los recordatorios que ya han llegado y no se han enviado, los marca como enviados y manda la notificación a todos los dispositivos del usuario.
+
+- **Sin duplicados:** se marcan como enviados con `FOR UPDATE SKIP LOCKED`, de modo que si algún día hay dos servidores, cada recordatorio lo coge solo uno.
+- **Dispositivos que ya no existen:** si el servicio push responde `404` o `410` (por ejemplo, el usuario desinstaló la PWA), se borra esa suscripción.
+- **Solo las últimas 24 horas:** si el servidor estuvo parado, al volver no envía una avalancha de avisos antiguos.
+- **Aviso dentro de la app:** `GET /api/reminders?status=due` lista los que ya han llegado y no se han descartado. Sirve de respaldo cuando no hay push (por ejemplo, en un iPhone sin la PWA instalada).
+- **Sin claves VAPID**, el servidor arranca igual: no envía push, y los recordatorios se ven dentro de la app.
+
+### Limitaciones a tener en cuenta
+
+- **El servidor tiene que estar despierto.** Algunos alojamientos gratuitos "duermen" el servidor si nadie lo usa durante un rato; mientras duerme, el proceso no se ejecuta y los avisos llegarían tarde. Lo tendremos en cuenta al elegir el alojamiento. Una solución gratuita habitual es un servicio externo que llame al servidor cada pocos minutos.
+- **Un error del servicio push no se reintenta:** el recordatorio se marca como enviado antes de mandarlo. Así nunca llega dos veces, a cambio de que, si el servicio push falla justo en ese momento, ese aviso se pierda. Aun así seguiría apareciendo dentro de la app.
+- **Las notificaciones llegarán de verdad cuando exista el frontend**, que es quien pide permiso al usuario y registra el *service worker* de la PWA.
+
 ## Inteligencia artificial (`feature/ia`)
 
 ### Qué es un embedding
