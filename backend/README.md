@@ -103,14 +103,21 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `DELETE /api/groups/:id` | `204`. Lo envía a la papelera; sus Nodexs no se borran |
 | `POST /api/groups/:id/nodexs` | Body `{ nodexId }`. `204`. Si ya estaba en el grupo, no hace nada |
 | `DELETE /api/groups/:id/nodexs/:nodexId` | `204`. Saca el Nodex del grupo |
-| `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `limit` (1–100, 50 por defecto) y `cursor` |
-| `POST /api/nodexs` | Body `{ type, title, content?, url?, groupIds? }`. `201 { nodex }`. Los enlaces necesitan `url` (`http` o `https`) |
+| `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `priority=low\|medium\|high\|urgent`, `limit` (1–100, 50 por defecto) y `cursor`. Orden: `sort=recent` (por defecto) o `sort=priority` (más prioritarios primero; sin prioridad al final) |
+| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds? }`. `201 { nodex }`. Los enlaces necesitan `url` (`http` o `https`) |
 | `GET /api/nodexs/:id` | `200 { nodex }` |
-| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url? }`. `200 { nodex }` |
+| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority? }` (`priority: null` la quita). `200 { nodex }` |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
+| `PUT /api/tasks/:nodexId` | Body `{ status?, dueAt? }`. Convierte el Nodex en tarea (`201`) o la actualiza (`200`). `status`: `todo`, `doing` o `done`; `dueAt`: fecha ISO con zona horaria o `null` |
+| `DELETE /api/tasks/:nodexId` | `204`. Quita la personalidad de tarea; el Nodex sigue existiendo |
+| `GET /api/tasks/board` | `200 { columns: { todo, doing, done } }`: el tablero, cada columna ordenada |
+| `POST /api/tasks/:nodexId/move` | Body `{ status, index }`. Mueve la tarea a esa columna y posición (empezando en 0). `200 { task }` |
+| `GET /api/tasks/calendar` | `?from=&to=` (fechas ISO, máximo 100 días). `200 { tasks }` con fecha límite en ese rango |
 
 Cada `nodex` incluye `groupIds`: los grupos (no borrados) en los que está. Un grupo o Nodex de otro usuario, o un ID con formato incorrecto, responde `404`.
+
+Cada `nodex` incluye también `task` (`{ status, dueAt, completedAt }`) si es una tarea, o `null` si no lo es.
 
 `user` siempre tiene la forma `{ id, name, email, avatarUrl, tutorialCompletedVersion }`; nunca incluye la contraseña. `register` y `login` admiten 10 intentos cada 15 minutos por IP; a partir de ahí responden `429`.
 
@@ -131,6 +138,7 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/modules/auth/oauth.routes.ts`: login con Google y GitHub (Passport).
 - `src/modules/groups/`, `src/modules/nodexs/`, `src/modules/board/`: grupos, Nodexs y panel central.
 - `src/modules/me/`: datos del propio usuario (por ahora, el tutorial).
+- `src/modules/tasks/`: personalidad tarea: tablero, calendario y movimientos.
 - `src/lib/params.ts`: `parseId`, que convierte un ID mal formado en un `404`.
 - `src/lib/embeddings.ts`: carga el modelo de IA y convierte texto en vectores.
 - `src/modules/ai/`: cálculo de vectores, sugerencias de grupo y sus endpoints.

@@ -90,6 +90,7 @@ model Nodex {
   content   String?
   url       String?
   source    String                      @default("manual") // manual | share
+  priority  Int?                        @db.SmallInt
   metadata  Json                        @default("{}")
   embedding Unsupported("vector(384)")?
   createdAt DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -100,6 +101,7 @@ model Nodex {
   groups        GroupNodex[]
   enrichment    NodexEnrichment?
   aiSuggestions AiSuggestion[]
+  task          Task?
 
   @@unique([id, userId])
   @@index([userId, createdAt(sort: Desc)])
@@ -160,4 +162,22 @@ model AiSuggestion {
   @@index([userId, status])
   @@index([nodexId])
   @@map("ai_suggestions")
+}
+
+model Task {
+  nodexId     String    @id @map("nodex_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  status      String    @default("todo")
+  dueAt       DateTime? @map("due_at") @db.Timestamptz(6)
+  position    Float     @default(0)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([nodexId, userId])
+  @@index([userId, status, position])
+  @@index([userId, dueAt])
+  @@map("tasks")
 }

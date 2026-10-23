@@ -45,7 +45,28 @@ Cada rama sale de `develop` y vuelve a `develop` con un pull request.
 | `feature/grupos-nodexs` | CRUD de grupos y Nodexs, y asignación de Nodexs a grupos | `RF-04.1`, `RF-04.4`, `RF-05.1`, `RF-05.2` |
 | `feature/tutorial` | Guardar qué versión del tutorial ha visto cada usuario | `RF-10.4`, `RF-10.5` |
 | `feature/perfil` | Pantalla de perfil: nombre e imagen | HU-02 |
-| `feature/ia` | Sugerencias de grupo y enriquecimiento | `RF-04.2`, `RF-04.3`, `RF-05.4`, `RF-05.5` |
+| `feature/ia` | Vectores de IA y sugerencias de grupo | `RF-04.2` |
+| `feature/prioridad` | Prioridad subjetiva de cada Nodex | HU-11 |
+| `feature/tareas` | Personalidad tarea: estado, fecha límite, calendario y tablero | `RF-12.4`–`RF-12.6` |
+| `feature/recordatorios` | Personalidad recordatorio y notificaciones push | `RF-12.7` |
+| `feature/enlaces` | Vista previa de enlaces y comprobación de enlaces rotos | `RF-12.3` |
+| `feature/ia-busqueda` | Búsqueda por significado, relacionados y duplicados | `RF-05.7`–`RF-05.9` |
+| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos | `RF-04.3` |
+
+## Personalidades (HU-12): diseño
+
+Cada personalidad es **una tabla propia** enlazada a `nodexs` (una fila por Nodex como máximo), siguiendo la regla de "una tabla por funcionalidad". Un Nodex tiene una personalidad si tiene fila en esa tabla, así que se pueden combinar libremente: añadir o quitar una es crear o borrar su fila, sin tocar las demás.
+
+| Personalidad | Dónde vive | Campos principales |
+|--------------|------------|--------------------|
+| Apunte | Es el Nodex sin más: `title` y `content` | — |
+| Enlace | `nodexs.url` y una tabla `link_previews` | Título, descripción e imagen de la página; fecha de la última comprobación y si el enlace sigue vivo |
+| Tarea | Tabla `tasks` | `status` (`todo`, `doing`, `done`), `due_at` opcional, `position` para el orden dentro de cada columna del tablero, `completed_at` |
+| Recordatorio | Tabla `reminders` | `remind_at`, `sent_at` (para no avisar dos veces) |
+
+Las notificaciones de los recordatorios serán **push de la PWA** (Web Push): gratis y sin servicios de terceros de pago. El backend necesitará una tabla con las suscripciones de cada dispositivo y un proceso que, cada minuto, busque los recordatorios vencidos y los envíe. Llegarán de verdad cuando el frontend registre la PWA.
+
+La **prioridad** no es una personalidad: cualquier Nodex puede tenerla, sea apunte, enlace o tarea.
 
 ## Cómo funciona una petición
 
@@ -233,6 +254,29 @@ Al desvincular (`DELETE /api/me/providers/:provider`), el backend comprueba que 
 ### Mensajes de validación en español
 
 `config/env.ts` activa `z.config(z.locales.es())`. Desde ahí, los mensajes por defecto de Zod salen en español (por ejemplo, *"Entrada inválida: se esperaba número, recibido texto"*). Los mensajes personalizados, como *"El nombre es obligatorio"*, se mantienen.
+
+## Tareas (`feature/tareas`)
+
+Un Nodex se convierte en tarea con `PUT /api/tasks/:nodexId` y deja de serlo con `DELETE`. El Nodex no cambia: solo se añade o se borra su fila en `tasks`. Así la matrícula puede ser a la vez enlace, tarea y (más adelante) recordatorio.
+
+### Cómo se ordena el tablero
+
+Cada tarea tiene un número `position`, y cada columna se muestra ordenada por él. Al mover una tarea, en lugar de renumerar toda la columna, se le da **un número entre el de sus dos vecinas**:
+
+```
+Columna "En curso":  A (1)   B (2)   C (3)
+Mover X entre A y B  →  X recibe (1 + 2) / 2 = 1,5
+Resultado:           A (1)   X (1,5)   B (2)   C (3)
+```
+
+Solo se actualiza la tarea que se mueve, así que cada movimiento es una sola escritura en la base. A esta técnica se le llama **orden fraccionario**. Tras miles de movimientos en el mismo hueco los números se quedarían sin decimales; si llegara a pasar, bastaría con renumerar esa columna.
+
+### Otros detalles
+
+- **Fechas con zona horaria:** `dueAt`, `from` y `to` se envían en formato ISO con zona horaria (`2026-10-23T17:00:00+02:00`). El calendario no calcula "este mes": es el frontend quien envía el rango en la hora del usuario.
+- **`completed_at`:** se rellena al pasar a `done` y se vacía si la tarea vuelve atrás. Servirá para estadísticas como "tareas completadas esta semana".
+- **Prioridad en el tablero y el calendario:** cada tarjeta incluye la prioridad del Nodex, para poder resaltarla.
+- **Aislamiento:** `tasks` tiene la misma clave foránea compuesta que `group_nodexs`; además, cada consulta filtra por usuario. Un Nodex borrado desaparece del tablero y del calendario.
 
 ## Inteligencia artificial (`feature/ia`)
 

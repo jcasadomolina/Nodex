@@ -59,6 +59,26 @@
 - **RF-10.4**: El sistema debe recordar, por usuario y en cualquier dispositivo, si ya ha visto el tutorial.
 - **RF-10.5**: El sistema debe mostrar las novedades cuando el tutorial se amplíe con funcionalidades nuevas.
 
+### HU-11: Prioridad de los Nodexs
+
+> La prioridad es subjetiva: indica cuándo quiere el usuario ocuparse de un Nodex, no qué tipo de Nodex es.
+
+- **RF-11.1**: El sistema debe permitir asignar a cada Nodex una prioridad: urgente (hoy, ya), alta (esta semana), media (pronto) o baja (cuando tenga tiempo). Por defecto, un Nodex no tiene prioridad.
+- **RF-11.2**: El sistema debe permitir cambiar o quitar la prioridad en cualquier momento.
+- **RF-11.3**: El sistema debe permitir ordenar y filtrar los Nodexs por prioridad, y mostrar primero los más prioritarios donde tenga sentido.
+
+### HU-12: Personalidades de los Nodexs
+
+> Una personalidad añade un comportamiento a un Nodex. Un mismo Nodex puede tener varias a la vez: por ejemplo, la matrícula de la universidad puede ser un enlace, una tarea con fecha de hoy y un recordatorio a las 17:00.
+
+- **RF-12.1**: El sistema debe permitir añadir y quitar personalidades a un Nodex, de forma independiente y combinable.
+- **RF-12.2** *(apunte)*: Un Nodex sin otras personalidades es un apunte de texto.
+- **RF-12.3** *(enlace)*: Un Nodex con URL debe mostrar una vista previa del enlace (título, descripción e imagen de la página).
+- **RF-12.4** *(tarea)*: El sistema debe permitir convertir un Nodex en tarea, con fecha límite opcional y un estado: pendiente, en curso o hecha.
+- **RF-12.5** *(tarea)*: El sistema debe mostrar las tareas en un calendario según su fecha límite.
+- **RF-12.6** *(tarea)*: El sistema debe mostrar las tareas en un tablero de tres columnas (pendiente, en curso y hecha) y permitir moverlas entre columnas.
+- **RF-12.7** *(recordatorio)*: El sistema debe permitir programar un recordatorio en un Nodex y enviar una notificación push cuando llegue la hora.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos
