@@ -255,6 +255,29 @@ Al desvincular (`DELETE /api/me/providers/:provider`), el backend comprueba que 
 
 `config/env.ts` activa `z.config(z.locales.es())`. Desde ahí, los mensajes por defecto de Zod salen en español (por ejemplo, *"Entrada inválida: se esperaba número, recibido texto"*). Los mensajes personalizados, como *"El nombre es obligatorio"*, se mantienen.
 
+## Tareas (`feature/tareas`)
+
+Un Nodex se convierte en tarea con `PUT /api/tasks/:nodexId` y deja de serlo con `DELETE`. El Nodex no cambia: solo se añade o se borra su fila en `tasks`. Así la matrícula puede ser a la vez enlace, tarea y (más adelante) recordatorio.
+
+### Cómo se ordena el tablero
+
+Cada tarea tiene un número `position`, y cada columna se muestra ordenada por él. Al mover una tarea, en lugar de renumerar toda la columna, se le da **un número entre el de sus dos vecinas**:
+
+```
+Columna "En curso":  A (1)   B (2)   C (3)
+Mover X entre A y B  →  X recibe (1 + 2) / 2 = 1,5
+Resultado:           A (1)   X (1,5)   B (2)   C (3)
+```
+
+Solo se actualiza la tarea que se mueve, así que cada movimiento es una sola escritura en la base. A esta técnica se le llama **orden fraccionario**. Tras miles de movimientos en el mismo hueco los números se quedarían sin decimales; si llegara a pasar, bastaría con renumerar esa columna.
+
+### Otros detalles
+
+- **Fechas con zona horaria:** `dueAt`, `from` y `to` se envían en formato ISO con zona horaria (`2026-10-23T17:00:00+02:00`). El calendario no calcula "este mes": es el frontend quien envía el rango en la hora del usuario.
+- **`completed_at`:** se rellena al pasar a `done` y se vacía si la tarea vuelve atrás. Servirá para estadísticas como "tareas completadas esta semana".
+- **Prioridad en el tablero y el calendario:** cada tarjeta incluye la prioridad del Nodex, para poder resaltarla.
+- **Aislamiento:** `tasks` tiene la misma clave foránea compuesta que `group_nodexs`; además, cada consulta filtra por usuario. Un Nodex borrado desaparece del tablero y del calendario.
+
 ## Inteligencia artificial (`feature/ia`)
 
 ### Qué es un embedding

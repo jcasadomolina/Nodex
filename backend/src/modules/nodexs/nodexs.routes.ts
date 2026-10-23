@@ -25,6 +25,7 @@ export const nodexFields = {
   createdAt: true,
   updatedAt: true,
   groups: { where: { group: { deletedAt: null } }, select: { groupId: true } },
+  task: { select: { status: true, dueAt: true, completedAt: true } },
 } as const;
 
 type NodexRow = Prisma.NodexGetPayload<{ select: typeof nodexFields }>;
