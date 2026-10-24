@@ -13,6 +13,9 @@ const envSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   CLOUDINARY_URL: z.string().startsWith("cloudinary://").optional(),
+  VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+  VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+  VAPID_SUBJECT: z.string().startsWith("mailto:").optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
