@@ -384,6 +384,51 @@ Crear o editar un Nodex
 - **Velocidad:** la primera vez que se usa, el modelo tarda unos segundos en cargarse. Después, unos **8 ms por Nodex**.
 - **Memoria:** con el modelo cargado, el proceso usa unos **570 MB de RAM**. Hay que tenerlo en cuenta al elegir el alojamiento: algunos planes gratuitos solo dan 512 MB.
 
+## Búsqueda, relacionados y duplicados (`feature/ia-busqueda`)
+
+Las tres funciones reutilizan el vector que ya se guarda en `nodexs.embedding`. No hay tablas nuevas: todo son consultas SQL con el operador `<=>` de pgvector, siempre filtradas por el usuario de la sesión.
+
+### Búsqueda híbrida (`RF-05.7`)
+
+`GET /api/nodexs/search?q=…` convierte la búsqueda en un vector y lo compara con todos los Nodexs del usuario. Pero los embeddings fallan con palabras sueltas, siglas o nombres propios ("react", "Alfama"), así que la búsqueda es **híbrida**: a la similitud se le suma un extra si el texto aparece tal cual.
+
+```
+puntuación = similitud de significado (0–1)
+           + 1    si el texto está en el título
+           + 0,5  si está en el contenido o en la URL
+se muestran los que llegan a 0,3, de mayor a menor
+```
+
+Así, lo que contiene la palabra exacta sale siempre arriba, y debajo aparece lo que habla de lo mismo con otras palabras ("comida casera de legumbres" encuentra las lentejas y los garbanzos). El texto se busca con `ILIKE`, que no distingue mayúsculas; los caracteres `%` y `_` se escapan para que se busquen literalmente.
+
+Si el modelo falla, la búsqueda no se rompe (`RNF-08`): se registra el error y se busca solo por texto.
+
+### Relacionados (`RF-05.8`)
+
+`GET /api/nodexs/:id/related` devuelve los Nodexs con similitud **≥ 0,45** respecto al que se está viendo, del más al menos parecido. Si el Nodex aún no tiene vector, la lista sale vacía.
+
+### Duplicados (`RF-05.9`)
+
+Al crear un Nodex, `POST /api/nodexs` calcula su vector **en el momento** (no en segundo plano, como antes) y responde con `duplicates`: los Nodexs que ya tenía el usuario con la **misma URL** (sin contar la `/` final) o una similitud **≥ 0,9**. El Nodex se guarda igualmente: el frontend muestra el aviso y el usuario decide si lo borra.
+
+Para no hacer esperar al usuario, la comprobación tiene un límite de **3 segundos** (`Promise.race`). Si el modelo tarda más (por ejemplo, la primera vez, mientras se carga) o falla, la respuesta sale sin duplicados y el resto del trabajo (vector y sugerencia de grupo) sigue en segundo plano.
+
+### Calibración de los umbrales
+
+Se probó con 12 Nodexs de temas variados (cocina, programación, viajes, impuestos, música, deporte) y 6 casi duplicados:
+
+| Umbral | Datos que lo justifican |
+|--------|-------------------------|
+| Búsqueda ≥ 0,3 | Los aciertos estaban entre 0,30 y 0,65. Por debajo de 0,3 casi todo era ruido. Se cuela algún resultado dudoso al final de la lista (0,31), pero en una búsqueda es peor perder un acierto que mostrar uno de más |
+| Relacionados ≥ 0,45 | Los pares del mismo tema (dos recetas, dos viajes) daban 0,45–0,61. El ruido llegaba a 0,43 ("Discos de jazz" ↔ "Guiso de garbanzos") |
+| Duplicados ≥ 0,9 | La misma nota reescrita daba 0,95. Pero dos apuntes distintos de TypeScript daban 0,835, así que bajar a 0,85 avisaría de duplicados falsos. Los enlaces repetidos se detectan por la URL |
+
+**Limitación conocida:** este modelo distingue bien temas cotidianos, pero agrupa peor los técnicos. "programación web frontend" no encuentra el tutorial de React por significado (0,26), aunque "react" o "aprender a programar" sí. Es otra razón para que la búsqueda sea híbrida.
+
+### Por qué no hay índice HNSW
+
+Un índice HNSW acelera la búsqueda de vectores parecidos, pero es **aproximado** y se aplica antes del filtro por usuario: con muchos usuarios podría devolver menos resultados de los esperados. Cada consulta solo mira los Nodexs de un usuario (cientos o pocos miles), y compararlos todos uno a uno es rápido y exacto. Se añadirá si el volumen lo pide (ver [la base de datos](08-base-de-datos.md)).
+
 ## Decisiones tomadas
 
 - **Almacenamiento de imágenes:** **Cloudinary**, plan gratuito sin tarjeta (25 créditos al mes compartidos entre almacenamiento, tráfico y transformaciones). Las fotos se reducen a 256×256 en WebP (unos 15 KB). Todo el acceso irá en un único archivo, `lib/storage.ts`, para poder pasar a Cloudflare R2 si el tráfico crece. Las fotos de Google y GitHub no se guardan: solo su URL.
