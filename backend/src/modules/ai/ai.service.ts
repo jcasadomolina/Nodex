@@ -1,8 +1,15 @@
+import { setTimeout as wait } from "node:timers/promises";
 import { embed, toVector } from "../../lib/embeddings.js";
 import { prisma } from "../../lib/prisma.js";
 
 export const MIN_SIMILARITY = 0.35;
 export const MIN_MARGIN = 0.1;
+export const MIN_SEARCH_SCORE = 0.3;
+export const TITLE_MATCH_BONUS = 1;
+export const TEXT_MATCH_BONUS = 0.5;
+export const MIN_RELATED_SIMILARITY = 0.45;
+export const MIN_DUPLICATE_SIMILARITY = 0.9;
+const DUPLICATE_TIMEOUT_MS = 3000;
 
 function nodexText(nodex: { title: string; content: string | null; url: string | null }) {
   const parts = [nodex.title, nodex.content?.slice(0, 2000)];
@@ -79,4 +86,79 @@ export async function processNodex(userId: string, nodexId: string) {
 
 export function processInBackground(userId: string, nodexId: string) {
   processNodex(userId, nodexId).catch((err) => console.error(`Error de IA con el Nodex ${nodexId}:`, err));
+}
+
+type Match = { id: string; similarity: number };
+
+async function findDuplicates(userId: string, nodexId: string) {
+  return prisma.$queryRaw<Match[]>`
+    SELECT n.id, COALESCE(1 - (n.embedding <=> t.embedding), 1)::float AS similarity
+    FROM nodexs n, nodexs t
+    WHERE t.id = ${nodexId}::uuid
+      AND n.user_id = ${userId}::uuid
+      AND n.id <> t.id
+      AND n.deleted_at IS NULL
+      AND (
+        rtrim(n.url, '/') = rtrim(t.url, '/')
+        OR 1 - (n.embedding <=> t.embedding) >= ${MIN_DUPLICATE_SIMILARITY}::float
+      )
+    ORDER BY similarity DESC
+    LIMIT 5
+  `;
+}
+
+export function checkNewNodex(userId: string, nodexId: string) {
+  const check = (async () => {
+    await updateEmbedding(nodexId);
+    const duplicates = await findDuplicates(userId, nodexId);
+    await suggestGroup(userId, nodexId);
+    return duplicates;
+  })().catch((err) => {
+    console.error(`Error de IA con el Nodex ${nodexId}:`, err);
+    return [];
+  });
+  return Promise.race([check, wait(DUPLICATE_TIMEOUT_MS, [] as Match[])]);
+}
+
+export async function findRelated(userId: string, nodexId: string, limit: number) {
+  return prisma.$queryRaw<Match[]>`
+    SELECT n.id, (1 - (n.embedding <=> t.embedding))::float AS similarity
+    FROM nodexs n, nodexs t
+    WHERE t.id = ${nodexId}::uuid
+      AND n.user_id = ${userId}::uuid
+      AND n.id <> t.id
+      AND n.deleted_at IS NULL
+      AND 1 - (n.embedding <=> t.embedding) >= ${MIN_RELATED_SIMILARITY}::float
+    ORDER BY n.embedding <=> t.embedding
+    LIMIT ${limit}
+  `;
+}
+
+export async function searchNodexs(userId: string, query: string, limit: number) {
+  const vector = await embed(query)
+    .then(toVector)
+    .catch((err) => {
+      console.error("Error de IA en la búsqueda; se busca solo por texto:", err);
+      return null;
+    });
+  const pattern = `%${query.replace(/[\\%_]/g, "\\$&")}%`;
+
+  return prisma.$queryRaw<{ id: string; score: number }[]>`
+    SELECT id, score FROM (
+      SELECT id,
+        (
+          COALESCE(1 - (embedding <=> ${vector}::vector), 0)
+          + CASE
+              WHEN title ILIKE ${pattern} THEN ${TITLE_MATCH_BONUS}::float
+              WHEN content ILIKE ${pattern} OR url ILIKE ${pattern} THEN ${TEXT_MATCH_BONUS}::float
+              ELSE 0
+            END
+        )::float AS score
+      FROM nodexs
+      WHERE user_id = ${userId}::uuid AND deleted_at IS NULL
+    ) ranked
+    WHERE score >= ${MIN_SEARCH_SCORE}::float
+    ORDER BY score DESC
+    LIMIT ${limit}
+  `;
 }

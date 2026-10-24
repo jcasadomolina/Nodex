@@ -4,9 +4,16 @@ import { HttpError } from "../../lib/http-error.js";
 import { parseId } from "../../lib/params.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { processInBackground } from "../ai/ai.service.js";
+import { checkNewNodex, findRelated, processInBackground, searchNodexs } from "../ai/ai.service.js";
 import { previewFields, refreshPreviewInBackground } from "../links/links.service.js";
-import { createNodexSchema, listNodexsSchema, priorityToName, updateNodexSchema } from "./nodexs.schemas.js";
+import {
+  createNodexSchema,
+  listNodexsSchema,
+  priorityToName,
+  relatedNodexsSchema,
+  searchNodexsSchema,
+  updateNodexSchema,
+} from "./nodexs.schemas.js";
 
 export const nodexsRouter = Router();
 
@@ -44,6 +51,25 @@ async function findNodex(userId: string, id: string) {
   }
   return nodex;
 }
+
+async function loadInOrder<T extends { id: string }>(userId: string, matches: T[]) {
+  const nodexs = await prisma.nodex.findMany({
+    where: { id: { in: matches.map((m) => m.id) }, userId, deletedAt: null },
+    select: nodexFields,
+  });
+  const byId = new Map(nodexs.map((nodex) => [nodex.id, toNodex(nodex)]));
+  return matches.flatMap(({ id, ...extra }) => {
+    const nodex = byId.get(id);
+    return nodex ? [{ ...nodex, ...extra }] : [];
+  });
+}
+
+nodexsRouter.get("/search", async (req, res) => {
+  const userId = req.session.userId!;
+  const { q, limit } = searchNodexsSchema.parse(req.query);
+  const matches = await searchNodexs(userId, q, limit);
+  res.json({ nodexs: await loadInOrder(userId, matches) });
+});
 
 nodexsRouter.get("/", async (req, res) => {
   const { groupId, orphan, type, priority, sort, cursor, limit } = listNodexsSchema.parse(req.query);
@@ -96,15 +122,24 @@ nodexsRouter.post("/", async (req, res) => {
     },
     select: nodexFields,
   });
-  processInBackground(userId, nodex.id);
   if (nodex.url) refreshPreviewInBackground(nodex.id);
-  res.status(201).json({ nodex: toNodex(nodex) });
+  const duplicates = await loadInOrder(userId, await checkNewNodex(userId, nodex.id));
+  res.status(201).json({ nodex: toNodex(nodex), duplicates });
 });
 
 nodexsRouter.get("/:id", async (req, res) => {
   const id = parseId(req.params.id, NODEX_NOT_FOUND);
   const nodex = await findNodex(req.session.userId!, id);
   res.json({ nodex: toNodex(nodex) });
+});
+
+nodexsRouter.get("/:id/related", async (req, res) => {
+  const userId = req.session.userId!;
+  const id = parseId(req.params.id, NODEX_NOT_FOUND);
+  const { limit } = relatedNodexsSchema.parse(req.query);
+  await findNodex(userId, id);
+  const matches = await findRelated(userId, id, limit);
+  res.json({ nodexs: await loadInOrder(userId, matches) });
 });
 
 nodexsRouter.patch("/:id", async (req, res) => {

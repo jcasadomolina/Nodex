@@ -109,8 +109,10 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/groups/:id/nodexs` | Body `{ nodexId }`. `204`. Si ya estaba en el grupo, no hace nada |
 | `DELETE /api/groups/:id/nodexs/:nodexId` | `204`. Saca el Nodex del grupo |
 | `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `priority=low\|medium\|high\|urgent`, `limit` (1–100, 50 por defecto) y `cursor`. Orden: `sort=recent` (por defecto) o `sort=priority` (más prioritarios primero; sin prioridad al final) |
-| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds? }`. `201 { nodex }`. Los enlaces necesitan `url` (`http` o `https`) |
+| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds? }`. `201 { nodex, duplicates }`. Los enlaces necesitan `url` (`http` o `https`). `duplicates`: Nodexs casi iguales ya guardados (misma URL o similitud ≥ 0,9), cada uno con `similarity`; el Nodex se crea igualmente |
+| `GET /api/nodexs/search` | `?q=` (1–200 caracteres) y `limit` (1–50, 20 por defecto). `200 { nodexs }` ordenados por `score`: mezcla el parecido de significado con la coincidencia de texto en título, contenido o URL |
 | `GET /api/nodexs/:id` | `200 { nodex }` |
+| `GET /api/nodexs/:id/related` | `?limit=` (1–20, 5 por defecto). `200 { nodexs }`: los más parecidos (similitud ≥ 0,45), cada uno con `similarity` |
 | `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority? }` (`priority: null` la quita). `200 { nodex }` |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
