@@ -149,6 +149,67 @@ La IA **sugiere** y el usuario **confirma**: nunca se mueve un Nodex sin su apro
 | `status` | text | `pending`, `accepted` o `rejected` |
 | `created_at`, `resolved_at` | timestamptz | |
 
+### `tasks` (`RF-12.4`–`RF-12.6`)
+
+Personalidad **tarea** de un Nodex: como mucho una fila por Nodex. Si existe la fila, el Nodex es una tarea.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `nodex_id` | uuid | PK. FK compuesta `(nodex_id, user_id)` → `nodexs(id, user_id)`, cascade |
+| `user_id` | uuid | Para el aislamiento y para cargar el tablero sin pasar por `nodexs` |
+| `status` | text | `todo`, `doing` o `done`. Por defecto `todo` |
+| `due_at` | timestamptz | Fecha límite, opcional |
+| `position` | double precision | Orden dentro de su columna del tablero |
+| `completed_at` | timestamptz | Se rellena al pasar a `done` y se vacía al salir |
+| `created_at`, `updated_at` | timestamptz | |
+
+Índices: `(user_id, status, position)` para el tablero y `(user_id, due_at)` para el calendario.
+
+### `reminders` (`RF-12.7`)
+
+Personalidad **recordatorio**: como mucho una fila por Nodex.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `nodex_id` | uuid | PK. FK compuesta `(nodex_id, user_id)` → `nodexs(id, user_id)`, cascade |
+| `user_id` | uuid | |
+| `remind_at` | timestamptz | Cuándo avisar |
+| `sent_at` | timestamptz | Cuándo se envió la notificación push; evita enviarla dos veces |
+| `dismissed_at` | timestamptz | Cuándo la marcó como vista el usuario dentro de la app |
+| `created_at`, `updated_at` | timestamptz | |
+
+Índices: `remind_at` **solo de los no enviados** (índice parcial, el que usa el proceso de envío) y `(user_id, remind_at)` para las listas.
+
+### `push_subscriptions`
+
+Cada navegador o móvil en el que el usuario acepta las notificaciones genera una suscripción. Un usuario puede tener varias (móvil, portátil…).
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid | PK |
+| `user_id` | uuid | FK → `users`, cascade |
+| `endpoint` | text | Único. Dirección del servicio push del navegador (Google, Mozilla, Apple…) |
+| `p256dh`, `auth` | text | Claves del navegador para cifrar el contenido del aviso |
+| `created_at` | timestamptz | |
+
+### `link_previews` (`RF-12.3`)
+
+Vista previa y estado del enlace de un Nodex: como mucho una fila por Nodex con URL.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `nodex_id` | uuid | PK. FK compuesta `(nodex_id, user_id)` → `nodexs(id, user_id)`, cascade |
+| `user_id` | uuid | |
+| `url` | text | URL comprobada (si el Nodex cambia de URL, se detecta y se rehace la vista previa) |
+| `status` | text | `pending`, `ok`, `broken` (404/410), `unreachable` (error de red, 5xx, 403…) o `blocked` (dirección interna) |
+| `http_status` | integer | Último código HTTP recibido |
+| `title`, `description`, `image_url`, `site_name` | text | Datos de la vista previa |
+| `archive_url` | text | Copia en archive.org, si el enlace está roto o no accesible |
+| `last_checked_at` | timestamptz | Última comprobación |
+| `created_at`, `updated_at` | timestamptz | |
+
+Índices: `last_checked_at` (para el proceso periódico) y `(user_id, status)` (para la lista de rotos).
+
 ## Aislamiento entre usuarios
 
 Un usuario nunca puede ver ni tocar los datos de otro (ver [Requisitos técnicos](04-requisitos-tecnicos.md)). Se protege en dos capas:
@@ -182,7 +243,7 @@ En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcio
 ## Implementación
 
 - Esquema: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma). Los modelos usan PascalCase y los campos camelCase, como es habitual en TypeScript; `@@map` y `@map` los traducen a nombres en snake_case en la base.
-- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`.
+- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`; `*_add_tasks` crea la tabla `tasks`; `*_add_reminders_and_push` crea `reminders` y `push_subscriptions`; `*_add_link_previews` crea `link_previews`.
 - `priority` es la única excepción a la regla de "texto en vez de ENUM": se guarda como número para poder **ordenar** por ella (urgente > alta > media > baja). Con texto, el orden sería alfabético, que aquí no tiene sentido.
 - `embedding` es de un tipo que Prisma no conoce (`vector`), así que en el esquema aparece como `Unsupported("vector(384)")` y se lee y escribe con SQL (`$queryRaw` / `$executeRaw`).
 - Configuración de la CLI: [`backend/prisma.config.ts`](../backend/prisma.config.ts). Carga el `.env` de la raíz y usa `DIRECT_URL` para las migraciones. La aplicación se conectará con `DATABASE_URL` (pooling) en el bloque de backend.

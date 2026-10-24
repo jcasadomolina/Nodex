@@ -255,6 +255,94 @@ Al desvincular (`DELETE /api/me/providers/:provider`), el backend comprueba que 
 
 `config/env.ts` activa `z.config(z.locales.es())`. Desde ahí, los mensajes por defecto de Zod salen en español (por ejemplo, *"Entrada inválida: se esperaba número, recibido texto"*). Los mensajes personalizados, como *"El nombre es obligatorio"*, se mantienen.
 
+## Tareas (`feature/tareas`)
+
+Un Nodex se convierte en tarea con `PUT /api/tasks/:nodexId` y deja de serlo con `DELETE`. El Nodex no cambia: solo se añade o se borra su fila en `tasks`. Así la matrícula puede ser a la vez enlace, tarea y (más adelante) recordatorio.
+
+### Cómo se ordena el tablero
+
+Cada tarea tiene un número `position`, y cada columna se muestra ordenada por él. Al mover una tarea, en lugar de renumerar toda la columna, se le da **un número entre el de sus dos vecinas**:
+
+```
+Columna "En curso":  A (1)   B (2)   C (3)
+Mover X entre A y B  →  X recibe (1 + 2) / 2 = 1,5
+Resultado:           A (1)   X (1,5)   B (2)   C (3)
+```
+
+Solo se actualiza la tarea que se mueve, así que cada movimiento es una sola escritura en la base. A esta técnica se le llama **orden fraccionario**. Tras miles de movimientos en el mismo hueco los números se quedarían sin decimales; si llegara a pasar, bastaría con renumerar esa columna.
+
+### Otros detalles
+
+- **Fechas con zona horaria:** `dueAt`, `from` y `to` se envían en formato ISO con zona horaria (`2026-10-23T17:00:00+02:00`). El calendario no calcula "este mes": es el frontend quien envía el rango en la hora del usuario.
+- **`completed_at`:** se rellena al pasar a `done` y se vacía si la tarea vuelve atrás. Servirá para estadísticas como "tareas completadas esta semana".
+- **Prioridad en el tablero y el calendario:** cada tarjeta incluye la prioridad del Nodex, para poder resaltarla.
+- **Aislamiento:** `tasks` tiene la misma clave foránea compuesta que `group_nodexs`; además, cada consulta filtra por usuario. Un Nodex borrado desaparece del tablero y del calendario.
+
+## Recordatorios y notificaciones push (`feature/recordatorios`)
+
+### Qué es Web Push
+
+Es el estándar que permite a una web enviar notificaciones al móvil o al ordenador aunque esté cerrada, igual que una app nativa. Intervienen tres actores:
+
+```
+1. El navegador del usuario acepta las notificaciones
+   → le da a Nodex una "suscripción": una dirección del servicio push de su navegador
+     (Google para Chrome, Mozilla para Firefox, Apple para Safari) y unas claves
+   → el frontend la envía a POST /api/push/subscriptions
+
+2. Llega la hora de un recordatorio
+   → el backend cifra el mensaje con las claves del navegador, lo firma con su clave VAPID
+     y lo envía a esa dirección
+
+3. El servicio push lo entrega al dispositivo, que muestra la notificación
+```
+
+- **Claves VAPID:** son la "firma" de Nodex. El servicio push comprueba que el aviso lo envía de verdad nuestro servidor. Se generan una vez con `npm run push:keys`; la privada va al `.env` y nunca se comparte (`RNF-9.1`).
+- **Cifrado de extremo a extremo:** Google, Mozilla o Apple transportan el aviso, pero no pueden leer su contenido. Solo el dispositivo del usuario puede descifrarlo.
+- **Coste:** gratis. No hace falta ningún servicio de pago.
+
+### El proceso de envío
+
+`reminders.worker.ts` se arranca junto al servidor y, **cada minuto**, busca los recordatorios que ya han llegado y no se han enviado, los marca como enviados y manda la notificación a todos los dispositivos del usuario.
+
+- **Sin duplicados:** se marcan como enviados con `FOR UPDATE SKIP LOCKED`, de modo que si algún día hay dos servidores, cada recordatorio lo coge solo uno.
+- **Dispositivos que ya no existen:** si el servicio push responde `404` o `410` (por ejemplo, el usuario desinstaló la PWA), se borra esa suscripción.
+- **Solo las últimas 24 horas:** si el servidor estuvo parado, al volver no envía una avalancha de avisos antiguos.
+- **Aviso dentro de la app:** `GET /api/reminders?status=due` lista los que ya han llegado y no se han descartado. Sirve de respaldo cuando no hay push (por ejemplo, en un iPhone sin la PWA instalada).
+- **Sin claves VAPID**, el servidor arranca igual: no envía push, y los recordatorios se ven dentro de la app.
+
+### Limitaciones a tener en cuenta
+
+- **El servidor tiene que estar despierto.** Algunos alojamientos gratuitos "duermen" el servidor si nadie lo usa durante un rato; mientras duerme, el proceso no se ejecuta y los avisos llegarían tarde. Lo tendremos en cuenta al elegir el alojamiento. Una solución gratuita habitual es un servicio externo que llame al servidor cada pocos minutos.
+- **Un error del servicio push no se reintenta:** el recordatorio se marca como enviado antes de mandarlo. Así nunca llega dos veces, a cambio de que, si el servicio push falla justo en ese momento, ese aviso se pierda. Aun así seguiría apareciendo dentro de la app.
+- **Las notificaciones llegarán de verdad cuando exista el frontend**, que es quien pide permiso al usuario y registra el *service worker* de la PWA.
+
+## Enlaces: vista previa y enlaces rotos (`feature/enlaces`)
+
+Al crear un Nodex con URL, o al cambiarla, el backend visita la página en segundo plano y guarda su **título, descripción, imagen y nombre del sitio**. Son las etiquetas `og:*` (Open Graph) que las webs ponen para que WhatsApp, X o Telegram muestren la "tarjeta" de un enlace. Cada 10 minutos, un proceso vuelve a revisar los enlaces que llevan más de 7 días sin comprobarse, en lotes de 20.
+
+| Estado | Cuándo | Qué se puede mostrar |
+|--------|--------|----------------------|
+| `ok` | La página responde 2xx | La tarjeta con título, descripción e imagen |
+| `broken` | Responde 404 o 410 | "Enlace roto" + la copia en archive.org si existe |
+| `unreachable` | Error de red, de DNS, 5xx, 403… | "No se puede acceder ahora" + la copia en archive.org |
+| `blocked` | Apunta a una dirección interna | Nada: se rechaza por seguridad |
+
+**Por qué un error de DNS no es "roto":** al probar, el DNS del router de casa rechazó `example.com`, que funciona perfectamente. Un fallo de red o de DNS puede ser del servidor de Nodex o temporal, así que solo se considera roto lo que la propia web confirma con un 404 o un 410.
+
+**archive.org:** su API pública (`/wayback/available`) dice si existe una copia guardada de una URL. Es gratuita, pero lenta (más de 8 segundos a veces) y limita las peticiones (responde `429` si se le pregunta mucho). Por eso tiene 15 segundos de margen, y una vez encontrada la copia no se vuelve a consultar.
+
+### Seguridad: SSRF
+
+**SSRF** (*Server-Side Request Forgery*) es un ataque en el que alguien hace que el servidor visite por él una dirección que el atacante no puede alcanzar: `http://localhost`, la red interna del alojamiento o `169.254.169.254`, donde muchos proveedores de nube exponen credenciales. Como Nodex visita URLs que escriben los usuarios, hay que impedirlo. `lib/safe-fetch.ts` lo hace así:
+
+- **La IP se comprueba al conectar, no al leer la URL.** Se valida la dirección que devuelve el DNS justo antes de abrir la conexión. Así se bloquean también los dominios que apuntan a una IP interna (`localtest.me` → 127.0.0.1) y los trucos como escribir 127.0.0.1 en decimal (`http://2130706433`).
+- **Cada redirección se vuelve a comprobar**, como máximo 3. Una web pública no puede redirigir a `127.0.0.1`.
+- **Solo `http` y `https`**: nada de `file://` ni otros protocolos.
+- **Límites:** 8 segundos por petición, 1 MB por página y solo se procesa HTML.
+
+Probado contra: `localhost`, `127.0.0.1`, la IP en decimal, `[::1]`, `169.254.169.254`, `192.168.1.1`, `localtest.me`, una redirección pública hacia 127.0.0.1 y `file://`. Todo bloqueado.
+
 ## Inteligencia artificial (`feature/ia`)
 
 ### Qué es un embedding

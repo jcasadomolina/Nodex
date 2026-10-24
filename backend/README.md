@@ -24,6 +24,10 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
    GOOGLE_CLIENT_SECRET="..."               #   o GitHub responde 503
    GITHUB_CLIENT_ID="..."
    GITHUB_CLIENT_SECRET="..."
+   CLOUDINARY_URL="cloudinary://..."        # opcional: sin ella, subir foto responde 503
+   VAPID_PUBLIC_KEY="..."                   # opcionales: claves para las notificaciones push.
+   VAPID_PRIVATE_KEY="..."                  #   Se generan con: npm run push:keys
+   VAPID_SUBJECT="mailto:tu-email@..."      #   Contacto para los servicios push
    ```
 
    Cómo conseguir las credenciales de Google y GitHub: [docs/06-sistema-backend.md](../docs/06-sistema-backend.md#registrar-nodex-en-google-y-github).
@@ -56,6 +60,7 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
 | `npm start` | Arranca la versión compilada (producción) |
 | `npm run typecheck` | Comprueba los tipos sin generar archivos |
 | `npm run ai:backfill` | Calcula el vector de IA de los Nodexs que no lo tengan (antiguos o con error) |
+| `npm run push:keys` | Genera un par de claves VAPID para las notificaciones push (se hace una sola vez) |
 
 La primera vez que se usa la IA, el modelo (118 MB) se descarga en `.cache/models`, que no se sube a Git.
 
@@ -109,8 +114,24 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority? }` (`priority: null` la quita). `200 { nodex }` |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
+| `PUT /api/tasks/:nodexId` | Body `{ status?, dueAt? }`. Convierte el Nodex en tarea (`201`) o la actualiza (`200`). `status`: `todo`, `doing` o `done`; `dueAt`: fecha ISO con zona horaria o `null` |
+| `DELETE /api/tasks/:nodexId` | `204`. Quita la personalidad de tarea; el Nodex sigue existiendo |
+| `GET /api/tasks/board` | `200 { columns: { todo, doing, done } }`: el tablero, cada columna ordenada |
+| `POST /api/tasks/:nodexId/move` | Body `{ status, index }`. Mueve la tarea a esa columna y posición (empezando en 0). `200 { task }` |
+| `GET /api/tasks/calendar` | `?from=&to=` (fechas ISO, máximo 100 días). `200 { tasks }` con fecha límite en ese rango |
+| `PUT /api/reminders/:nodexId` | Body `{ remindAt }` (fecha ISO futura). Programa o reprograma el recordatorio. `200 { reminder }` |
+| `DELETE /api/reminders/:nodexId` | `204`. Quita el recordatorio |
+| `GET /api/reminders` | `?status=upcoming` (por defecto: los que aún no han llegado) o `?status=due` (los que ya han llegado y no se han descartado, para el aviso dentro de la app) |
+| `POST /api/reminders/:nodexId/dismiss` | `204`. Marca como visto un recordatorio que ya ha llegado |
+| `GET /api/push/public-key` | `200 { publicKey }`: la clave VAPID pública que necesita el navegador para suscribirse. `503` si push no está configurado |
+| `POST /api/push/subscriptions` | Body: la suscripción del navegador (`{ endpoint, keys: { p256dh, auth } }`). `204` |
+| `DELETE /api/push/subscriptions` | Body `{ endpoint }`. `204`. Deja de enviar notificaciones a ese dispositivo |
+| `GET /api/links/broken` | `200 { links }`: enlaces rotos del usuario, con la copia de archive.org si existe |
+| `POST /api/links/:nodexId/refresh` | Vuelve a comprobar el enlace ahora. `200 { preview }`. Máximo 10 por minuto |
 
 Cada `nodex` incluye `groupIds`: los grupos (no borrados) en los que está. Un grupo o Nodex de otro usuario, o un ID con formato incorrecto, responde `404`.
+
+Cada `nodex` incluye también `task` (`{ status, dueAt, completedAt }`) si es una tarea, y `reminder` (`{ remindAt, sentAt, dismissedAt }`) si tiene recordatorio, y `linkPreview` (`{ status, title, description, imageUrl, siteName, archiveUrl, lastCheckedAt }`) si tiene URL; `null` en caso contrario.
 
 `user` siempre tiene la forma `{ id, name, email, avatarUrl, tutorialCompletedVersion }`; nunca incluye la contraseña. `register` y `login` admiten 10 intentos cada 15 minutos por IP; a partir de ahí responden `429`.
 
@@ -131,6 +152,11 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/modules/auth/oauth.routes.ts`: login con Google y GitHub (Passport).
 - `src/modules/groups/`, `src/modules/nodexs/`, `src/modules/board/`: grupos, Nodexs y panel central.
 - `src/modules/me/`: datos del propio usuario (por ahora, el tutorial).
+- `src/modules/tasks/`: personalidad tarea: tablero, calendario y movimientos.
+- `src/modules/reminders/`: recordatorios y el proceso que envía los avisos cada minuto (`reminders.worker.ts`).
+- `src/modules/push/`, `src/lib/push.ts`: suscripciones y envío de notificaciones push.
+- `src/modules/links/`: vista previa de enlaces, comprobación periódica (`links.worker.ts`) y copias de archive.org.
+- `src/lib/safe-fetch.ts`: descarga páginas de forma segura (protección contra SSRF). `src/lib/html-meta.ts`: extrae título, descripción e imagen.
 - `src/lib/params.ts`: `parseId`, que convierte un ID mal formado en un `404`.
 - `src/lib/embeddings.ts`: carga el modelo de IA y convierte texto en vectores.
 - `src/modules/ai/`: cálculo de vectores, sugerencias de grupo y sus endpoints.

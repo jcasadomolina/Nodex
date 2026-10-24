@@ -28,10 +28,11 @@ model User {
   createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  oauthAccounts OAuthAccount[]
-  groups        Group[]
-  nodexs        Nodex[]
-  aiSuggestions AiSuggestion[]
+  oauthAccounts     OAuthAccount[]
+  pushSubscriptions PushSubscription[]
+  groups            Group[]
+  nodexs            Nodex[]
+  aiSuggestions     AiSuggestion[]
 
   @@map("users")
 }
@@ -101,6 +102,9 @@ model Nodex {
   groups        GroupNodex[]
   enrichment    NodexEnrichment?
   aiSuggestions AiSuggestion[]
+  task          Task?
+  reminder      Reminder?
+  linkPreview   LinkPreview?
 
   @@unique([id, userId])
   @@index([userId, createdAt(sort: Desc)])
@@ -161,4 +165,76 @@ model AiSuggestion {
   @@index([userId, status])
   @@index([nodexId])
   @@map("ai_suggestions")
+}
+
+model Task {
+  nodexId     String    @id @map("nodex_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  status      String    @default("todo")
+  dueAt       DateTime? @map("due_at") @db.Timestamptz(6)
+  position    Float     @default(0)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([nodexId, userId])
+  @@index([userId, status, position])
+  @@index([userId, dueAt])
+  @@map("tasks")
+}
+
+model Reminder {
+  nodexId     String    @id @map("nodex_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  remindAt    DateTime  @map("remind_at") @db.Timestamptz(6)
+  sentAt      DateTime? @map("sent_at") @db.Timestamptz(6)
+  dismissedAt DateTime? @map("dismissed_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([nodexId, userId])
+  @@index([remindAt], where: raw("sent_at IS NULL"))
+  @@index([userId, remindAt])
+  @@map("reminders")
+}
+
+model PushSubscription {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model LinkPreview {
+  nodexId       String    @id @map("nodex_id") @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  url           String
+  status        String    @default("pending")
+  httpStatus    Int?      @map("http_status")
+  title         String?
+  description   String?
+  imageUrl      String?   @map("image_url")
+  siteName      String?   @map("site_name")
+  archiveUrl    String?   @map("archive_url")
+  lastCheckedAt DateTime? @map("last_checked_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([nodexId, userId])
+  @@index([lastCheckedAt])
+  @@index([userId, status])
+  @@map("link_previews")
 }

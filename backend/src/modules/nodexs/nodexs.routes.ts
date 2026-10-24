@@ -5,6 +5,7 @@ import { parseId } from "../../lib/params.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { processInBackground } from "../ai/ai.service.js";
+import { previewFields, refreshPreviewInBackground } from "../links/links.service.js";
 import { createNodexSchema, listNodexsSchema, priorityToName, updateNodexSchema } from "./nodexs.schemas.js";
 
 export const nodexsRouter = Router();
@@ -25,6 +26,9 @@ export const nodexFields = {
   createdAt: true,
   updatedAt: true,
   groups: { where: { group: { deletedAt: null } }, select: { groupId: true } },
+  task: { select: { status: true, dueAt: true, completedAt: true } },
+  reminder: { select: { remindAt: true, sentAt: true, dismissedAt: true } },
+  linkPreview: { select: previewFields },
 } as const;
 
 type NodexRow = Prisma.NodexGetPayload<{ select: typeof nodexFields }>;
@@ -93,6 +97,7 @@ nodexsRouter.post("/", async (req, res) => {
     select: nodexFields,
   });
   processInBackground(userId, nodex.id);
+  if (nodex.url) refreshPreviewInBackground(nodex.id);
   res.status(201).json({ nodex: toNodex(nodex) });
 });
 
@@ -115,6 +120,7 @@ nodexsRouter.patch("/:id", async (req, res) => {
   if (data.title !== undefined || data.content !== undefined || data.url !== undefined) {
     processInBackground(req.session.userId!, id);
   }
+  if (data.url !== undefined) refreshPreviewInBackground(id);
   res.json({ nodex: toNodex(nodex) });
 });
 
