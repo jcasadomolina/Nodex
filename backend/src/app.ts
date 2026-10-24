@@ -10,6 +10,7 @@ import { oauthRouter } from "./modules/auth/oauth.routes.js";
 import { boardRouter } from "./modules/board/board.routes.js";
 import { groupsRouter } from "./modules/groups/groups.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
+import { linksRouter } from "./modules/links/links.routes.js";
 import { meRouter } from "./modules/me/me.routes.js";
 import { nodexsRouter } from "./modules/nodexs/nodexs.routes.js";
 import { pushRouter } from "./modules/push/push.routes.js";
@@ -38,6 +39,7 @@ app.use("/api/suggestions", suggestionsRouter);
 app.use("/api/tasks", tasksRouter);
 app.use("/api/reminders", remindersRouter);
 app.use("/api/push", pushRouter);
+app.use("/api/links", linksRouter);
 
 app.use(notFound);
 app.use(errorHandler);

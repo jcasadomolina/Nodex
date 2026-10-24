@@ -317,6 +317,32 @@ Es el estándar que permite a una web enviar notificaciones al móvil o al orden
 - **Un error del servicio push no se reintenta:** el recordatorio se marca como enviado antes de mandarlo. Así nunca llega dos veces, a cambio de que, si el servicio push falla justo en ese momento, ese aviso se pierda. Aun así seguiría apareciendo dentro de la app.
 - **Las notificaciones llegarán de verdad cuando exista el frontend**, que es quien pide permiso al usuario y registra el *service worker* de la PWA.
 
+## Enlaces: vista previa y enlaces rotos (`feature/enlaces`)
+
+Al crear un Nodex con URL, o al cambiarla, el backend visita la página en segundo plano y guarda su **título, descripción, imagen y nombre del sitio**. Son las etiquetas `og:*` (Open Graph) que las webs ponen para que WhatsApp, X o Telegram muestren la "tarjeta" de un enlace. Cada 10 minutos, un proceso vuelve a revisar los enlaces que llevan más de 7 días sin comprobarse, en lotes de 20.
+
+| Estado | Cuándo | Qué se puede mostrar |
+|--------|--------|----------------------|
+| `ok` | La página responde 2xx | La tarjeta con título, descripción e imagen |
+| `broken` | Responde 404 o 410 | "Enlace roto" + la copia en archive.org si existe |
+| `unreachable` | Error de red, de DNS, 5xx, 403… | "No se puede acceder ahora" + la copia en archive.org |
+| `blocked` | Apunta a una dirección interna | Nada: se rechaza por seguridad |
+
+**Por qué un error de DNS no es "roto":** al probar, el DNS del router de casa rechazó `example.com`, que funciona perfectamente. Un fallo de red o de DNS puede ser del servidor de Nodex o temporal, así que solo se considera roto lo que la propia web confirma con un 404 o un 410.
+
+**archive.org:** su API pública (`/wayback/available`) dice si existe una copia guardada de una URL. Es gratuita, pero lenta (más de 8 segundos a veces) y limita las peticiones (responde `429` si se le pregunta mucho). Por eso tiene 15 segundos de margen, y una vez encontrada la copia no se vuelve a consultar.
+
+### Seguridad: SSRF
+
+**SSRF** (*Server-Side Request Forgery*) es un ataque en el que alguien hace que el servidor visite por él una dirección que el atacante no puede alcanzar: `http://localhost`, la red interna del alojamiento o `169.254.169.254`, donde muchos proveedores de nube exponen credenciales. Como Nodex visita URLs que escriben los usuarios, hay que impedirlo. `lib/safe-fetch.ts` lo hace así:
+
+- **La IP se comprueba al conectar, no al leer la URL.** Se valida la dirección que devuelve el DNS justo antes de abrir la conexión. Así se bloquean también los dominios que apuntan a una IP interna (`localtest.me` → 127.0.0.1) y los trucos como escribir 127.0.0.1 en decimal (`http://2130706433`).
+- **Cada redirección se vuelve a comprobar**, como máximo 3. Una web pública no puede redirigir a `127.0.0.1`.
+- **Solo `http` y `https`**: nada de `file://` ni otros protocolos.
+- **Límites:** 8 segundos por petición, 1 MB por página y solo se procesa HTML.
+
+Probado contra: `localhost`, `127.0.0.1`, la IP en decimal, `[::1]`, `169.254.169.254`, `192.168.1.1`, `localtest.me`, una redirección pública hacia 127.0.0.1 y `file://`. Todo bloqueado.
+
 ## Inteligencia artificial (`feature/ia`)
 
 ### Qué es un embedding

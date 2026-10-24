@@ -104,6 +104,7 @@ model Nodex {
   aiSuggestions AiSuggestion[]
   task          Task?
   reminder      Reminder?
+  linkPreview   LinkPreview?
 
   @@unique([id, userId])
   @@index([userId, createdAt(sort: Desc)])
@@ -213,4 +214,27 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+model LinkPreview {
+  nodexId       String    @id @map("nodex_id") @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  url           String
+  status        String    @default("pending")
+  httpStatus    Int?      @map("http_status")
+  title         String?
+  description   String?
+  imageUrl      String?   @map("image_url")
+  siteName      String?   @map("site_name")
+  archiveUrl    String?   @map("archive_url")
+  lastCheckedAt DateTime? @map("last_checked_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([nodexId, userId])
+  @@index([lastCheckedAt])
+  @@index([userId, status])
+  @@map("link_previews")
 }
