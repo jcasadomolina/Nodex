@@ -84,9 +84,11 @@ Se hace con **columnas CSS** (`columns-1 sm:columns-2 lg:columns-3 xl:columns-4`
 | Nodex que ya no existe | "Este Nodex ya no existe" en la ventana |
 | Error inesperado de React | Página "Algo ha salido mal" con "Reintentar" |
 
-## Estilo provisional
+## Estilo
 
-Los colores son variables CSS en `src/app/globals.css`, que es como trabaja shadcn/ui, con un juego para el modo claro y otro para el oscuro. El naranja `#ffa247` y los fondos (blanco y `#1f1f1f`) salen de los bocetos. Cuando se decidan la paleta y la tipografía definitivas, basta con cambiar esas variables.
+Los colores son variables CSS en `src/app/globals.css`, que es como trabaja shadcn/ui, con un juego para el modo claro y otro para el oscuro. **Paleta aprobada (A, "naranja actual"):** naranja `#ffa247` como color principal, con texto `#1f1f1f` encima; fondo blanco en modo claro, y `#1f1f1f` de fondo con tarjetas `#2b2b2b` en modo oscuro; grises neutros. Se eligió frente a una variante con fondo crema y otra con grises azulados.
+
+**Tipografía aprobada: Nunito**, de Google Fonts, cargada con `next/font` en `src/app/layout.tsx`. Sus terminaciones redondeadas repiten las formas de las píldoras y tarjetas de los bocetos. Se descartaron Geist (la de Next.js) y Outfit.
 
 El logo provisional (`components/logo.tsx` y `app/icon.svg`) es el icono del boceto 4: un nodo con satélites.
 
