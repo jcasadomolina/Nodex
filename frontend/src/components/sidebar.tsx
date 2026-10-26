@@ -29,7 +29,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
       aria-label="Navegación principal"
       className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around rounded-2xl bg-primary p-1.5 shadow-lg md:inset-x-auto md:top-1/2 md:bottom-auto md:left-3 md:-translate-y-1/2 md:flex-col md:gap-3 md:px-1.5 md:py-4"
     >
-      <Logo className="hidden size-8 text-primary-foreground md:block" />
+      <Logo className="hidden size-10 md:block" />
       <Suspense fallback={<PanelLink active={false} />}>
         <CurrentPanelLink />
       </Suspense>
