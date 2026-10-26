@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {children}
       </div>
       <div className="hidden aspect-square w-full max-w-sm flex-col items-center justify-center gap-4 rounded-2xl bg-neutral-600 p-8 text-center text-white md:flex">
-        <Logo className="size-24 text-primary" />
+        <Logo animated className="size-28" />
         <p className="text-2xl font-semibold">Nodex</p>
         <p className="text-white/80">Tus notas y enlaces, conectados</p>
       </div>

@@ -90,7 +90,9 @@ Los colores son variables CSS en `src/app/globals.css`, que es como trabaja shad
 
 **Tipografía aprobada: Nunito**, de Google Fonts, cargada con `next/font` en `src/app/layout.tsx`. Sus terminaciones redondeadas repiten las formas de las píldoras y tarjetas de los bocetos. Se descartaron Geist (la de Next.js) y Outfit.
 
-El logo provisional (`components/logo.tsx` y `app/icon.svg`) es el icono del boceto 4: un nodo con satélites.
+**Logo aprobado** (`components/logo.tsx`): un nodo central grande con seis satélites de distintos tamaños, dentro de un cuadrado naranja con esquinas redondeadas. Une el nodo con satélites del boceto 4 y el icono de app. `app/icon.svg` es su versión estática para el favicon.
+
+Con `<Logo animated />` se anima en un ciclo de 4,5 s: aparece el nodo central con un pequeño rebote, después los satélites uno a uno cada 0,2 s, empezando por el de abajo y en el sentido de las agujas del reloj. Luego desaparecen en el mismo orden y, al final, el nodo central. Es CSS puro (`@keyframes` en `globals.css`, con un retraso por satélite mediante la variable `--i`), y se queda quieto si el sistema pide reducir el movimiento (`prefers-reduced-motion`). Se usa animado en el login y en `app/loading.tsx`, la pantalla que muestra Next.js mientras carga una ruta; quieto, en la barra lateral.
 
 ## Decisiones técnicas
 
