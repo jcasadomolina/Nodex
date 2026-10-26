@@ -12,6 +12,7 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Sistema de backend](06-sistema-backend.md) | Stack, estructura del código y plan por ramas | En curso |
 | [Brief de diseño](07-brief-de-diseno.md) | Estilo visual, color, tipografía, bocetos | Pendiente |
 | [Base de datos](08-base-de-datos.md) | PostgreSQL en Neon, tablas, relaciones y reglas de evolución | Completo |
+| [Frontend](09-frontend.md) | Stack, conexión con el backend, pantallas y estados | En curso |
 
 ## Glosario
 

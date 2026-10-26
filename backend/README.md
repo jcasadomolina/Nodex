@@ -19,7 +19,7 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
    DIRECT_URL="...?sslmode=verify-full"     # directa: la usan las migraciones
    SESSION_SECRET="..."                     # mínimo 32 caracteres aleatorios
    PORT=4000                                # opcional, 4000 por defecto
-   APP_URL="http://localhost:4000"          # URL pública que ve el navegador
+   APP_URL="http://localhost:3000"          # URL pública que ve el navegador (la del frontend)
    GOOGLE_CLIENT_ID="..."                   # opcionales: sin ellas, el login con Google
    GOOGLE_CLIENT_SECRET="..."               #   o GitHub responde 503
    GITHUB_CLIENT_ID="..."
