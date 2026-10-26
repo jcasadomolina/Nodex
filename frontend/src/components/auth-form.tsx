@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +60,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         })}
         {error && <p className="text-sm text-destructive">{error.message}</p>}
         <Button type="submit" size="lg" disabled={mutation.isPending}>
+          {mutation.isPending && <Spinner />}
           {isLogin ? "Entrar" : "Registrarme"}
         </Button>
       </form>

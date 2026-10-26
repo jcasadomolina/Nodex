@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -129,6 +130,7 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
         <NodexList nodexs={created.duplicates} onOpen={onOpenNodex} />
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="destructive" onClick={() => remove(created.id, "Nodex borrado")} disabled={deleteNodex.isPending}>
+            {deleteNodex.isPending && <Spinner />}
             Borrar el que acabo de crear
           </Button>
           <Button onClick={onDone}>Mantener los dos</Button>
@@ -221,6 +223,7 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
           </Button>
         )}
         <Button type="submit" disabled={mutation.isPending}>
+          {mutation.isPending && <Spinner />}
           {nodex ? "Guardar" : "Crear"}
         </Button>
       </div>
@@ -266,7 +269,7 @@ export function NodexDialog({ id, open, onOpenChange, onOpenNodex }: NodexDialog
         </DialogHeader>
         {!id && <NodexForm key="new" onDone={close} onOpenNodex={onOpenNodex} />}
         {id && missing && <p className="text-muted-foreground">Este Nodex ya no existe.</p>}
-        {id && nodex.isPending && <p className="text-muted-foreground">Cargando…</p>}
+        {id && nodex.isPending && <Spinner className="mx-auto my-8 size-8 text-primary" />}
         {id && nodex.data && <NodexForm key={nodex.data.id} nodex={nodex.data} onDone={close} onOpenNodex={onOpenNodex} />}
       </DialogContent>
     </Dialog>

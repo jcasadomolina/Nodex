@@ -75,7 +75,7 @@ Se hace con **columnas CSS** (`columns-1 sm:columns-2 lg:columns-3 xl:columns-4`
 
 | Situación | Qué ve el usuario |
 |-----------|-------------------|
-| Cargando | Esqueletos grises de tarjeta |
+| Cargando | Una rueda que gira (`components/spinner.tsx`), en la pantalla o dentro del botón que se ha pulsado |
 | Panel vacío | "Aún no tienes Nodexs" y un botón para crear el primero |
 | Filtro o búsqueda sin resultados | Mensaje y botón para quitar el filtro o la búsqueda |
 | Error de validación (`400`, `409`) | El mensaje del backend debajo del campo o en un aviso |

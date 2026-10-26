@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
+import { Spinner } from "@/components/spinner";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -39,6 +40,7 @@ export default function ProfilePage() {
       <Suspense>
         <LinkNotice />
       </Suspense>
+      {profile.isPending && <Spinner className="mx-auto mt-16 size-8 text-primary" />}
       {profile.data && (
         <section className="mx-auto mt-8 grid w-full max-w-md gap-6 rounded-2xl border bg-card p-6">
           <div>
