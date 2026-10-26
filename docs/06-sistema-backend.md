@@ -145,20 +145,20 @@ Solo se usa el email si el proveedor confirma que está **verificado**. Si no fu
 
 ### Registrar Nodex en Google y GitHub
 
-Ambos son gratuitos. Con las URLs de abajo funciona en local; para producción se añadirán las del dominio final.
+Ambos son gratuitos. Con las URLs de abajo funciona en local, a través del frontend (`localhost:3000`, que reenvía `/api` al backend); para producción se añadirán las del dominio final.
 
 **Google**
 1. Entra en [console.cloud.google.com](https://console.cloud.google.com) y crea un proyecto llamado `Nodex`.
 2. Abre **Google Auth Platform** y configura la pantalla de consentimiento: nombre `Nodex`, tu email de soporte y tipo de usuario **Externo**.
 3. Mientras la app esté en modo **prueba**, solo pueden entrar los usuarios que añadas en **Audiencia → Usuarios de prueba**. Añade tu cuenta.
 4. En **Clientes**, crea un cliente de tipo **Aplicación web** con este URI de redirección autorizado:
-   `http://localhost:4000/api/auth/google/callback`
+   `http://localhost:3000/api/auth/google/callback`
 5. Copia el ID y el secreto del cliente en `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
 
 **GitHub**
 1. Ve a **Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. Rellena: nombre `Nodex`, Homepage URL `http://localhost:4000`, Authorization callback URL:
-   `http://localhost:4000/api/auth/github/callback`
+2. Rellena: nombre `Nodex`, Homepage URL `http://localhost:3000`, Authorization callback URL:
+   `http://localhost:3000/api/auth/github/callback`
 3. Pulsa **Generate a new client secret**.
 4. Copia el Client ID y el secreto en `GITHUB_CLIENT_ID` y `GITHUB_CLIENT_SECRET`.
 
@@ -172,7 +172,7 @@ Ambos son gratuitos. Con las URLs de abajo funciona en local; para producción s
 | Tras cambiar el `.env` no cambia nada | Node solo lee el `.env` al arrancar; `watch` recarga con cambios de código, no del `.env` | Para el servidor (`Ctrl+C`) y vuelve a lanzar `npm run dev` |
 | Google muestra "Acceso bloqueado" | La app está en modo prueba y esa cuenta no es usuario de prueba | Añádela en **Audiencia → Usuarios de prueba** |
 
-Para probar: arranca con `npm run dev` y abre `http://localhost:4000/api/auth/google` en el navegador. Tras aceptar, acabarás en `http://localhost:4000/`, que responde `404` porque aún no hay frontend. Es normal: comprueba la sesión abriendo `http://localhost:4000/api/auth/me`.
+Para probar: arranca el backend y el frontend (`npm run dev` en cada carpeta), abre `http://localhost:3000/login` y pulsa "Continuar con Google" o "Continuar con GitHub". Tras aceptar, acabarás en el panel con la sesión iniciada.
 
 ## Grupos y Nodexs (`feature/grupos-nodexs`)
 
