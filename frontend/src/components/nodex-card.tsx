@@ -32,6 +32,7 @@ export function NodexCard({ nodex, groups, onOpen }: NodexCardProps) {
           {domainOf(nodex.url)}
         </p>
       )}
+      {nodex.tags.length > 0 && <p className="text-xs font-medium text-primary">{nodex.tags.map((t) => `#${t}`).join(" ")}</p>}
       {(nodex.priority || groupNames.length > 0) && (
         <div className="flex flex-wrap gap-1">
           {nodex.priority && <Badge variant={urgent ? "default" : "secondary"}>{PRIORITY_LABELS[nodex.priority]}</Badge>}

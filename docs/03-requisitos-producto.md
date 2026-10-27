@@ -79,6 +79,15 @@
 - **RF-12.6** *(tarea)*: El sistema debe mostrar las tareas en un tablero de tres columnas (pendiente, en curso y hecha) y permitir moverlas entre columnas.
 - **RF-12.7** *(recordatorio)*: El sistema debe permitir programar un recordatorio en un Nodex y enviar una notificación push cuando llegue la hora.
 
+### HU-13: Etiquetas de los Nodexs
+
+> Una etiqueta es una palabra libre (`#cocina`, `#urgente-trabajo`) que el usuario pone a sus Nodexs. A diferencia de los grupos, no se gestionan aparte: existen mientras algún Nodex las use.
+
+- **RF-13.1**: El sistema debe permitir añadir y quitar etiquetas a un Nodex al crearlo o editarlo (máximo 10 por Nodex).
+- **RF-13.2**: El sistema debe normalizar las etiquetas: minúsculas, sin espacios (se sustituyen por guiones) y de 30 caracteres como máximo.
+- **RF-13.3**: El sistema debe sugerir las etiquetas que el usuario ya usa mientras escribe una.
+- **RF-13.4**: El sistema debe mostrar las etiquetas en las tarjetas y permitir encontrar los Nodexs por etiqueta en la búsqueda.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos

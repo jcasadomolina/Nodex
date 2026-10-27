@@ -150,7 +150,9 @@ export async function searchNodexs(userId: string, query: string, limit: number)
           COALESCE(1 - (embedding <=> ${vector}::vector), 0)
           + CASE
               WHEN title ILIKE ${pattern} THEN ${TITLE_MATCH_BONUS}::float
-              WHEN content ILIKE ${pattern} OR url ILIKE ${pattern} THEN ${TEXT_MATCH_BONUS}::float
+              WHEN content ILIKE ${pattern} OR url ILIKE ${pattern}
+                OR EXISTS (SELECT 1 FROM nodex_tags nt WHERE nt.nodex_id = nodexs.id AND nt.name ILIKE ${pattern})
+                THEN ${TEXT_MATCH_BONUS}::float
               ELSE 0
             END
         )::float AS score

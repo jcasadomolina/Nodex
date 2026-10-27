@@ -105,10 +105,25 @@ model Nodex {
   task          Task?
   reminder      Reminder?
   linkPreview   LinkPreview?
+  tags          NodexTag[]
 
   @@unique([id, userId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("nodexs")
+}
+
+// Etiquetas libres de cada Nodex (HU-13). Se guardan ya normalizadas
+// (minúsculas, sin espacios), así que la clave primaria evita duplicados.
+model NodexTag {
+  nodexId String @map("nodex_id") @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  name    String
+
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@id([nodexId, name])
+  @@index([userId, name])
+  @@map("nodex_tags")
 }
 
 // Qué Nodexs hay en cada grupo. Un Nodex sin filas aquí es un huérfano.

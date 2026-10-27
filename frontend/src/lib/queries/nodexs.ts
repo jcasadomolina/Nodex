@@ -14,6 +14,7 @@ export type NodexInput = {
   content: string | null;
   url: string | null;
   priority: Priority | null;
+  tags: string[];
 };
 
 function listParams({ filter, sort, priority }: NodexQuery, cursor?: string) {
@@ -63,7 +64,7 @@ function useInvalidateNodexs() {
   const queryClient = useQueryClient();
 
   return (id?: string) => {
-    for (const key of ["nodexs", "groups", "search", "related"]) {
+    for (const key of ["nodexs", "groups", "search", "related", "tags"]) {
       queryClient.invalidateQueries({ queryKey: [key] });
     }
     if (id) queryClient.invalidateQueries({ queryKey: ["nodex", id] });

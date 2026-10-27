@@ -35,6 +35,7 @@ export type Nodex = {
   url: string | null;
   priority: Priority | null;
   groupIds: string[];
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   linkPreview: LinkPreview | null;

@@ -36,12 +36,18 @@ export const nodexFields = {
   task: { select: { status: true, dueAt: true, completedAt: true } },
   reminder: { select: { remindAt: true, sentAt: true, dismissedAt: true } },
   linkPreview: { select: previewFields },
+  tags: { select: { name: true }, orderBy: { name: "asc" } },
 } as const;
 
 type NodexRow = Prisma.NodexGetPayload<{ select: typeof nodexFields }>;
 
-export function toNodex({ groups, priority, ...nodex }: NodexRow) {
-  return { ...nodex, priority: priorityToName(priority), groupIds: groups.map((g) => g.groupId) };
+export function toNodex({ groups, priority, tags, ...nodex }: NodexRow) {
+  return {
+    ...nodex,
+    priority: priorityToName(priority),
+    groupIds: groups.map((g) => g.groupId),
+    tags: tags.map((t) => t.name),
+  };
 }
 
 async function findNodex(userId: string, id: string) {
@@ -104,7 +110,7 @@ nodexsRouter.get("/", async (req, res) => {
 
 nodexsRouter.post("/", async (req, res) => {
   const userId = req.session.userId!;
-  const { groupIds, ...data } = createNodexSchema.parse(req.body);
+  const { groupIds, tags = [], ...data } = createNodexSchema.parse(req.body);
   const uniqueGroupIds = [...new Set(groupIds)];
 
   const ownedGroups = await prisma.group.count({
@@ -119,6 +125,7 @@ nodexsRouter.post("/", async (req, res) => {
       ...data,
       userId,
       groups: { create: uniqueGroupIds.map((groupId) => ({ groupId })) },
+      tags: { create: tags.map((name) => ({ name })) },
     },
     select: nodexFields,
   });
@@ -144,14 +151,18 @@ nodexsRouter.get("/:id/related", async (req, res) => {
 
 nodexsRouter.patch("/:id", async (req, res) => {
   const id = parseId(req.params.id, NODEX_NOT_FOUND);
-  const data = updateNodexSchema.parse(req.body);
+  const { tags, ...data } = updateNodexSchema.parse(req.body);
   const current = await findNodex(req.session.userId!, id);
 
   if (current.type === "link" && data.url === null) {
     throw new HttpError(400, "Los enlaces necesitan una URL");
   }
 
-  const nodex = await prisma.nodex.update({ where: { id }, data, select: nodexFields });
+  const nodex = await prisma.nodex.update({
+    where: { id },
+    data: { ...data, ...(tags && { tags: { deleteMany: {}, create: tags.map((name) => ({ name })) } }) },
+    select: nodexFields,
+  });
   if (data.title !== undefined || data.content !== undefined || data.url !== undefined) {
     processInBackground(req.session.userId!, id);
   }

@@ -87,6 +87,10 @@ El layout de la app manda aquí a quien no ha completado el tutorial (`tutorialC
 
 "Entrar a Nodex" deja la marca `nodex-tour` en `sessionStorage` y va al panel. Mientras exista, el layout no vuelve a redirigir a la bienvenida, y `Tour` muestra 7 bocadillos anclados con el Popover de Radix a los elementos con `data-tour` (búsqueda, grupos, "+ Grupo", ordenar, "+", Panel y Ajustes). Los pasos cuyo elemento no se ve se saltan. Al terminar, saltarlo o pulsar `Esc`, se guarda `PUT /me/tutorial { version: 1 }`, así que no vuelve a salir en ningún dispositivo. Si se cierra la pestaña a medias, saldrá otra vez porque no se completó. Para repetirlo: Ajustes → "Ver la bienvenida otra vez".
 
+## Etiquetas (HU-13)
+
+En la ventana del Nodex, el campo "Etiquetas" (`components/tag-input.tsx`) convierte lo que escribes en una etiqueta al pulsar `Enter` o escribir una coma, con la misma normalización que el backend. Las sugerencias salen de `GET /api/tags` con un `<datalist>`, el autocompletado nativo del navegador. Las tarjetas muestran las etiquetas como `#cocina`, y la búsqueda del panel también encuentra por etiqueta.
+
 ## Estados y errores
 
 | Situación | Qué ve el usuario |
