@@ -54,6 +54,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               Perfil
             </Link>
           </Button>
+          <Button variant="outline" asChild>
+            <Link href="/bienvenida" onClick={() => onOpenChange(false)}>
+              Ver la bienvenida otra vez
+            </Link>
+          </Button>
           <Button variant="destructive" onClick={() => logout.mutate()} disabled={logout.isPending}>
             {logout.isPending && <Spinner />}
             Cerrar sesión

@@ -74,7 +74,7 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
   }
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1">
+    <div data-tour="grupos" className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1">
       <button type="button" className={cn(chipClass, chipState(value.kind === "all"))} onClick={() => onChange({ kind: "all" })}>
         Todos
       </button>
@@ -122,7 +122,7 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
       {creating ? (
         <NameInput initial="" onSubmit={create} onCancel={() => setCreating(false)} />
       ) : (
-        <button type="button" className={cn(chipClass, "border-dashed bg-transparent hover:bg-muted")} onClick={() => setCreating(true)}>
+        <button type="button" data-tour="nuevo-grupo" className={cn(chipClass, "border-dashed bg-transparent hover:bg-muted")} onClick={() => setCreating(true)}>
           <Plus className="size-4" /> Grupo
         </button>
       )}

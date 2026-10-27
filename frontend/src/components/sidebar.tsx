@@ -12,7 +12,7 @@ const itemClass =
 
 function PanelLink({ active }: { active: boolean }) {
   return (
-    <Link href="/" aria-label="Panel" aria-current={active ? "page" : undefined} className={cn(itemClass, active && "bg-white/40")}>
+    <Link href="/" aria-label="Panel" data-tour="panel" aria-current={active ? "page" : undefined} className={cn(itemClass, active && "bg-white/40")}>
       <LayoutGrid />
     </Link>
   );
@@ -33,7 +33,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
       <Suspense fallback={<PanelLink active={false} />}>
         <CurrentPanelLink />
       </Suspense>
-      <button type="button" aria-label="Ajustes" onClick={onOpenSettings} className={itemClass}>
+      <button type="button" aria-label="Ajustes" data-tour="ajustes" onClick={onOpenSettings} className={itemClass}>
         <Settings />
       </button>
     </nav>

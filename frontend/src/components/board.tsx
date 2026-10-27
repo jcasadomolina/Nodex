@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { GroupFilter } from "@/components/group-filter";
 import { NodexDialog } from "@/components/nodex-dialog";
 import { NodexGrid } from "@/components/nodex-grid";
+import { Tour } from "@/components/tour";
 import { SortMenu } from "@/components/sort-menu";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
@@ -112,11 +113,13 @@ export function Board({ openId }: { openId?: string }) {
       <Button
         size="icon-lg"
         aria-label="Crear Nodex"
+        data-tour="crear"
         onClick={() => setDialog({ open: true, id: null })}
         className="fixed right-6 bottom-24 z-30 size-14 rounded-full shadow-lg md:bottom-6 [&_svg:not([class*='size-'])]:size-6"
       >
         <Plus />
       </Button>
+      <Tour />
       <NodexDialog id={dialog.id} open={dialog.open} onOpenChange={changeDialog} onOpenNodex={openNodex} />
     </div>
   );

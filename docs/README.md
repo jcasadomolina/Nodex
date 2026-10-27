@@ -10,7 +10,7 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Requisitos técnicos](04-requisitos-tecnicos.md) | Stack propuesto y requisitos de la base de datos | Completo |
 | [Flujo de la aplicación](05-flujo-de-la-aplicacion.md) | Pantallas y recorridos del usuario | Pendiente |
 | [Sistema de backend](06-sistema-backend.md) | Stack, estructura del código y plan por ramas | En curso |
-| [Brief de diseño](07-brief-de-diseno.md) | Estilo visual, color, tipografía, bocetos | Pendiente |
+| [Brief de diseño](07-brief-de-diseno.md) | Estilo visual, color, tipografía, bocetos | Completo |
 | [Base de datos](08-base-de-datos.md) | PostgreSQL en Neon, tablas, relaciones y reglas de evolución | Completo |
 | [Frontend](09-frontend.md) | Stack, conexión con el backend, pantallas y estados | En curso |
 
