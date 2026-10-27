@@ -52,7 +52,7 @@ export default function WelcomePage() {
 
   return (
     <main
-      className="relative isolate flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden px-4 py-8"
+      className="relative isolate flex flex-1 flex-col items-center justify-center overflow-hidden px-4 py-8"
       onKeyDown={(event) => {
         if (event.key === "ArrowRight") goTo(index + 1);
         if (event.key === "ArrowLeft") goTo(index - 1);
@@ -86,28 +86,27 @@ export default function WelcomePage() {
             </article>
           ))}
         </div>
+
+        <div className="flex items-center justify-between gap-3 border-t px-6 py-4">
+          <Button variant="outline" size="lg" onClick={() => goTo(index - 1)} disabled={index === 0}>
+            Anterior
+          </Button>
+          <div className="flex gap-2" aria-hidden="true">
+            {SLIDES.map((slide, i) => (
+              <span key={slide.title} className={cn("h-2 rounded-full bg-foreground/20 transition-all", i === index ? "w-6 bg-primary" : "w-2")} />
+            ))}
+          </div>
+          {last ? (
+            <Button size="lg" onClick={enter}>
+              Entrar a Nodex
+            </Button>
+          ) : (
+            <Button size="lg" onClick={() => goTo(index + 1)}>
+              Siguiente
+            </Button>
+          )}
+        </div>
       </section>
-
-      <div className="flex gap-2" aria-hidden="true">
-        {SLIDES.map((slide, i) => (
-          <span key={slide.title} className={cn("h-2 rounded-full bg-foreground/20 transition-all", i === index ? "w-6 bg-primary" : "w-2")} />
-        ))}
-      </div>
-
-      <div className="flex w-full max-w-lg justify-between gap-3">
-        <Button variant="outline" size="lg" onClick={() => goTo(index - 1)} disabled={index === 0}>
-          Anterior
-        </Button>
-        {last ? (
-          <Button size="lg" onClick={enter}>
-            Entrar a Nodex
-          </Button>
-        ) : (
-          <Button size="lg" onClick={() => goTo(index + 1)}>
-            Siguiente
-          </Button>
-        )}
-      </div>
     </main>
   );
 }
