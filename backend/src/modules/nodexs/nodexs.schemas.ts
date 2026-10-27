@@ -14,6 +14,15 @@ export function priorityToName(value: number | null) {
   return value ? PRIORITIES[value - 1]! : null;
 }
 
+function normalizeTag(name: string) {
+  return name.trim().toLowerCase().replace(/^#+/, "").replace(/\s+/g, "-").slice(0, 30);
+}
+
+const tagList = z
+  .array(z.string())
+  .max(10, "Un Nodex puede tener como máximo 10 etiquetas")
+  .transform((names) => [...new Set(names.map(normalizeTag).filter(Boolean))]);
+
 const fields = {
   title: z.string().trim().min(1, "El título es obligatorio").max(200),
   content: z.string().max(50_000).nullable().optional(),
@@ -22,6 +31,7 @@ const fields = {
     .nullable()
     .optional()
     .transform((p) => (p ? priorityToNumber(p) : p)),
+  tags: tagList.optional(),
 };
 
 export const createNodexSchema = z

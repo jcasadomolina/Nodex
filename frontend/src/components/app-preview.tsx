@@ -19,6 +19,7 @@ function sample(id: string, title: string, extra: Partial<Nodex> = {}): Nodex {
     url: null,
     priority: null,
     groupIds: [],
+    tags: [],
     createdAt: "",
     updatedAt: "",
     linkPreview: null,

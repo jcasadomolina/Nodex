@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { TagInput } from "@/components/tag-input";
 import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 import { domainOf, looksLikeUrl, PRIORITY_LABELS } from "@/lib/format";
 import { useGroups } from "@/lib/queries/groups";
-import { useCreateNodex, useDeleteNodex, useNodex, useRelated, useUpdateNodex } from "@/lib/queries/nodexs";
+import { useCreateNodex, useDeleteNodex, useNodex, useRelated, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
 import type { Nodex, NodexMatch, Priority } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,7 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
   const [content, setContent] = useState(nodex?.content ?? "");
   const [priority, setPriority] = useState<Priority | null>(nodex?.priority ?? null);
   const [groupIds, setGroupIds] = useState<string[]>(nodex?.groupIds ?? []);
+  const [tags, setTags] = useState<string[]>(nodex?.tags ?? []);
   const [created, setCreated] = useState<{ id: string; duplicates: NodexMatch[] } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -76,14 +78,15 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const input = { title: title.trim(), url: url.trim() || null, content: content.trim() || null, priority, groupIds };
+    const input = { title: title.trim(), url: url.trim() || null, content: content.trim() || null, priority, groupIds, tags };
 
     if (nodex) {
-      const changes = Object.fromEntries(
+      const changes: Partial<Omit<NodexInput, "type">> = Object.fromEntries(
         (["title", "url", "content", "priority"] as const)
           .filter((key) => input[key] !== nodex[key])
           .map((key) => [key, input[key]]),
       );
+      if (tags.join() !== nodex.tags.join()) changes.tags = tags;
       updateNodex.mutate(
         { id: nodex.id, changes, groupIds, previousGroupIds: nodex.groupIds },
         {
@@ -213,6 +216,12 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
           </div>
         </fieldset>
       )}
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="nodex-tags">Etiquetas</Label>
+        <TagInput value={tags} onChange={setTags} />
+        {fieldError("tags")}
+      </div>
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 

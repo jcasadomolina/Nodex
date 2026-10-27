@@ -15,6 +15,7 @@ import { meRouter } from "./modules/me/me.routes.js";
 import { nodexsRouter } from "./modules/nodexs/nodexs.routes.js";
 import { pushRouter } from "./modules/push/push.routes.js";
 import { remindersRouter } from "./modules/reminders/reminders.routes.js";
+import { tagsRouter } from "./modules/tags/tags.routes.js";
 import { tasksRouter } from "./modules/tasks/tasks.routes.js";
 
 export const app = express();
@@ -34,6 +35,7 @@ app.use("/api/auth", oauthRouter);
 app.use("/api/me", meRouter);
 app.use("/api/groups", groupsRouter);
 app.use("/api/nodexs", nodexsRouter);
+app.use("/api/tags", tagsRouter);
 app.use("/api/board", boardRouter);
 app.use("/api/suggestions", suggestionsRouter);
 app.use("/api/tasks", tasksRouter);

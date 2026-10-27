@@ -210,6 +210,18 @@ Vista previa y estado del enlace de un Nodex: como mucho una fila por Nodex con 
 
 Índices: `last_checked_at` (para el proceso periódico) y `(user_id, status)` (para la lista de rotos).
 
+### `nodex_tags` (HU-13)
+
+Etiquetas libres de cada Nodex. No hay una tabla de etiquetas aparte: una etiqueta existe mientras algún Nodex la use.
+
+| Columna | Tipo | Qué guarda |
+|---------|------|------------|
+| `nodex_id` | uuid | El Nodex. Parte de la clave primaria |
+| `user_id` | uuid | El dueño. Junto con `nodex_id` forma la clave foránea compuesta hacia `nodexs`, como en `group_nodexs`, para que no se pueda etiquetar el Nodex de otro usuario |
+| `name` | text | La etiqueta ya normalizada (minúsculas, sin espacios, 30 caracteres como máximo). Parte de la clave primaria, así que un Nodex no puede repetir etiqueta |
+
+Índice `(user_id, name)` para listar las etiquetas de un usuario (`GET /api/tags`). Al borrar un Nodex de verdad, sus etiquetas se borran en cascada.
+
 ## Aislamiento entre usuarios
 
 Un usuario nunca puede ver ni tocar los datos de otro (ver [Requisitos técnicos](04-requisitos-tecnicos.md)). Se protege en dos capas:
@@ -243,7 +255,7 @@ En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcio
 ## Implementación
 
 - Esquema: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma). Los modelos usan PascalCase y los campos camelCase, como es habitual en TypeScript; `@@map` y `@map` los traducen a nombres en snake_case en la base.
-- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`; `*_add_tasks` crea la tabla `tasks`; `*_add_reminders_and_push` crea `reminders` y `push_subscriptions`; `*_add_link_previews` crea `link_previews`.
+- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`; `*_add_tasks` crea la tabla `tasks`; `*_add_reminders_and_push` crea `reminders` y `push_subscriptions`; `*_add_link_previews` crea `link_previews`; `*_add_nodex_tags` crea `nodex_tags`.
 - `priority` es la única excepción a la regla de "texto en vez de ENUM": se guarda como número para poder **ordenar** por ella (urgente > alta > media > baja). Con texto, el orden sería alfabético, que aquí no tiene sentido.
 - `embedding` es de un tipo que Prisma no conoce (`vector`), así que en el esquema aparece como `Unsupported("vector(384)")` y se lee y escribe con SQL (`$queryRaw` / `$executeRaw`).
 - Configuración de la CLI: [`backend/prisma.config.ts`](../backend/prisma.config.ts). Carga el `.env` de la raíz y usa `DIRECT_URL` para las migraciones. La aplicación se conectará con `DATABASE_URL` (pooling) en el bloque de backend.
