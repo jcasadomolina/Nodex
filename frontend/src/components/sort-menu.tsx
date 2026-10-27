@@ -27,7 +27,7 @@ export function SortMenu({ sort, priority, onChange }: SortMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={active ? "default" : "outline"} className="shrink-0 rounded-full" aria-label="Ordenar y filtrar">
+        <Button variant={active ? "default" : "outline"} className="shrink-0 rounded-full" aria-label="Ordenar y filtrar" data-tour="ordenar">
           <ListFilter />
           <span className="hidden sm:inline">Ordenar y filtrar</span>
         </Button>

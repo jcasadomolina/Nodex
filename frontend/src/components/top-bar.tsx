@@ -13,7 +13,7 @@ export function TopBar({ location, search = "", onSearchChange }: TopBarProps) {
     <header className="sticky top-3 z-30 mx-auto flex w-full max-w-2xl items-center gap-3 rounded-full bg-primary px-5 py-2 text-primary-foreground shadow-md">
       <span className="shrink-0 truncate font-medium">{location}</span>
       {onSearchChange && (
-        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white/40 px-3 py-1">
+        <label data-tour="buscar" className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white/40 px-3 py-1">
           <Search className="size-4 shrink-0" aria-hidden="true" />
           <input
             type="search"

@@ -71,6 +71,22 @@ Al abrir un Nodex desde el panel, la URL cambia con `history.pushState`, sin nav
 
 Se hace con **columnas CSS** (`columns-1 sm:columns-2 lg:columns-3 xl:columns-4`), sin librería. Las tarjetas se reparten **de arriba abajo por columnas**, no por filas. Para un panel de notas es aceptable, y se cambiará si hace falta un orden estricto por filas.
 
+## La primera vez en Nodex
+
+Diseño: [especificación](superpowers/specs/2026-10-27-primera-vez-design.md).
+
+### Pantalla de inicio (`/login` y `/registro`)
+
+Inspirada en la portada de Calendly. A la izquierda van el titular, los botones de Google y GitHub y el formulario (con mostrar/ocultar contraseña). A la derecha, `AppPreview` alterna tres vistas de la app (panel, Nodex abierto y búsqueda) con un fundido cada 4 s. No son capturas: son los **componentes reales** (`NodexCard`) con datos de ejemplo, así que siempre coinciden con la interfaz y siguen el tema claro u oscuro. Al fondo, `AuthBackground` pinta una mancha naranja y una red de nodos que se mueve despacio. Todo es CSS y SVG, y se queda quieto con `prefers-reduced-motion`.
+
+### Bienvenida (`/bienvenida`)
+
+El layout de la app manda aquí a quien no ha completado el tutorial (`tutorialCompletedVersion < TUTORIAL_VERSION`, en `lib/tour.ts`). Así la ve quien acaba de registrarse y quien entra por primera vez con Google o GitHub, en cualquier dispositivo. Es un carrusel de 4 diapositivas hecho con **`scroll-snap` de CSS**: en el móvil se desliza con el dedo sin librerías, y los botones y las flechas del teclado mueven el carrusel con `scrollTo`. La última explica el único permiso que pediremos (notificaciones, al crear el primer recordatorio) y lleva a "Entrar a Nodex".
+
+### Tutorial
+
+"Entrar a Nodex" deja la marca `nodex-tour` en `sessionStorage` y va al panel. Mientras exista, el layout no vuelve a redirigir a la bienvenida, y `Tour` muestra 7 bocadillos anclados con el Popover de Radix a los elementos con `data-tour` (búsqueda, grupos, "+ Grupo", ordenar, "+", Panel y Ajustes). Los pasos cuyo elemento no se ve se saltan. Al terminar, saltarlo o pulsar `Esc`, se guarda `PUT /me/tutorial { version: 1 }`, así que no vuelve a salir en ningún dispositivo. Si se cierra la pestaña a medias, saldrá otra vez porque no se completó. Para repetirlo: Ajustes → "Ver la bienvenida otra vez".
+
 ## Estados y errores
 
 | Situación | Qué ve el usuario |
