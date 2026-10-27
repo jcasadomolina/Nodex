@@ -120,6 +120,27 @@ export function checkNewNodex(userId: string, nodexId: string) {
   return Promise.race([check, wait(DUPLICATE_TIMEOUT_MS, [] as Match[])]);
 }
 
+export async function findRelatedPairs(userId: string, perNodex: number) {
+  return prisma.$queryRaw<{ a: string; b: string; similarity: number }[]>`
+    SELECT DISTINCT LEAST(n.id, m.id) AS a, GREATEST(n.id, m.id) AS b, m.similarity
+    FROM nodexs n
+    CROSS JOIN LATERAL (
+      SELECT o.id, (1 - (o.embedding <=> n.embedding))::float AS similarity
+      FROM nodexs o
+      WHERE o.user_id = n.user_id
+        AND o.id <> n.id
+        AND o.deleted_at IS NULL
+        AND o.embedding IS NOT NULL
+      ORDER BY o.embedding <=> n.embedding
+      LIMIT ${perNodex}
+    ) m
+    WHERE n.user_id = ${userId}::uuid
+      AND n.deleted_at IS NULL
+      AND n.embedding IS NOT NULL
+      AND m.similarity >= ${MIN_RELATED_SIMILARITY}::float
+  `;
+}
+
 export async function findRelated(userId: string, nodexId: string, limit: number) {
   return prisma.$queryRaw<Match[]>`
     SELECT n.id, (1 - (n.embedding <=> t.embedding))::float AS similarity

@@ -16,6 +16,7 @@ const STEPS = [
   { target: "ordenar", title: "Ordena y filtra", text: "Pon primero lo más urgente o muestra solo una prioridad." },
   { target: "crear", title: "Crea tu primer Nodex", text: "Escribe una nota o pega un enlace. Te avisaremos si ya tenías algo parecido." },
   { target: "panel", title: "Tu panel", text: "Aquí vuelves siempre para ver todos tus Nodexs." },
+  { target: "grafo", title: "Vista gráfica", text: "Mira tus Nodexs como un mapa: cada grupo en el centro, rodeado de sus Nodexs." },
   { target: "ajustes", title: "Ajustes", text: "Cambia el tema, revisa tu perfil o vuelve a ver esta bienvenida cuando quieras." },
 ];
 
