@@ -117,6 +117,7 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `GET /api/tags` | `200 { tags }`: las etiquetas en uso, cada una con `nodexCount`, por orden alfabético |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
+| `GET /api/board/related` | `200 { pairs }`: pares `{ a, b, similarity }` de Nodexs relacionados para el grafo (los 3 más parecidos de cada uno, con similitud ≥ 0,45, sin repetir el par) |
 | `PUT /api/tasks/:nodexId` | Body `{ status?, dueAt? }`. Convierte el Nodex en tarea (`201`) o la actualiza (`200`). `status`: `todo`, `doing` o `done`; `dueAt`: fecha ISO con zona horaria o `null` |
 | `DELETE /api/tasks/:nodexId` | `204`. Quita la personalidad de tarea; el Nodex sigue existiendo |
 | `GET /api/tasks/board` | `200 { columns: { todo, doing, done } }`: el tablero, cada columna ordenada |

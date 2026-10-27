@@ -91,6 +91,22 @@ El layout de la app manda aquí a quien no ha completado el tutorial (`tutorialC
 
 En la ventana del Nodex, el campo "Etiquetas" (`components/tag-input.tsx`) convierte lo que escribes en una etiqueta al pulsar `Enter` o escribir una coma, con la misma normalización que el backend. Las sugerencias salen de `GET /api/tags` con un `<datalist>`, el autocompletado nativo del navegador. Las tarjetas muestran las etiquetas como `#cocina`, y la búsqueda del panel también encuentra por etiqueta.
 
+## Vista gráfica (`/grafo`, `RF-04.5`)
+
+Diseño: [especificación](superpowers/specs/2026-10-27-grafo-design.md). Funciona como el grafo de Obsidian: los grupos son nodos grandes y sus Nodexs se unen a ellos.
+
+| Pieza | Qué hace |
+|-------|----------|
+| `components/graph-view.tsx` | Construye los nodos y las uniones a partir de `GET /api/board` y de los ajustes. Calcula la física con **d3-force** (uniones, repulsión, colisión y atracción al centro) y pinta en SVG. El zoom y el desplazamiento los gestiona **d3-zoom**; los nodos se arrastran con eventos de puntero |
+| `components/graph-panel.tsx` | El panel de ajustes, con secciones plegables `<details>` (nativas): filtros, grupos, colores, mostrar y exportar |
+| `lib/graph-settings.ts` | Ajustes por defecto, `localStorage` (`nodex-graph`) y `matchesRule`, que decide si una regla de color (`grupo:`, `etiqueta:`, `prioridad:`, `tipo:` o una palabra) se aplica a un Nodex |
+| `app/(app)/grafo/page.tsx` | La página y la exportación: serializa el SVG, sustituye `currentColor` por el color real y añade el fondo del tema; para PNG y JPEG lo pinta en un `<canvas>` al doble de resolución |
+
+- **Relacionados:** al activarlos se piden a `GET /api/board/related` y se dibujan con línea discontinua.
+- **Posiciones estables:** al cambiar un ajuste se vuelve a calcular el grafo, pero cada nodo conserva su posición anterior, así que no "salta".
+- **Vista rápida:** en el ordenador, la tarjeta del Nodex sale al pasar el ratón y el clic abre la ventana de edición; en el móvil sale al tocar, con un botón "Abrir".
+- **Simplificaciones:** las fuerzas son fijas (Obsidian deja ajustarlas) y con miles de nodos el SVG puede ir lento; en ese caso se pasaría a `<canvas>`.
+
 ## Estados y errores
 
 | Situación | Qué ve el usuario |
