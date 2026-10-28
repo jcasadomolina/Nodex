@@ -51,6 +51,7 @@ Cada dato tiene una **clave** en la caché:
 | `["search", texto]` | `GET /nodexs/search` |
 | `["nodex", id]`, `["related", id]` | Un Nodex y sus relacionados |
 | `["tasks", "board"]`, `["tasks", "calendar", desde]` | `GET /tasks/board` y `GET /tasks/calendar` |
+| `["alerts", "due" \| "upcoming" \| "broken"]` | `GET /reminders?status=due` (cada 60 s), `?status=upcoming` y `GET /links/broken` |
 | `["nodexs", "suggestions"]` | `GET /suggestions` (cuelga de `nodexs` para recargarse al guardar un Nodex) |
 
 Después de crear, editar o borrar, se **invalidan** las claves afectadas y TanStack Query vuelve a pedirlas. Si cualquier petición devuelve `401` (sesión caducada), se cierra la sesión en el backend, que borra la cookie, y se va a `/login?expired=1`. Cerrar antes la sesión evita un bucle: con la cookie todavía puesta, `proxy.ts` devolvería al usuario al panel.
@@ -119,6 +120,18 @@ Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualq
 
 - **Arrastrar:** con el ratón empieza tras moverse 5 px (así un clic abre el Nodex); con el dedo, tras mantener 200 ms (así se puede seguir haciendo scroll); con el teclado, espacio para coger y soltar, flechas para mover, `Esc` para cancelar e `Intro` para abrir.
 - **Fechas:** el `<input type="date">` da `AAAA-MM-DD`; se guarda como las 00:00 de ese día en hora local (`fromDateInput`) y se lee con `toLocaleDateString("sv-SE")` (`toDateInput`), que devuelve el mismo formato. Así la tarea cae en el mismo día en cualquier pantalla.
+
+## Avisos: recordatorios y enlaces rotos (`RF-12.3`, `RF-12.7`)
+
+Diseño: [especificación](superpowers/specs/2026-10-28-recordatorios-enlaces-design.md). La **campana** de la barra lateral (`components/alerts-button.tsx`) es el centro de avisos:
+
+- El número rojo cuenta los recordatorios vencidos y sin descartar. La consulta se repite cada 60 s mientras la pestaña está visible.
+- Al pulsarla, un Popover muestra "Ahora" (con Descartar), "Próximos" y "Enlaces rotos" (con "Ver copia" de archive.org si existe). "Abrir" navega a `/nodexs/:id`.
+- Si llega un recordatorio nuevo con la app abierta, sale un aviso con "Abrir". Para no repetir avisos, el componente guarda en un `useRef` los recordatorios que ya ha visto; en la primera carga solo los apunta, sin avisar.
+
+En la ventana del Nodex, la sección "Recordatorio" tiene un `<input type="datetime-local">` (hora local) y los atajos "En 1 hora", "Esta tarde (18:00)" y "Mañana a las 9:00". Se guarda junto con el Nodex (`PUT` o `DELETE /reminders/:id`). Si la fecha ya pasó, el backend responde con un error que se muestra bajo el campo. Los enlaces rotos o que no responden muestran "Comprobar ahora" (`POST /links/:id/refresh`) y "Ver copia".
+
+Las notificaciones push al móvil llegarán con la PWA, porque necesitan un *service worker*.
 
 ## Vista gráfica (`/grafo`, `RF-04.5`)
 

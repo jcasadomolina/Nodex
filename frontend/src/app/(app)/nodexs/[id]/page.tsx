@@ -3,7 +3,7 @@ import { Board } from "@/components/board";
 
 async function OpenNodex({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <Board openId={id} />;
+  return <Board key={id} openId={id} />;
 }
 
 export default function NodexPage({ params }: PageProps<"/nodexs/[id]">) {

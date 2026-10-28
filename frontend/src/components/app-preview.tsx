@@ -24,6 +24,7 @@ function sample(id: string, title: string, extra: Partial<Nodex> = {}): Nodex {
     updatedAt: "",
     linkPreview: null,
     task: null,
+    reminder: null,
     ...extra,
   };
 }
