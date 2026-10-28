@@ -8,7 +8,7 @@ export type User = {
   tutorialCompletedVersion: number | null;
 };
 
-export type Profile = User & { providers: ("google" | "github")[] };
+export type Profile = User & { hasPassword: boolean; providers: ("google" | "github")[] };
 
 export type Group = {
   id: string;

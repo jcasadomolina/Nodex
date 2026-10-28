@@ -3,10 +3,11 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useLogout } from "@/lib/queries/auth";
+import { useLogout, useMe } from "@/lib/queries/auth";
 
 const THEMES = [
   { value: "light", label: "Claro", icon: Sun },
@@ -22,6 +23,7 @@ type SettingsDialogProps = {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { theme, setTheme } = useTheme();
   const logout = useLogout();
+  const me = useMe();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,9 +51,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </section>
 
         <div className="grid gap-2 border-t pt-4">
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="h-auto justify-start py-2" asChild>
             <Link href="/perfil" onClick={() => onOpenChange(false)}>
-              Perfil
+              {me.data && <Avatar name={me.data.name} url={me.data.avatarUrl} className="size-8" />}
+              <span className="grid text-left">
+                <span>{me.data?.name ?? "Perfil"}</span>
+                <span className="text-xs font-normal text-muted-foreground">Ver y editar tu perfil</span>
+              </span>
             </Link>
           </Button>
           <Button variant="outline" asChild>

@@ -16,10 +16,11 @@ type ConfirmDialogProps = {
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
+  confirmLabel?: string;
   onConfirm: () => void;
 };
 
-export function ConfirmDialog({ open, onOpenChange, title, description, onConfirm }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel = "Borrar", onConfirm }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -30,7 +31,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, onConfir
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={onConfirm}>
-            Borrar
+            {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

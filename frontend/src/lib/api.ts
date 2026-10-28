@@ -13,8 +13,8 @@ export async function api<T>(path: string, options: { method?: string; body?: un
   try {
     res = await fetch(`/api${path}`, {
       method: options.method ?? "GET",
-      headers: options.body === undefined ? undefined : { "Content-Type": "application/json" },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      headers: options.body === undefined || options.body instanceof FormData ? undefined : { "Content-Type": "application/json" },
+      body: options.body === undefined || options.body instanceof FormData ? options.body : JSON.stringify(options.body),
     });
   } catch {
     throw new ApiError(0, "No se ha podido conectar con el servidor");
