@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import type { BoardFilter, Nodex, NodexMatch, NodexResult, Priority, TaskInput } from "../types";
 
 export type NodexQuery = {
@@ -66,7 +66,7 @@ export function useInvalidateNodexs() {
 
   return (id?: string) =>
     Promise.all(
-      [["nodexs"], ["groups"], ["search"], ["related"], ["tags"], ["tasks"], ...(id ? [["nodex", id]] : [])].map((queryKey) =>
+      [["nodexs"], ["groups"], ["search"], ["related"], ["tags"], ["tasks"], ["alerts"], ...(id ? [["nodex", id]] : [])].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );
@@ -76,12 +76,18 @@ export function useCreateNodex() {
   const invalidate = useInvalidateNodexs();
 
   return useMutation({
-    mutationFn: async ({ task, ...input }: NodexInput & { groupIds: string[]; task?: TaskInput }) => {
+    mutationFn: async ({ task, reminder, ...input }: NodexInput & { groupIds: string[]; task?: TaskInput; reminder?: string }) => {
       const result = await api<{ nodex: Nodex; duplicates: NodexMatch[] }>("/nodexs", { method: "POST", body: input });
       if (task) {
         await api(`/tasks/${result.nodex.id}`, { method: "PUT", body: task }).catch(() =>
           toast.error("Nodex creado, pero no se ha podido guardar la tarea"),
         );
+      }
+      if (reminder) {
+        await api(`/reminders/${result.nodex.id}`, { method: "PUT", body: { remindAt: reminder } }).catch((error: Error) => {
+          const reason = error instanceof ApiError ? (error.fields.remindAt?.[0] ?? error.message) : error.message;
+          toast.error(`Nodex creado, pero no se ha podido guardar el recordatorio: ${reason}`);
+        });
       }
       return result;
     },
@@ -93,12 +99,13 @@ export function useUpdateNodex() {
   const invalidate = useInvalidateNodexs();
 
   return useMutation({
-    mutationFn: async ({ id, changes, groupIds, previousGroupIds, task }: {
+    mutationFn: async ({ id, changes, groupIds, previousGroupIds, task, reminder }: {
       id: string;
       changes: Partial<Omit<NodexInput, "type">>;
       groupIds: string[];
       previousGroupIds: string[];
       task?: TaskInput | null;
+      reminder?: string | null;
     }) => {
       if (Object.keys(changes).length > 0) await api(`/nodexs/${id}`, { method: "PATCH", body: changes });
       const added = groupIds.filter((g) => !previousGroupIds.includes(g));
@@ -109,6 +116,8 @@ export function useUpdateNodex() {
       ]);
       if (task === null) await api(`/tasks/${id}`, { method: "DELETE" });
       if (task) await api(`/tasks/${id}`, { method: "PUT", body: task });
+      if (reminder === null) await api(`/reminders/${id}`, { method: "DELETE" });
+      if (reminder) await api(`/reminders/${id}`, { method: "PUT", body: { remindAt: reminder } });
     },
     onSettled: (_data, _error, { id }) => invalidate(id),
   });

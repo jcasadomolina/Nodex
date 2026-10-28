@@ -35,6 +35,14 @@ export type LinkPreview = {
   description: string | null;
   imageUrl: string | null;
   siteName: string | null;
+  archiveUrl: string | null;
+  lastCheckedAt: string | null;
+};
+
+export type Reminder = {
+  remindAt: string;
+  sentAt: string | null;
+  dismissedAt: string | null;
 };
 
 export type Nodex = {
@@ -50,10 +58,21 @@ export type Nodex = {
   updatedAt: string;
   linkPreview: LinkPreview | null;
   task: Task | null;
+  reminder: Reminder | null;
 };
 
 export type TaskCard = Task & {
   nodex: Pick<Nodex, "id" | "title" | "type" | "url" | "priority">;
+};
+
+export type ReminderItem = Reminder & {
+  nodex: Pick<Nodex, "id" | "title" | "type" | "priority">;
+};
+
+export type BrokenLink = {
+  url: string;
+  archiveUrl: string | null;
+  nodex: Pick<Nodex, "id" | "title">;
 };
 
 export type NodexMatch = Nodex & { similarity: number };

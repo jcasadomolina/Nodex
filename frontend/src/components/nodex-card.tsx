@@ -1,6 +1,6 @@
-import { Link2 } from "lucide-react";
+import { Bell, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { domainOf, PRIORITY_LABELS } from "@/lib/format";
+import { domainOf, formatDateTime, PRIORITY_LABELS } from "@/lib/format";
 import type { Group, Nodex, Task } from "@/lib/types";
 
 function taskLabel(task: Task) {
@@ -19,6 +19,8 @@ export function NodexCard({ nodex, groups, onOpen }: NodexCardProps) {
   const groupNames = groups.filter((g) => nodex.groupIds.includes(g.id)).map((g) => g.name);
   const image = nodex.linkPreview?.imageUrl;
   const urgent = nodex.priority === "urgent" || nodex.priority === "high";
+  const pendingReminder = nodex.reminder !== null && nodex.reminder.sentAt === null;
+  const broken = nodex.linkPreview?.status === "broken";
 
   return (
     <button
@@ -39,8 +41,15 @@ export function NodexCard({ nodex, groups, onOpen }: NodexCardProps) {
         </p>
       )}
       {nodex.tags.length > 0 && <p className="text-xs font-medium text-primary">{nodex.tags.map((t) => `#${t}`).join(" ")}</p>}
-      {(nodex.priority || nodex.task || groupNames.length > 0) && (
+      {(nodex.priority || nodex.task || pendingReminder || broken || groupNames.length > 0) && (
         <div className="flex flex-wrap gap-1">
+          {broken && <Badge variant="destructive">Enlace roto</Badge>}
+          {pendingReminder && (
+            <Badge variant="secondary">
+              <Bell aria-hidden="true" />
+              <span className="sr-only">Recordatorio:</span> {formatDateTime(nodex.reminder!.remindAt)}
+            </Badge>
+          )}
           {nodex.task && <Badge variant="secondary">{taskLabel(nodex.task)}</Badge>}
           {nodex.priority && <Badge variant={urgent ? "default" : "secondary"}>{PRIORITY_LABELS[nodex.priority]}</Badge>}
           {groupNames.map((name) => (

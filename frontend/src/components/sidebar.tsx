@@ -4,6 +4,7 @@ import { LayoutGrid, Settings, SquareCheckBig, Waypoints } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
+import { AlertsButton } from "@/components/alerts-button";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
       <Suspense fallback={<NavLinks pathname={null} />}>
         <CurrentNavLinks />
       </Suspense>
+      <AlertsButton className={itemClass} />
       <button type="button" aria-label="Ajustes" data-tour="ajustes" onClick={onOpenSettings} className={itemClass}>
         <Settings />
       </button>

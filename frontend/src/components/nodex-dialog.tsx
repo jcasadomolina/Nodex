@@ -11,7 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
-import { domainOf, fromDateInput, looksLikeUrl, PRIORITY_LABELS, TASK_STATUS_LABELS, toDateInput } from "@/lib/format";
+import {
+  domainOf,
+  formatDateTime,
+  fromDateInput,
+  fromDateTimeInput,
+  looksLikeUrl,
+  PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
+  toDateInput,
+  toDateTimeInput,
+} from "@/lib/format";
+import { useRefreshLink } from "@/lib/queries/alerts";
 import { useGroups } from "@/lib/queries/groups";
 import { useCreateNodex, useDeleteNodex, useNodex, useRelated, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
 import type { Nodex, NodexMatch, Priority, TaskInput, TaskStatus } from "@/lib/types";
@@ -24,6 +35,37 @@ const toggleClass = "h-8 rounded-full border px-3 text-sm transition-colors";
 function toggleState(active: boolean) {
   return active ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted";
 }
+
+function Switch({ checked, labelledBy, onChange }: { checked: boolean; labelledBy: string; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-labelledby={labelledBy}
+      onClick={onChange}
+      className={cn(
+        "relative h-6 w-11 rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        checked ? "bg-primary" : "bg-muted-foreground/30",
+      )}
+    >
+      <span className={cn("absolute top-1 left-1 size-4 rounded-full bg-white transition-transform", checked && "translate-x-5")} />
+    </button>
+  );
+}
+
+function atHour(daysFromToday: number, hour: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  date.setHours(hour, 0, 0, 0);
+  return date;
+}
+
+const REMINDER_SHORTCUTS = [
+  { label: "En 1 hora", at: () => new Date(Math.ceil(Date.now() / 60_000) * 60_000 + 3_600_000) },
+  { label: "Esta tarde (18:00)", at: () => (atHour(0, 18) > new Date() ? atHour(0, 18) : atHour(1, 18)) },
+  { label: "Mañana a las 9:00", at: () => atHour(1, 9) },
+];
 
 function showSaveError(error: Error) {
   if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500) {
@@ -66,6 +108,9 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
   const [priority, setPriority] = useState<Priority | null>(nodex?.priority ?? null);
   const [groupIds, setGroupIds] = useState<string[]>(nodex?.groupIds ?? []);
   const [tags, setTags] = useState<string[]>(nodex?.tags ?? []);
+  const [reminderOn, setReminderOn] = useState(Boolean(nodex?.reminder));
+  const [remindAt, setRemindAt] = useState<string | null>(nodex?.reminder?.remindAt ?? null);
+  const refreshLink = useRefreshLink();
   const [task, setTask] = useState<TaskInput | null>(
     nodex?.task ? { status: nodex.task.status, dueAt: nodex.task.dueAt } : defaultTask ? { status: "todo", dueAt: null } : null,
   );
@@ -91,9 +136,16 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
           .map((key) => [key, input[key]]),
       );
       if (tags.join() !== nodex.tags.join()) changes.tags = tags;
+      const reminderChange = !reminderOn
+        ? nodex.reminder
+          ? null
+          : undefined
+        : remindAt && remindAt !== nodex.reminder?.remindAt
+          ? remindAt
+          : undefined;
       const taskChanged = task?.status !== nodex.task?.status || task?.dueAt !== nodex.task?.dueAt;
       updateNodex.mutate(
-        { id: nodex.id, changes, groupIds, previousGroupIds: nodex.groupIds, task: taskChanged ? task : undefined },
+        { id: nodex.id, changes, groupIds, previousGroupIds: nodex.groupIds, task: taskChanged ? task : undefined, reminder: reminderChange },
         {
           onSuccess: () => {
             toast.success("Cambios guardados");
@@ -106,7 +158,7 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
     }
 
     createNodex.mutate(
-      { type: input.url ? "link" : "note", ...input, task: task ?? undefined },
+      { type: input.url ? "link" : "note", ...input, task: task ?? undefined, reminder: reminderOn && remindAt ? remindAt : undefined },
       {
         onSuccess: ({ nodex: saved, duplicates }) => {
           if (duplicates.length > 0) {
@@ -208,16 +260,7 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
           <span className="text-sm font-medium" id="nodex-task">
             Tarea
           </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={task !== null}
-            aria-labelledby="nodex-task"
-            onClick={() => setTask(task ? null : { status: "todo", dueAt: null })}
-            className={cn("relative h-6 w-11 rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50", task ? "bg-primary" : "bg-muted-foreground/30")}
-          >
-            <span className={cn("absolute top-1 left-1 size-4 rounded-full bg-white transition-transform", task && "translate-x-5")} />
-          </button>
+          <Switch checked={task !== null} labelledBy="nodex-task" onChange={() => setTask(task ? null : { status: "todo", dueAt: null })} />
         </div>
         {task && (
           <div className="grid gap-3">
@@ -252,6 +295,66 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
           </div>
         )}
       </div>
+
+      <div role="group" aria-labelledby="nodex-reminder" className="grid gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium" id="nodex-reminder">
+            Recordatorio
+          </span>
+          <Switch checked={reminderOn} labelledBy="nodex-reminder" onChange={() => setReminderOn(!reminderOn)} />
+        </div>
+        {reminderOn && (
+          <div className="grid gap-3">
+            <div className="flex flex-wrap gap-2">
+              {REMINDER_SHORTCUTS.map(({ label, at }) => (
+                <button key={label} type="button" onClick={() => setRemindAt(at().toISOString())} className={cn(toggleClass, "hover:bg-muted")}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Label htmlFor="nodex-remind-at">Avisarme el</Label>
+              <Input
+                id="nodex-remind-at"
+                type="datetime-local"
+                value={remindAt ? toDateTimeInput(remindAt) : ""}
+                onChange={(event) => setRemindAt(event.target.value ? fromDateTimeInput(event.target.value) : null)}
+                className="w-auto"
+              />
+            </div>
+            {nodex?.reminder && remindAt === nodex.reminder.remindAt && new Date(remindAt) <= new Date() && (
+              <p className="text-sm text-muted-foreground">
+                {nodex.reminder.sentAt ? `Avisado el ${formatDateTime(remindAt)}. Elige otra fecha para volver a avisarte.` : "Pendiente de aviso."}
+              </p>
+            )}
+            {fieldError("remindAt")}
+          </div>
+        )}
+      </div>
+
+      {nodex?.url && (nodex.linkPreview?.status === "broken" || nodex.linkPreview?.status === "unreachable") && (
+        <div className="grid gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm">
+          <p className="font-medium text-destructive">
+            {nodex.linkPreview.status === "broken" ? "Este enlace está roto" : "Este enlace no responde"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={refreshLink.isPending} onClick={() =>
+                refreshLink.mutate(nodex.id, {
+                  onSuccess: ({ preview }) => toast(preview.status === "ok" ? "El enlace vuelve a funcionar" : "El enlace sigue sin funcionar"),
+                })
+              }>
+              {refreshLink.isPending && <Spinner />} Comprobar ahora
+            </Button>
+            {nodex.linkPreview.archiveUrl && (
+              <Button type="button" variant="outline" size="sm" asChild>
+                <a href={nodex.linkPreview.archiveUrl} target="_blank" rel="noreferrer">
+                  Ver copia
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {groups.data && groups.data.length > 0 && (
         <fieldset className="grid gap-1.5">
