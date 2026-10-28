@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCreateGroup, useDeleteGroup, useGroups, useRenameGroup } from "@/lib/queries/groups";
+import { useRefreshing, useRefreshSuggestions } from "@/lib/queries/suggestions";
 import type { BoardFilter, Group } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,8 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
   const createGroup = useCreateGroup();
   const renameGroup = useRenameGroup();
   const deleteGroup = useDeleteGroup();
+  const refreshSuggestions = useRefreshSuggestions();
+  const refreshing = useRefreshing();
   const [creating, setCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Group | null>(null);
@@ -78,13 +81,21 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
       <button type="button" className={cn(chipClass, chipState(value.kind === "all"))} onClick={() => onChange({ kind: "all" })}>
         Todos
       </button>
-      <button
-        type="button"
-        className={cn(chipClass, chipState(value.kind === "orphans"))}
-        onClick={() => onChange({ kind: "orphans" })}
-      >
-        Huérfanos
-      </button>
+      <div className={cn(chipClass, chipState(value.kind === "orphans"), "pr-1")}>
+        <button type="button" onClick={() => onChange({ kind: "orphans" })}>
+          Huérfanos
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger aria-label="Opciones de Huérfanos" className="rounded-full p-1 hover:bg-black/10">
+            <MoreHorizontal className="size-3.5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem disabled={refreshing} onSelect={() => refreshSuggestions.mutate()}>
+              Revisar con IA
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {groups.data?.map((group) => {
         if (renamingId === group.id) {

@@ -60,15 +60,15 @@ export function useSearch(q: string) {
   });
 }
 
-function useInvalidateNodexs() {
+export function useInvalidateNodexs() {
   const queryClient = useQueryClient();
 
-  return (id?: string) => {
-    for (const key of ["nodexs", "groups", "search", "related", "tags"]) {
-      queryClient.invalidateQueries({ queryKey: [key] });
-    }
-    if (id) queryClient.invalidateQueries({ queryKey: ["nodex", id] });
-  };
+  return (id?: string) =>
+    Promise.all(
+      [["nodexs"], ["groups"], ["search"], ["related"], ["tags"], ...(id ? [["nodex", id]] : [])].map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    );
 }
 
 export function useCreateNodex() {

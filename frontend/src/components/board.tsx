@@ -7,6 +7,7 @@ import { NodexDialog } from "@/components/nodex-dialog";
 import { NodexGrid } from "@/components/nodex-grid";
 import { Tour } from "@/components/tour";
 import { SortMenu } from "@/components/sort-menu";
+import { SuggestionsButton } from "@/components/suggestions-button";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { useGroups } from "@/lib/queries/groups";
@@ -96,6 +97,7 @@ export function Board({ openId }: { openId?: string }) {
         <>
           <div className="flex min-w-0 items-center gap-3">
             <GroupFilter value={filter} onChange={(f) => setQuery({ ...query, filter: f })} />
+            <SuggestionsButton onOpen={openNodex} />
             <SortMenu sort={query.sort} priority={query.priority} onChange={(v) => setQuery({ ...query, ...v })} />
           </div>
           <NodexGrid

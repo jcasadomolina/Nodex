@@ -49,6 +49,7 @@ Cada dato tiene una **clave** en la caché:
 | `["nodexs", filtros]` | `GET /nodexs` (de 50 en 50, con `useInfiniteQuery`) |
 | `["search", texto]` | `GET /nodexs/search` |
 | `["nodex", id]`, `["related", id]` | Un Nodex y sus relacionados |
+| `["nodexs", "suggestions"]` | `GET /suggestions` (cuelga de `nodexs` para recargarse al guardar un Nodex) |
 
 Después de crear, editar o borrar, se **invalidan** las claves afectadas y TanStack Query vuelve a pedirlas. Si cualquier petición devuelve `401` (sesión caducada), se cierra la sesión en el backend, que borra la cookie, y se va a `/login?expired=1`. Cerrar antes la sesión evita un bucle: con la cookie todavía puesta, `proxy.ts` devolvería al usuario al panel.
 
@@ -90,6 +91,16 @@ El layout de la app manda aquí a quien no ha completado el tutorial (`tutorialC
 ## Etiquetas (HU-13)
 
 En la ventana del Nodex, el campo "Etiquetas" (`components/tag-input.tsx`) convierte lo que escribes en una etiqueta al pulsar `Enter` o escribir una coma, con la misma normalización que el backend. Las sugerencias salen de `GET /api/tags` con un `<datalist>`, el autocompletado nativo del navegador. Las tarjetas muestran las etiquetas como `#cocina`, y la búsqueda del panel también encuentra por etiqueta.
+
+## Sugerencias de la IA (`RF-04.2`)
+
+Al guardar un Nodex huérfano, el backend busca el grupo al que más se parece y, si destaca claramente, guarda una sugerencia. En el panel, junto a "Ordenar y filtrar", aparece un botón ✨ con el número de sugerencias pendientes (si no hay ninguna, no se muestra). Abre un Popover (`components/suggestions-button.tsx`) con una fila por sugerencia, "Título → Grupo":
+
+- **✓ Aceptar** llama a `POST /suggestions/:id/accept` y mete el Nodex en el grupo.
+- **✕ Rechazar** llama a `POST /suggestions/:id/reject`; la IA no vuelve a proponer ese grupo para ese Nodex y busca otro.
+- **Revisar huérfanos** (al pie del Popover y en el menú `…` del filtro "Huérfanos") llama a `POST /suggestions/refresh`, que vuelve a revisar todos los huérfanos. Sirve para los Nodexs guardados antes de que existiera su grupo. Mientras trabaja, un aviso con rueda dice "Revisando huérfanos…".
+
+Después de cada acción se invalidan las mismas claves que al editar un Nodex, así que el panel, los contadores de los grupos y el grafo se actualizan solos.
 
 ## Vista gráfica (`/grafo`, `RF-04.5`)
 

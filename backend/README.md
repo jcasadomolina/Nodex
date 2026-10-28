@@ -92,7 +92,7 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `GET /api/suggestions` | `200 { suggestions }`: sugerencias de la IA pendientes, con el Nodex y el grupo propuesto |
 | `POST /api/suggestions/refresh` | Calcula los vectores que falten y revisa todos los huérfanos. `200 { reviewed, pending }` |
 | `POST /api/suggestions/:id/accept` | `204`. Mete el Nodex en el grupo sugerido |
-| `POST /api/suggestions/:id/reject` | `204`. Descarta la sugerencia; ese grupo no se vuelve a proponer para ese Nodex |
+| `POST /api/suggestions/:id/reject` | `204`. Descarta la sugerencia; ese grupo no se vuelve a proponer para ese Nodex. La búsqueda de otro grupo sigue en segundo plano |
 | `PUT /api/me/tutorial` | Body `{ version }` (entero ≥ 1). `200 { tutorialCompletedVersion }`. Marca qué versión del tutorial ha visto el usuario |
 | `GET /api/auth/google` · `GET /api/auth/github` | Redirige al login del proveedor. `503` si no está configurado |
 | `GET /api/auth/google/callback` · `GET /api/auth/github/callback` | El proveedor vuelve aquí. Inicia sesión y redirige a `APP_URL`, o a `APP_URL/login?error=<proveedor>` si falla |
