@@ -107,6 +107,18 @@ Al guardar un Nodex huérfano, el backend busca el grupo al que más se parece y
 
 Después de cada acción se invalidan las mismas claves que al editar un Nodex, así que el panel, los contadores de los grupos y el grafo se actualizan solos.
 
+### Grupos nuevos (`RF-04.3`)
+
+"Revisar huérfanos" también busca huérfanos parecidos entre sí y propone crear un grupo con ellos. Sin LLM:
+
+1. **Parecido:** la similitud de los embeddings, más 0,3 si los dos Nodexs comparten una palabra del título o una etiqueta (la misma idea que la búsqueda híbrida). Con títulos cortos, el modelo solo daba similitudes de 0,3 a 0,5 entre temas claramente iguales, y algo de ruido entre temas distintos; la palabra en común separa bien unos de otros.
+2. **Agrupación en estrella:** el huérfano con más vecinos parecidos (≥ 0,55) forma un grupo con ellos; se repite con los que quedan. Solo cuentan los grupos de 3 o más.
+3. **Nombre:** la etiqueta que comparten al menos la mitad o, si no, la palabra que más se repite en los títulos, sin palabras vacías ni nombres de grupos que ya existen.
+
+Para que el cálculo no se dispare, solo se miran los 500 huérfanos más recientes. Un bloqueo de PostgreSQL por usuario (`pg_advisory_xact_lock`) evita que dos revisiones o una revisión y una aceptación a la vez dupliquen o mezclen propuestas.
+
+En el Popover ✨, el apartado "Grupos nuevos" deja cambiar el nombre antes de pulsar "Crear grupo". "Rechazar" hace que esos Nodexs no vuelvan a proponerse. Las funciones de agrupar y poner nombre son puras y tienen tests (`backend/src/modules/ai/new-groups.test.ts`, con `npx tsx --test`).
+
 ## Tareas (`/tareas`, `RF-12.4` a `RF-12.6`)
 
 Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualquier Nodex puede ser una tarea: en su ventana, el interruptor "Tarea" muestra el estado (Pendiente, En curso, Hecha) y una fecha límite opcional. La tarea se guarda dentro del mismo guardado del Nodex (`PUT` o `DELETE /tasks/:id`, solo si ha cambiado), así que hay un único botón y un único error. Las tarjetas del panel llevan la etiqueta "Tarea · 3 nov" o "Hecha".

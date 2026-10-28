@@ -1,6 +1,8 @@
 import { setTimeout as wait } from "node:timers/promises";
 import { embed, toVector } from "../../lib/embeddings.js";
+import type { Prisma } from "../../../generated/prisma/client.js";
 import { prisma } from "../../lib/prisma.js";
+import { boostPairs, clusterByNeighbors, MIN_NEW_GROUP_SIZE, MIN_PAIR_SIMILARITY, suggestName, type Pair } from "./new-groups.js";
 
 export const MIN_SIMILARITY = 0.35;
 export const MIN_MARGIN = 0.1;
@@ -184,4 +186,66 @@ export async function searchNodexs(userId: string, query: string, limit: number)
     ORDER BY score DESC
     LIMIT ${limit}
   `;
+}
+
+export const MAX_NEW_GROUP_CANDIDATES = 500;
+
+export function lockNewGroups(tx: Prisma.TransactionClient, userId: string) {
+  return tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`new-groups:${userId}`}))`;
+}
+
+export async function proposeNewGroups(userId: string) {
+  const candidates = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT n.id FROM nodexs n
+    WHERE n.user_id = ${userId}::uuid
+      AND n.deleted_at IS NULL
+      AND n.embedding IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM group_nodexs gn JOIN groups g ON g.id = gn.group_id
+        WHERE gn.nodex_id = n.id AND g.deleted_at IS NULL
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM ai_suggestions s
+        WHERE s.nodex_id = n.id
+          AND (
+            (s.kind = 'assign_group' AND s.status = 'pending'
+              AND EXISTS (SELECT 1 FROM groups sg WHERE sg.id = s.group_id AND sg.deleted_at IS NULL))
+            OR (s.kind = 'new_group' AND s.status = 'rejected')
+          )
+      )
+    ORDER BY n.created_at DESC, n.id
+    LIMIT ${MAX_NEW_GROUP_CANDIDATES}
+  `;
+  const ids = candidates.map((c) => c.id);
+
+  const pairs = ids.length < MIN_NEW_GROUP_SIZE ? [] : await prisma.$queryRaw<Pair[]>`
+    SELECT a.id AS a, b.id AS b, (1 - (a.embedding <=> b.embedding))::float AS similarity
+    FROM nodexs a JOIN nodexs b ON a.id < b.id
+    WHERE a.id = ANY(${ids}::uuid[])
+      AND b.id = ANY(${ids}::uuid[])
+      AND 1 - (a.embedding <=> b.embedding) >= ${MIN_PAIR_SIMILARITY}::float
+  `;
+  const details = await prisma.nodex.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, title: true, tags: { select: { name: true } } },
+  });
+  const byId = new Map(details.map((n) => [n.id, { title: n.title, tags: n.tags.map((t) => t.name) }]));
+  const clusters = clusterByNeighbors(ids, boostPairs(byId, pairs));
+  const groups = await prisma.group.findMany({ where: { userId, deletedAt: null }, select: { name: true } });
+  const taken = new Set(groups.map((g) => g.name.toLowerCase()));
+
+  const rows = clusters.flatMap((members) => {
+    const name = suggestName(
+      members.map((id) => byId.get(id)!),
+      taken,
+    );
+    taken.add(name.toLowerCase());
+    return members.map((nodexId) => ({ userId, nodexId, kind: "new_group", suggestedName: name }));
+  });
+  await prisma.$transaction(async (tx) => {
+    await lockNewGroups(tx, userId);
+    await tx.aiSuggestion.deleteMany({ where: { userId, kind: "new_group", status: "pending" } });
+    await tx.aiSuggestion.createMany({ data: rows });
+  });
+  return clusters.length;
 }

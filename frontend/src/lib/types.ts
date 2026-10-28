@@ -19,6 +19,11 @@ export type Group = {
   nodexCount?: number;
 };
 
+export type NewGroupProposal = {
+  name: string;
+  nodexs: { id: string; title: string; type: "note" | "link" }[];
+};
+
 export type TaskStatus = "todo" | "doing" | "done";
 
 export type Task = {
