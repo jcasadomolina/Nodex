@@ -19,6 +19,16 @@ export type Group = {
   nodexCount?: number;
 };
 
+export type TaskStatus = "todo" | "doing" | "done";
+
+export type Task = {
+  status: TaskStatus;
+  dueAt: string | null;
+  completedAt: string | null;
+};
+
+export type TaskInput = Pick<Task, "status" | "dueAt">;
+
 export type LinkPreview = {
   status: string;
   title: string | null;
@@ -39,6 +49,11 @@ export type Nodex = {
   createdAt: string;
   updatedAt: string;
   linkPreview: LinkPreview | null;
+  task: Task | null;
+};
+
+export type TaskCard = Task & {
+  nodex: Pick<Nodex, "id" | "title" | "type" | "url" | "priority">;
 };
 
 export type NodexMatch = Nodex & { similarity: number };

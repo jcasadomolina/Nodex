@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Settings, Waypoints } from "lucide-react";
+import { LayoutGrid, Settings, SquareCheckBig, Waypoints } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
@@ -13,6 +13,7 @@ const itemClass =
 const NAV = [
   { href: "/", label: "Panel", tour: "panel", icon: LayoutGrid, match: (p: string) => p === "/" || p.startsWith("/nodexs") },
   { href: "/grafo", label: "Vista gráfica", tour: "grafo", icon: Waypoints, match: (p: string) => p.startsWith("/grafo") },
+  { href: "/tareas", label: "Tareas", tour: "tareas", icon: SquareCheckBig, match: (p: string) => p.startsWith("/tareas") },
 ];
 
 function NavLinks({ pathname }: { pathname: string | null }) {

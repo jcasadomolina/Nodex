@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
-import { domainOf, looksLikeUrl, PRIORITY_LABELS } from "@/lib/format";
+import { domainOf, fromDateInput, looksLikeUrl, PRIORITY_LABELS, TASK_STATUS_LABELS, toDateInput } from "@/lib/format";
 import { useGroups } from "@/lib/queries/groups";
 import { useCreateNodex, useDeleteNodex, useNodex, useRelated, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
-import type { Nodex, NodexMatch, Priority } from "@/lib/types";
+import type { Nodex, NodexMatch, Priority, TaskInput, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const PRIORITIES: (Priority | null)[] = [null, "low", "medium", "high", "urgent"];
@@ -48,11 +48,12 @@ function NodexList({ nodexs, onOpen }: { nodexs: Nodex[]; onOpen: (id: string) =
 
 type NodexFormProps = {
   nodex?: Nodex;
+  defaultTask?: boolean;
   onDone: () => void;
   onOpenNodex: (id: string) => void;
 };
 
-function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
+function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFormProps) {
   const groups = useGroups();
   const related = useRelated(nodex?.id);
   const createNodex = useCreateNodex();
@@ -65,6 +66,9 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
   const [priority, setPriority] = useState<Priority | null>(nodex?.priority ?? null);
   const [groupIds, setGroupIds] = useState<string[]>(nodex?.groupIds ?? []);
   const [tags, setTags] = useState<string[]>(nodex?.tags ?? []);
+  const [task, setTask] = useState<TaskInput | null>(
+    nodex?.task ? { status: nodex.task.status, dueAt: nodex.task.dueAt } : defaultTask ? { status: "todo", dueAt: null } : null,
+  );
   const [created, setCreated] = useState<{ id: string; duplicates: NodexMatch[] } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -87,8 +91,9 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
           .map((key) => [key, input[key]]),
       );
       if (tags.join() !== nodex.tags.join()) changes.tags = tags;
+      const taskChanged = task?.status !== nodex.task?.status || task?.dueAt !== nodex.task?.dueAt;
       updateNodex.mutate(
-        { id: nodex.id, changes, groupIds, previousGroupIds: nodex.groupIds },
+        { id: nodex.id, changes, groupIds, previousGroupIds: nodex.groupIds, task: taskChanged ? task : undefined },
         {
           onSuccess: () => {
             toast.success("Cambios guardados");
@@ -101,7 +106,7 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
     }
 
     createNodex.mutate(
-      { type: input.url ? "link" : "note", ...input },
+      { type: input.url ? "link" : "note", ...input, task: task ?? undefined },
       {
         onSuccess: ({ nodex: saved, duplicates }) => {
           if (duplicates.length > 0) {
@@ -198,6 +203,56 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
         </div>
       </fieldset>
 
+      <div role="group" aria-labelledby="nodex-task" className="grid gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium" id="nodex-task">
+            Tarea
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={task !== null}
+            aria-labelledby="nodex-task"
+            onClick={() => setTask(task ? null : { status: "todo", dueAt: null })}
+            className={cn("relative h-6 w-11 rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50", task ? "bg-primary" : "bg-muted-foreground/30")}
+          >
+            <span className={cn("absolute top-1 left-1 size-4 rounded-full bg-white transition-transform", task && "translate-x-5")} />
+          </button>
+        </div>
+        {task && (
+          <div className="grid gap-3">
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(TASK_STATUS_LABELS) as TaskStatus[]).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  aria-pressed={task.status === status}
+                  onClick={() => setTask({ ...task, status })}
+                  className={cn(toggleClass, toggleState(task.status === status))}
+                >
+                  {TASK_STATUS_LABELS[status]}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="nodex-due">Fecha límite</Label>
+              <Input
+                id="nodex-due"
+                type="date"
+                value={task.dueAt ? toDateInput(task.dueAt) : ""}
+                onChange={(event) => setTask({ ...task, dueAt: event.target.value ? fromDateInput(event.target.value) : null })}
+                className="w-auto"
+              />
+              {task.dueAt && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setTask({ ...task, dueAt: null })}>
+                  Quitar fecha
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {groups.data && groups.data.length > 0 && (
         <fieldset className="grid gap-1.5">
           <legend className="mb-1.5 text-sm font-medium">Grupos</legend>
@@ -259,12 +314,13 @@ function NodexForm({ nodex, onDone, onOpenNodex }: NodexFormProps) {
 
 type NodexDialogProps = {
   id: string | null;
+  defaultTask?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenNodex: (id: string) => void;
 };
 
-export function NodexDialog({ id, open, onOpenChange, onOpenNodex }: NodexDialogProps) {
+export function NodexDialog({ id, defaultTask, open, onOpenChange, onOpenNodex }: NodexDialogProps) {
   const nodex = useNodex(id ?? undefined);
   const missing = nodex.error instanceof ApiError && nodex.error.status === 404;
   const close = () => onOpenChange(false);
@@ -276,7 +332,7 @@ export function NodexDialog({ id, open, onOpenChange, onOpenNodex }: NodexDialog
           <DialogTitle>{id ? "Nodex" : "Nuevo Nodex"}</DialogTitle>
           <DialogDescription className="sr-only">{id ? "Ver y editar el Nodex" : "Crear una nota o un enlace"}</DialogDescription>
         </DialogHeader>
-        {!id && <NodexForm key="new" onDone={close} onOpenNodex={onOpenNodex} />}
+        {!id && <NodexForm key="new" defaultTask={defaultTask} onDone={close} onOpenNodex={onOpenNodex} />}
         {id && missing && <p className="text-muted-foreground">Este Nodex ya no existe.</p>}
         {id && nodex.isPending && <Spinner className="mx-auto my-8 size-8 text-primary" />}
         {id && nodex.data && <NodexForm key={nodex.data.id} nodex={nodex.data} onDone={close} onOpenNodex={onOpenNodex} />}

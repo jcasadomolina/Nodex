@@ -23,6 +23,7 @@ function sample(id: string, title: string, extra: Partial<Nodex> = {}): Nodex {
     createdAt: "",
     updatedAt: "",
     linkPreview: null,
+    task: null,
     ...extra,
   };
 }

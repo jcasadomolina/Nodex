@@ -14,6 +14,7 @@ Esta primera versión es el **esqueleto funcional**: login, registro, panel con 
 | Datos | **TanStack Query 5** | Caché de las respuestas, estados de carga y error, y refresco tras cada cambio |
 | Tema | **next-themes** | Modo claro, oscuro o el del sistema, recordado en el navegador |
 | Avisos | **Sonner** | Mensajes breves en una esquina (*toasts*) |
+| Arrastrar y soltar | **dnd-kit** | El tablero de tareas. Funciona con ratón, dedo y teclado, y anuncia los movimientos a los lectores de pantalla |
 
 ## Cómo se conecta con el backend
 
@@ -49,6 +50,7 @@ Cada dato tiene una **clave** en la caché:
 | `["nodexs", filtros]` | `GET /nodexs` (de 50 en 50, con `useInfiniteQuery`) |
 | `["search", texto]` | `GET /nodexs/search` |
 | `["nodex", id]`, `["related", id]` | Un Nodex y sus relacionados |
+| `["tasks", "board"]`, `["tasks", "calendar", desde]` | `GET /tasks/board` y `GET /tasks/calendar` |
 | `["nodexs", "suggestions"]` | `GET /suggestions` (cuelga de `nodexs` para recargarse al guardar un Nodex) |
 
 Después de crear, editar o borrar, se **invalidan** las claves afectadas y TanStack Query vuelve a pedirlas. Si cualquier petición devuelve `401` (sesión caducada), se cierra la sesión en el backend, que borra la cookie, y se va a `/login?expired=1`. Cerrar antes la sesión evita un bucle: con la cookie todavía puesta, `proxy.ts` devolvería al usuario al panel.
@@ -65,6 +67,8 @@ Después de crear, editar o borrar, se **invalidan** las claves afectadas y TanS
 | `/` | Panel: barra superior con la ubicación y la búsqueda, etiquetas de grupo, "Ordenar y filtrar" y la rejilla de Nodexs |
 | `/nodexs/[id]` | El panel con la ventana de ese Nodex abierta (las notificaciones de recordatorio enlazan aquí) |
 | `/perfil` | Provisional: nombre, correo y cuentas vinculadas |
+| `/grafo` | Vista gráfica |
+| `/tareas` | Tablero y calendario de tareas |
 
 Al abrir un Nodex desde el panel, la URL cambia con `history.pushState`, sin navegar: el panel no se desmonta y conserva los filtros.
 
@@ -101,6 +105,20 @@ Al guardar un Nodex huérfano, el backend busca el grupo al que más se parece y
 - **Revisar huérfanos** (al pie del Popover y en el menú `…` del filtro "Huérfanos") llama a `POST /suggestions/refresh`, que vuelve a revisar todos los huérfanos. Sirve para los Nodexs guardados antes de que existiera su grupo. Mientras trabaja, un aviso con rueda dice "Revisando huérfanos…".
 
 Después de cada acción se invalidan las mismas claves que al editar un Nodex, así que el panel, los contadores de los grupos y el grafo se actualizan solos.
+
+## Tareas (`/tareas`, `RF-12.4` a `RF-12.6`)
+
+Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualquier Nodex puede ser una tarea: en su ventana, el interruptor "Tarea" muestra el estado (Pendiente, En curso, Hecha) y una fecha límite opcional. La tarea se guarda dentro del mismo guardado del Nodex (`PUT` o `DELETE /tasks/:id`, solo si ha cambiado), así que hay un único botón y un único error. Las tarjetas del panel llevan la etiqueta "Tarea · 3 nov" o "Hecha".
+
+| Pieza | Qué hace |
+|-------|----------|
+| `app/(app)/tareas/page.tsx` | Pestañas Tablero y Calendario, botón + (abre la ventana con la tarea ya activada) y estados vacío, de carga y de error |
+| `components/task-board.tsx` | Tres columnas con **dnd-kit**. Copia las columnas a un estado local para mover la tarjeta al momento (actualización optimista) y luego llama a `POST /tasks/:id/move { status, index }`. Si falla, vuelve a los datos del servidor |
+| `components/task-calendar.tsx` | Rejilla de 6 semanas (de lunes a domingo) hecha con CSS grid, sin librería. En el móvil, lista de los días con tareas |
+| `components/task-card.tsx` | Tarjeta del tablero; la fecha va en rojo si ya pasó |
+
+- **Arrastrar:** con el ratón empieza tras moverse 5 px (así un clic abre el Nodex); con el dedo, tras mantener 200 ms (así se puede seguir haciendo scroll); con el teclado, espacio para coger y soltar, flechas para mover, `Esc` para cancelar e `Intro` para abrir.
+- **Fechas:** el `<input type="date">` da `AAAA-MM-DD`; se guarda como las 00:00 de ese día en hora local (`fromDateInput`) y se lee con `toLocaleDateString("sv-SE")` (`toDateInput`), que devuelve el mismo formato. Así la tarea cae en el mismo día en cualquier pantalla.
 
 ## Vista gráfica (`/grafo`, `RF-04.5`)
 

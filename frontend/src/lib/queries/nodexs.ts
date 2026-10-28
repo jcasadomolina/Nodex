@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "../api";
-import type { BoardFilter, Nodex, NodexMatch, NodexResult, Priority } from "../types";
+import type { BoardFilter, Nodex, NodexMatch, NodexResult, Priority, TaskInput } from "../types";
 
 export type NodexQuery = {
   filter: BoardFilter;
@@ -65,7 +66,7 @@ export function useInvalidateNodexs() {
 
   return (id?: string) =>
     Promise.all(
-      [["nodexs"], ["groups"], ["search"], ["related"], ["tags"], ...(id ? [["nodex", id]] : [])].map((queryKey) =>
+      [["nodexs"], ["groups"], ["search"], ["related"], ["tags"], ["tasks"], ...(id ? [["nodex", id]] : [])].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );
@@ -75,9 +76,16 @@ export function useCreateNodex() {
   const invalidate = useInvalidateNodexs();
 
   return useMutation({
-    mutationFn: (input: NodexInput & { groupIds: string[] }) =>
-      api<{ nodex: Nodex; duplicates: NodexMatch[] }>("/nodexs", { method: "POST", body: input }),
-    onSuccess: () => invalidate(),
+    mutationFn: async ({ task, ...input }: NodexInput & { groupIds: string[]; task?: TaskInput }) => {
+      const result = await api<{ nodex: Nodex; duplicates: NodexMatch[] }>("/nodexs", { method: "POST", body: input });
+      if (task) {
+        await api(`/tasks/${result.nodex.id}`, { method: "PUT", body: task }).catch(() =>
+          toast.error("Nodex creado, pero no se ha podido guardar la tarea"),
+        );
+      }
+      return result;
+    },
+    onSettled: () => invalidate(),
   });
 }
 
@@ -85,11 +93,12 @@ export function useUpdateNodex() {
   const invalidate = useInvalidateNodexs();
 
   return useMutation({
-    mutationFn: async ({ id, changes, groupIds, previousGroupIds }: {
+    mutationFn: async ({ id, changes, groupIds, previousGroupIds, task }: {
       id: string;
       changes: Partial<Omit<NodexInput, "type">>;
       groupIds: string[];
       previousGroupIds: string[];
+      task?: TaskInput | null;
     }) => {
       if (Object.keys(changes).length > 0) await api(`/nodexs/${id}`, { method: "PATCH", body: changes });
       const added = groupIds.filter((g) => !previousGroupIds.includes(g));
@@ -98,6 +107,8 @@ export function useUpdateNodex() {
         ...added.map((g) => api(`/groups/${g}/nodexs`, { method: "POST", body: { nodexId: id } })),
         ...removed.map((g) => api(`/groups/${g}/nodexs/${id}`, { method: "DELETE" })),
       ]);
+      if (task === null) await api(`/tasks/${id}`, { method: "DELETE" });
+      if (task) await api(`/tasks/${id}`, { method: "PUT", body: task });
     },
     onSettled: (_data, _error, { id }) => invalidate(id),
   });
