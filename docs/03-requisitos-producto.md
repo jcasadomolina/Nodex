@@ -48,6 +48,7 @@
 - **RF-05.7**: El sistema debe permitir buscar Nodexs por significado, aunque no compartan palabras con la búsqueda.
 - **RF-05.8**: El sistema debe mostrar, al abrir un Nodex, otros Nodexs relacionados con su contenido.
 - **RF-05.9**: El sistema debe avisar cuando un Nodex nuevo sea igual o casi igual a otro ya guardado.
+- **RF-05.10**: El sistema debe mostrar en los Nodexs con enlace un resumen automático de unas 3 frases del contenido de la página, elegidas con los embeddings que ya usa la aplicación (sin LLM de pago).
 
 ### HU-10: Tutorial de bienvenida
 
@@ -88,6 +89,46 @@
 - **RF-13.3**: El sistema debe sugerir las etiquetas que el usuario ya usa mientras escribe una.
 - **RF-13.4**: El sistema debe mostrar las etiquetas en las tarjetas y permitir encontrar los Nodexs por etiqueta en la búsqueda.
 
+### HU-14: Modo demo
+
+> Pensado para el portfolio: quien visite la aplicación debe poder probarla sin registrarse.
+
+- **RF-14.1**: El sistema debe ofrecer en la portada un botón "Probar sin registrarse" que inicie sesión en una cuenta temporal nueva.
+- **RF-14.2**: La cuenta temporal debe incluir grupos, Nodexs y etiquetas de ejemplo que muestren las funciones principales (IA, grafo, prioridades).
+- **RF-14.3**: El sistema debe mostrar un aviso visible de que se está en modo demo y ofrecer crear una cuenta de verdad.
+- **RF-14.4**: El sistema debe borrar las cuentas temporales y todos sus datos 24 horas después de crearlas.
+
+### HU-15: Papelera
+
+- **RF-15.1**: El sistema debe mostrar los Nodexs y grupos borrados en una papelera.
+- **RF-15.2**: El sistema debe permitir restaurar un elemento de la papelera, con sus etiquetas y sus grupos.
+- **RF-15.3**: El sistema debe permitir vaciar la papelera, previa confirmación.
+- **RF-15.4**: El sistema debe borrar definitivamente los elementos que lleven más de 30 días en la papelera.
+
+### HU-16: Importar y exportar
+
+- **RF-16.1**: El sistema debe permitir importar los marcadores exportados desde el navegador (archivo HTML): cada carpeta se convierte en un grupo y cada marcador en un Nodex con enlace.
+- **RF-16.2**: El sistema debe permitir exportar todos los datos del usuario a JSON y a Markdown (un archivo `.md` por Nodex, dentro de un `.zip`).
+- **RF-16.3**: El sistema debe permitir importar un JSON exportado desde Nodex.
+- **RF-16.4**: El sistema debe mostrar el progreso de una importación y avisar de los elementos que no se hayan podido importar o que ya existían.
+
+### HU-17: Paleta de comandos
+
+- **RF-17.1**: El sistema debe abrir con `Ctrl+K` (`Cmd+K` en Mac) un buscador global que encuentre Nodexs y grupos.
+- **RF-17.2**: La paleta debe permitir lanzar acciones: crear un Nodex, ir al grafo, abrir un grupo y abrir los ajustes.
+- **RF-17.3**: La paleta debe manejarse por completo con el teclado.
+
+### HU-18: Guardar desde el navegador
+
+- **RF-18.1**: El sistema debe ofrecer un *bookmarklet* "Guardar en Nodex" que se instale arrastrándolo a la barra de marcadores.
+- **RF-18.2**: Al pulsarlo en cualquier web, debe abrir una ventana de Nodex con el título y la URL de la página ya rellenados, para guardarla como Nodex.
+
+### HU-19: Compartir grupos
+
+- **RF-19.1**: El sistema debe permitir generar un enlace público de solo lectura para un grupo.
+- **RF-19.2**: Quien abra el enlace debe ver los Nodexs del grupo sin necesidad de cuenta y sin poder modificarlos.
+- **RF-19.3**: El sistema debe permitir desactivar el enlace o generar uno nuevo, que invalida el anterior.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos
@@ -101,6 +142,7 @@
 - **RNF-07.2**: Para conseguir una web usable se utilizarán las skills que se proporcionen.
 - **RNF-07.3**: Cualquier decisión notoria (color, tipografía, ubicación de elementos…) se consultará antes de aplicar el cambio.
 - **RNF-07.4**: La interfaz debe ser responsiva y adaptarse a móviles, tablets y monitores de escritorio.
+- **RNF-07.5**: La interfaz debe estar disponible en español e inglés, con el idioma elegido en los ajustes.
 
 ### HU-08: Dependencias y APIs de terceros
 

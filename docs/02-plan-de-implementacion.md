@@ -20,6 +20,22 @@
 3. **Frontend**: tecnologías, organización de elementos, diseño, color, usabilidad…
 4. **Pruebas**: tests unitarios, de integración y end-to-end; comprobar que todo funciona.
 
+## Hoja de ruta de funcionalidades
+
+Orden acordado el 28/10/2026 para terminar la aplicación web. Cada punto se diseña y se aprueba antes de implementarlo.
+
+1. **Pendiente de la hoja de ruta anterior**: personalidades en la interfaz (tareas, calendario, recordatorios y salud de enlaces, HU-12), perfil completo (HU-02), grupos nuevos con IA (`RF-04.3`) y las ideas aprobadas *Redescubre* y *Leer más tarde*, que se numerarán como HU al diseñarlas.
+2. **Papelera** (HU-15).
+3. **Resumen automático de enlaces** (`RF-05.10`).
+4. **Importar y exportar** (HU-16).
+5. **Guardar desde el navegador** (HU-18).
+6. **Compartir grupos** (HU-19).
+7. **Paleta de comandos** (HU-17).
+8. **Interfaz en inglés** (`RNF-07.5`): al final, cuando ya no se añaden pantallas.
+9. **Modo demo** (HU-14): justo antes de alojar la aplicación, para que los datos de ejemplo enseñen todo.
+
+Después: bloque de pruebas, alojamiento, PWA (`RF-05.6`, notificaciones push), aplicación de escritorio, APK y distribución.
+
 ## Repositorio y flujo Git
 
 - Todo el proceso queda reflejado en este repositorio de GitHub, que será profesional y acabará siendo público.
