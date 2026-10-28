@@ -89,6 +89,6 @@ suggestionsRouter.post("/:id/reject", async (req, res) => {
     where: { id: suggestion.id },
     data: { status: "rejected", resolvedAt: new Date() },
   });
-  await suggestGroup(userId, suggestion.nodexId);
+  suggestGroup(userId, suggestion.nodexId).catch((err) => console.error(`Error de IA con el Nodex ${suggestion.nodexId}:`, err));
   res.status(204).end();
 });

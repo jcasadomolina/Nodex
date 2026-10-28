@@ -46,3 +46,11 @@ export type NodexMatch = Nodex & { similarity: number };
 export type NodexResult = Nodex & { score: number };
 
 export type BoardFilter = { kind: "all" } | { kind: "orphans" } | { kind: "group"; groupId: string };
+
+export type Suggestion = {
+  id: string;
+  kind: "assign_group";
+  createdAt: string;
+  nodex: { id: string; title: string; type: Nodex["type"] };
+  group: { id: string; name: string };
+};
