@@ -89,8 +89,10 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `PUT /api/me/avatar` | Formulario `multipart/form-data` con el campo `avatar` (JPG, PNG, WebP o GIF, máx. 5 MB). `200 { user }`. `413` si pesa demasiado, `502` si Cloudinary falla, `503` si no está configurado |
 | `DELETE /api/me/avatar` | `200 { user }` con `avatarUrl: null` |
 | `DELETE /api/me/providers/:provider` | `204`. Desvincula `google` o `github`. `409` si es el único método de inicio de sesión |
-| `GET /api/suggestions` | `200 { suggestions }`: sugerencias de la IA pendientes, con el Nodex y el grupo propuesto |
-| `POST /api/suggestions/refresh` | Calcula los vectores que falten y revisa todos los huérfanos. `200 { reviewed, pending }` |
+| `GET /api/suggestions` | `200 { suggestions, newGroups }`: sugerencias de la IA pendientes (Nodex → grupo existente) y propuestas de grupos nuevos (`{ name, nodexs }`) |
+| `POST /api/suggestions/refresh` | Calcula los vectores que falten y revisa todos los huérfanos y recalcula las propuestas de grupos nuevos. `200 { reviewed, pending, newGroups }` |
+| `POST /api/suggestions/new-groups/accept` | Body `{ name, groupName }`. `201 { group }`: crea el grupo y mete los Nodexs de la propuesta que siguen huérfanos. `409` si ya existe un grupo con ese nombre |
+| `POST /api/suggestions/new-groups/reject` | Body `{ name }`. `204`. Esos Nodexs no vuelven a salir en propuestas de grupo nuevo |
 | `POST /api/suggestions/:id/accept` | `204`. Mete el Nodex en el grupo sugerido |
 | `POST /api/suggestions/:id/reject` | `204`. Descarta la sugerencia; ese grupo no se vuelve a proponer para ese Nodex. La búsqueda de otro grupo sigue en segundo plano |
 | `PUT /api/me/tutorial` | Body `{ version }` (entero ≥ 1). `200 { tutorialCompletedVersion }`. Marca qué versión del tutorial ha visto el usuario |
