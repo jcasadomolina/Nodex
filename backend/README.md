@@ -84,7 +84,7 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/auth/login` | Body `{ email, password }`. `200 { user }` e inicia sesión. `401` si las credenciales no son válidas |
 | `POST /api/auth/logout` | `204`. Cierra la sesión y borra la cookie |
 | `GET /api/auth/me` | `200 { user }` con el usuario de la sesión, o `401` |
-| `GET /api/me` | `200 { user }` con el perfil y `providers` (cuentas vinculadas: `google`, `github`) |
+| `GET /api/me` | `200 { user }` con el perfil, `hasPassword` (si tiene contraseña) y `providers` (cuentas vinculadas: `google`, `github`) |
 | `PATCH /api/me` | Body `{ name }`. `200 { user }` |
 | `PUT /api/me/avatar` | Formulario `multipart/form-data` con el campo `avatar` (JPG, PNG, WebP o GIF, máx. 5 MB). `200 { user }`. `413` si pesa demasiado, `502` si Cloudinary falla, `503` si no está configurado |
 | `DELETE /api/me/avatar` | `200 { user }` con `avatarUrl: null` |

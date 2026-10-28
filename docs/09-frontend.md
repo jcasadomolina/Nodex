@@ -67,7 +67,7 @@ Después de crear, editar o borrar, se **invalidan** las claves afectadas y TanS
 | `/login`, `/registro` | Formulario sobre un degradado naranja, con Google y GitHub. A la derecha queda el hueco del futuro carrusel |
 | `/` | Panel: barra superior con la ubicación y la búsqueda, etiquetas de grupo, "Ordenar y filtrar" y la rejilla de Nodexs |
 | `/nodexs/[id]` | El panel con la ventana de ese Nodex abierta (las notificaciones de recordatorio enlazan aquí) |
-| `/perfil` | Provisional: nombre, correo y cuentas vinculadas |
+| `/perfil` | Foto (subir a Cloudinary o quitar), nombre, correo y cuentas vinculadas (vincular o desvincular) |
 | `/grafo` | Vista gráfica |
 | `/tareas` | Tablero y calendario de tareas |
 
@@ -120,6 +120,13 @@ Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualq
 
 - **Arrastrar:** con el ratón empieza tras moverse 5 px (así un clic abre el Nodex); con el dedo, tras mantener 200 ms (así se puede seguir haciendo scroll); con el teclado, espacio para coger y soltar, flechas para mover, `Esc` para cancelar e `Intro` para abrir.
 - **Fechas:** el `<input type="date">` da `AAAA-MM-DD`; se guarda como las 00:00 de ese día en hora local (`fromDateInput`) y se lee con `toLocaleDateString("sv-SE")` (`toDateInput`), que devuelve el mismo formato. Así la tarea cae en el mismo día en cualquier pantalla.
+
+## Perfil (`/perfil`, HU-02)
+
+- **Foto:** "Cambiar foto" abre un `<input type="file">` oculto. Antes de enviar se comprueba el tipo (JPG, PNG, WebP o GIF) y el tamaño (5 MB como máximo), y se sube con `PUT /me/avatar` como `FormData`; `api()` detecta `FormData` y no le pone `Content-Type`, para que el navegador añada el *boundary*. Sin foto se muestra la inicial (`components/avatar.tsx`), que también aparece en Ajustes.
+- **Nombre:** `PATCH /me`; el botón solo se activa si cambia.
+- **Cuentas:** "Desvincular" pide confirmación. Si es el único método de inicio de sesión (`hasPassword` falso y una sola cuenta vinculada), el botón sale desactivado con la explicación.
+- Tras cada cambio se recargan `["profile"]` y `["me"]`, así que el nombre y la foto se actualizan en toda la app.
 
 ## Avisos: recordatorios y enlaces rotos (`RF-12.3`, `RF-12.7`)
 

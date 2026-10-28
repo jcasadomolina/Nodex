@@ -41,11 +41,11 @@ function updateUser(id: string, data: { name?: string; avatarUrl?: string | null
 meRouter.get("/", async (req, res) => {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: req.session.userId! },
-    select: { ...publicUser, oauthAccounts: { select: { provider: true } } },
+    select: { ...publicUser, passwordHash: true, oauthAccounts: { select: { provider: true } } },
   });
 
-  const { oauthAccounts, ...profile } = user;
-  res.json({ user: { ...profile, providers: oauthAccounts.map((a) => a.provider) } });
+  const { oauthAccounts, passwordHash, ...profile } = user;
+  res.json({ user: { ...profile, hasPassword: passwordHash !== null, providers: oauthAccounts.map((a) => a.provider) } });
 });
 
 meRouter.patch("/", async (req, res) => {
