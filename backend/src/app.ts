@@ -17,6 +17,7 @@ import { pushRouter } from "./modules/push/push.routes.js";
 import { remindersRouter } from "./modules/reminders/reminders.routes.js";
 import { tagsRouter } from "./modules/tags/tags.routes.js";
 import { tasksRouter } from "./modules/tasks/tasks.routes.js";
+import { trashRouter } from "./modules/trash/trash.routes.js";
 
 export const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/tasks", tasksRouter);
 app.use("/api/reminders", remindersRouter);
 app.use("/api/push", pushRouter);
 app.use("/api/links", linksRouter);
+app.use("/api/trash", trashRouter);
 
 app.use(notFound);
 app.use(errorHandler);

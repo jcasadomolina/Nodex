@@ -15,6 +15,7 @@ export async function sendDueReminders() {
       AND r.nodex_id IN (
         SELECT nodex_id FROM reminders
         WHERE sent_at IS NULL
+          AND EXISTS (SELECT 1 FROM nodexs active WHERE active.id = reminders.nodex_id AND active.deleted_at IS NULL)
           AND remind_at <= now()
           AND remind_at > now() - interval '1 day'
         ORDER BY remind_at

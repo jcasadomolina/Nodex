@@ -102,7 +102,7 @@ export function useInvalidateNodexs() {
 
   return (id?: string) =>
     Promise.all(
-      [["nodexs"], ["groups"], ["search"], ["related"], ["tags"], ["tasks"], ["alerts"], ...(id ? [["nodex", id]] : [])].map((queryKey) =>
+      [["nodexs"], ["groups"], ["search"], ["related"], ["tags"], ["tasks"], ["alerts"], ["trash"], ...(id ? [["nodex", id]] : [])].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );

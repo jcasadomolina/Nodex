@@ -24,6 +24,7 @@ import {
   toDateTimeInput,
 } from "@/lib/format";
 import { useRefreshLink } from "@/lib/queries/alerts";
+import { useUndoDelete } from "@/lib/queries/trash";
 import { useGroups } from "@/lib/queries/groups";
 import {
   useCreateNodex,
@@ -122,6 +123,7 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
   const [remindAt, setRemindAt] = useState<string | null>(nodex?.reminder?.remindAt ?? null);
   const refreshLink = useRefreshLink();
   const setReadLater = useSetReadLater();
+  const undoDelete = useUndoDelete();
   const [readLater, setReadLaterOnCreate] = useState(false);
   const [task, setTask] = useState<TaskInput | null>(
     nodex?.task ? { status: nodex.task.status, dueAt: nodex.task.dueAt } : defaultTask ? { status: "todo", dueAt: null } : null,
@@ -188,7 +190,7 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
   function remove(id: string, message: string) {
     deleteNodex.mutate(id, {
       onSuccess: () => {
-        toast.success(message);
+        toast.success(message, { action: { label: "Deshacer", onClick: () => undoDelete("nodexs", id) } });
         onDone();
       },
       onError: () => toast.error("No se ha podido borrar. Inténtalo de nuevo"),

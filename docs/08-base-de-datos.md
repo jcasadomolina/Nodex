@@ -252,7 +252,7 @@ En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcio
 3. **Una tabla por funcionalidad:** el enriquecimiento, las sugerencias y las integraciones van en tablas propias enlazadas a `nodexs`, no como columnas dentro de `nodexs`.
 4. **Texto en vez de `ENUM`** para tipos y estados (`type`, `status`, `source`…). Los valores válidos se comprueban en el backend, y añadir uno no exige tocar la base.
 5. **`metadata` (JSONB)** para probar datos nuevos sin migración. Si un dato se consolida, pasa a ser una columna.
-6. **Borrado lógico** en `nodexs` y `groups`: borrar rellena `deleted_at` en vez de eliminar la fila, lo que deja la puerta abierta a una papelera.
+6. **Borrado lógico** en `nodexs` y `groups`: borrar rellena `deleted_at` en vez de eliminar la fila. La papelera (HU-15) permite restaurarlos o eliminarlos para siempre, y un proceso que corre cada hora elimina definitivamente lo que lleva más de 30 días borrado. El borrado definitivo arrastra en cascada las tablas relacionadas (etiquetas, tarea, recordatorio, vista previa, pertenencia a grupos); las sugerencias de IA que apuntaban a un grupo borrado se quedan sin grupo (`SET NULL`).
 7. **Ramas de Neon:** cada migración se prueba primero en una copia de la base (una rama) antes de aplicarse a la principal.
 
 ## Implementación

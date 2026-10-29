@@ -133,6 +133,14 @@ Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualq
 - **Arrastrar:** con el ratón empieza tras moverse 5 px (así un clic abre el Nodex); con el dedo, tras mantener 200 ms (así se puede seguir haciendo scroll); con el teclado, espacio para coger y soltar, flechas para mover, `Esc` para cancelar e `Intro` para abrir.
 - **Fechas:** el `<input type="date">` da `AAAA-MM-DD`; se guarda como las 00:00 de ese día en hora local (`fromDateInput`) y se lee con `toLocaleDateString("sv-SE")` (`toDateInput`), que devuelve el mismo formato. Así la tarea cae en el mismo día en cualquier pantalla.
 
+## Papelera (`/papelera`, HU-15)
+
+Diseño: [especificación](superpowers/specs/2026-10-29-papelera-design.md). Se llega desde Ajustes. Dos pestañas (Nodexs y Grupos) con "Restaurar" y "Eliminar para siempre" en cada fila, y "Vaciar papelera". Cada fila dice cuántos días le quedan antes de que el proceso del backend lo elimine (30 días).
+
+- **Restaurar un grupo** cuyo nombre ya usa otro grupo lo renombra a «Nombre (restaurado)», «(restaurado 2)»… para no chocar con el índice único.
+- **Deshacer:** los avisos "Enviado a la papelera" (ventana del Nodex y menú del grupo) tienen un botón "Deshacer". Usa una función normal en vez de una mutación de TanStack Query porque la ventana ya se ha cerrado cuando pulsas el botón.
+- `["trash"]` está dentro de `useInvalidateNodexs`, así que borrar algo en el panel actualiza la papelera.
+
 ## Leer más tarde (HU-21)
 
 Diseño: [especificación](superpowers/specs/2026-10-29-leer-mas-tarde-design.md).
