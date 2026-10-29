@@ -38,7 +38,7 @@ export function NodexCard({ nodex, groups, index = 0, onOpen }: NodexCardProps) 
       </h3>
       {nodex.content && <p className="line-clamp-8 text-sm break-words whitespace-pre-line text-muted-foreground">{nodex.content}</p>}
       {nodex.url && (
-        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
           <a
             href={nodex.url}
             target="_blank"
@@ -51,11 +51,11 @@ export function NodexCard({ nodex, groups, index = 0, onOpen }: NodexCardProps) 
             <ArrowUpRight className="size-3" aria-hidden="true" />
           </a>
           {nodex.linkPreview?.readingMinutes && (
-            <>
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
               <span aria-hidden="true">·</span>
               <Clock className="size-3.5" aria-hidden="true" />
               {nodex.linkPreview.readingMinutes} min de lectura
-            </>
+            </span>
           )}
         </p>
       )}
