@@ -2,11 +2,12 @@ import { NodexCard } from "@/components/nodex-card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/spinner";
 import type { Group, Nodex } from "@/lib/types";
+import type { OpenTarget } from "@/lib/use-open-nodex";
 
 type NodexGridProps = {
   nodexs: Nodex[];
   groups: Group[];
-  onOpen: (id: string, newTab?: boolean) => void;
+  onOpen: (id: string, target?: OpenTarget) => void;
   loading: boolean;
   empty: React.ReactNode;
   hasMore?: boolean;

@@ -83,6 +83,8 @@ Diseño: [especificación](superpowers/specs/2026-10-29-vista-nodex-design.md). 
 - **Guardar sin perder cambios:** `useUpdateNodex` actualiza la caché del Nodex antes de enviar la petición (actualización optimista) y la deshace si falla. Además, todas las ediciones van en una cola (`scope` de TanStack Query), así que dos cambios seguidos llegan al servidor en orden y el segundo parte del resultado del primero.
 - **Enlace y tipo:** el tipo sigue a la URL. Ponerle una URL a una nota la convierte en enlace (y aparece "Leer más tarde"); quitarla la convierte en nota.
 - **Crear:** la ventana "Nuevo Nodex" pide título, enlace y, en "Más opciones", el resto de propiedades. Al crear se abre la página en `?editar=1` para escribir el contenido.
+- `TopBar` pinta el enlace del perfil solo tras hidratar (`useSyncExternalStore`): en páginas que se hidratan tarde (dentro de `<Suspense>`), el usuario ya está en caché y el HTML no coincidiría con el del servidor.
+
 ### Pestañas (`RF-22.5`)
 
 Diseño: [especificación](superpowers/specs/2026-10-29-pestanas-nodex-design.md). Encima de la página del Nodex, `components/nodex-tabs.tsx` muestra los Nodexs abiertos, como en Obsidian:
@@ -92,7 +94,16 @@ Diseño: [especificación](superpowers/specs/2026-10-29-pestanas-nodex-design.md
 - **Cerrar** la activa lleva a la de la derecha, luego a la de la izquierda y, si no queda ninguna, al panel. Flechas izquierda/derecha para moverse. El botón "+ Nuevo" crea un Nodex en una pestaña nueva; para que no se confunda con "abrir otro", la barra muestra la pista "Ctrl + clic en un Nodex para abrirlo en otra pestaña" (⌘ en Mac) y el tutorial lo explica en el paso del panel.
 - **Detalle de Next 16:** con `cacheComponents`, Next conserva oculta la página anterior (`<Activity>`), así que puede haber dos barras en el DOM. Por eso no se usan `id` en las pestañas y el foco tras usar las flechas lo pone la barra de la página nueva al montarse.
 
-- `TopBar` pinta el enlace del perfil solo tras hidratar (`useSyncExternalStore`): en páginas que se hidratan tarde (dentro de `<Suspense>`), el usuario ya está en caché y el HTML no coincidiría con el del servidor.
+### Dos paneles (`RF-22.6`)
+
+Diseño: [especificación](superpowers/specs/2026-10-29-dos-paneles-design.md). La página del Nodex se puede dividir en dos paneles, cada uno con sus pestañas:
+
+- **Abrir a la derecha:** botón "Dividir" (icono `SquareSplitHorizontal`) junto a "Abrir enlace" (↗) y "⋯"; "Abrir a la derecha" en el menú; o **Ctrl/Cmd + Alt + clic** en tarjetas, relacionados, tareas y grafo. `openTarget(event)` traduce el clic a `"active"`, `"newTab"` o `"right"`.
+- **Estado** (`lib/tabs.ts`): `{ left, right, split }`. El panel izquierdo sigue a la URL; el derecho solo vive en `localStorage` (no cambia la URL). Las pestañas guardadas con el formato anterior se convierten en `left`.
+- **Componentes:** `app/(app)/nodexs/layout.tsx` pinta `NodexSplit` (barra superior, separador y panel derecho). Como Next no vuelve a montar un layout al navegar, el panel derecho es una sola instancia y no pierde lo que estés editando al cambiar la pestaña izquierda. La página (`NodexView`) solo pinta el panel izquierdo. Si el mismo Nodex está en los dos lados, el derecho se muestra en solo lectura ("Edítalo en el panel izquierdo") para que no haya dos editores pisándose. Durante el arrastre del separador el ancho se previsualiza en estado local y se guarda al soltar. Los paneles son `NodexPane` (cabecera, título, propiedades, contenido y relacionados) separados por `PaneSeparator` (`role="separator"`, arrastrar entre 25 % y 75 %, flechas, Inicio/Fin y doble clic para el 50 %).
+- Dentro del panel derecho, los relacionados se abren en ese mismo panel; borrar un Nodex allí cierra su pestaña. Cerrar la última pestaña del derecho vuelve a un solo panel.
+- En el móvil (< `md`) no hay panel derecho ni botón "Dividir"; el estado se conserva para cuando la pantalla sea más ancha.
+
 
 ### La rejilla tipo Keep (*masonry*)
 

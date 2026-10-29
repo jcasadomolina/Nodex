@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { TASK_STATUS_LABELS, toDateInput } from "@/lib/format";
 import { useTaskCalendar } from "@/lib/queries/tasks";
 import type { TaskCard } from "@/lib/types";
-import { newTabClick, preventMiddleScroll } from "@/lib/use-open-nodex";
+import { openTarget, preventMiddleScroll, type OpenTarget } from "@/lib/use-open-nodex";
 import { cn } from "@/lib/utils";
 
 const chipClass = {
@@ -28,13 +28,13 @@ function dayKey(date: Date) {
   return date.toLocaleDateString("sv-SE");
 }
 
-function TaskChip({ card, onOpen }: { card: TaskCard; onOpen: (id: string, newTab?: boolean) => void }) {
+function TaskChip({ card, onOpen }: { card: TaskCard; onOpen: (id: string, target?: OpenTarget) => void }) {
   return (
     <button
       type="button"
-      onClick={(event) => onOpen(card.nodex.id, newTabClick(event))}
+      onClick={(event) => onOpen(card.nodex.id, openTarget(event))}
       onMouseDown={preventMiddleScroll}
-      onAuxClick={(event) => event.button === 1 && onOpen(card.nodex.id, true)}
+      onAuxClick={(event) => event.button === 1 && onOpen(card.nodex.id, "newTab")}
       title={`${card.nodex.title} · ${TASK_STATUS_LABELS[card.status]}`}
       className={cn("w-full truncate rounded-md px-1.5 py-0.5 text-left text-xs hover:opacity-80", chipClass[card.status])}
     >
@@ -43,7 +43,7 @@ function TaskChip({ card, onOpen }: { card: TaskCard; onOpen: (id: string, newTa
   );
 }
 
-export function TaskCalendar({ onOpen }: { onOpen: (id: string, newTab?: boolean) => void }) {
+export function TaskCalendar({ onOpen }: { onOpen: (id: string, target?: OpenTarget) => void }) {
   const [month, setMonth] = useState(() => firstOfMonth(new Date()));
   const start = addDays(month, -((month.getDay() + 6) % 7));
   const days = Array.from({ length: 42 }, (_, i) => addDays(start, i));

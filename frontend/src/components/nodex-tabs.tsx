@@ -7,7 +7,7 @@ import { NodexDialog } from "@/components/nodex-dialog";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 import { useNodex } from "@/lib/queries/nodexs";
-import { closeTab, useTabs } from "@/lib/tabs";
+import { activateRight, closeTab, useTabs, type Side } from "@/lib/tabs";
 import { preventMiddleScroll } from "@/lib/use-open-nodex";
 import { cn } from "@/lib/utils";
 
@@ -51,13 +51,15 @@ function Tab({ id, active, onSelect, onClose }: { id: string; active: boolean; o
 
 let focusAfterNavigation = false;
 
-function modifierKey() {
-  return /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl";
-}
+const isMac = () => /Mac|iPhone|iPad/.test(navigator.userAgent);
+const modifierKey = () => (isMac() ? "⌘" : "Ctrl");
+const altKey = () => (isMac() ? "⌥" : "Alt");
 
-export function NodexTabs() {
+export function NodexTabs({ side }: { side: Side }) {
   const router = useRouter();
-  const { tabs, active } = useTabs();
+  const pane = useTabs()[side];
+  const tabs = pane?.tabs ?? [];
+  const active = pane?.active ?? null;
   const [creating, setCreating] = useState(false);
   const tablist = useRef<HTMLDivElement>(null);
 
@@ -69,9 +71,15 @@ export function NodexTabs() {
     selected.focus();
   }, [active]);
 
+  function select(id: string) {
+    if (id === active) return;
+    if (side === "right") return activateRight(id);
+    router.push(`/nodexs/${id}`);
+  }
+
   function close(id: string) {
-    const next = closeTab(id);
-    if (id !== active) return;
+    const next = closeTab(side, id);
+    if (side === "right" || id !== active) return;
     router.replace(next ? `/nodexs/${next}` : "/");
   }
 
@@ -80,7 +88,7 @@ export function NodexTabs() {
     const next = tabs[(index + step + tabs.length) % tabs.length];
     if (!next) return;
     focusAfterNavigation = true;
-    router.push(`/nodexs/${next}`);
+    select(next);
   }
 
   if (tabs.length === 0) return null;
@@ -90,7 +98,7 @@ export function NodexTabs() {
       <div
         ref={tablist}
         role="tablist"
-        aria-label="Nodexs abiertos"
+        aria-label={side === "left" ? "Nodexs abiertos" : "Nodexs abiertos a la derecha"}
         className="flex items-end gap-1"
         onKeyDown={(event) => {
           if (event.key === "ArrowRight") move(1);
@@ -99,16 +107,21 @@ export function NodexTabs() {
         }}
       >
         {tabs.map((id) => (
-          <Tab key={id} id={id} active={id === active} onSelect={() => id !== active && router.push(`/nodexs/${id}`)} onClose={() => close(id)} />
+          <Tab key={id} id={id} active={id === active} onSelect={() => select(id)} onClose={() => close(id)} />
         ))}
       </div>
-      <Button variant="ghost" size="sm" className="mb-1 shrink-0" title="Crear un Nodex nuevo en otra pestaña" onClick={() => setCreating(true)}>
-        <Plus /> Nuevo
-      </Button>
-      <p className="mb-2 ml-auto hidden shrink-0 pl-2 text-xs text-muted-foreground md:block">
-        <kbd className="rounded border px-1 font-mono">{modifierKey()}</kbd> + clic en un Nodex para abrirlo en otra pestaña
-      </p>
-      <NodexDialog open={creating} onOpenChange={setCreating} newTab />
+      {side === "left" && (
+        <>
+          <Button variant="ghost" size="sm" className="mb-1 shrink-0" title="Crear un Nodex nuevo en otra pestaña" onClick={() => setCreating(true)}>
+            <Plus /> Nuevo
+          </Button>
+          <p className="mb-2 ml-auto hidden shrink-0 pl-2 text-xs text-muted-foreground lg:block">
+            <kbd className="rounded border px-1 font-mono">{modifierKey()}</kbd> + clic: otra pestaña ·{" "}
+            <kbd className="rounded border px-1 font-mono">{modifierKey()}</kbd> + <kbd className="rounded border px-1 font-mono">{altKey()}</kbd> + clic: a la derecha
+          </p>
+          <NodexDialog open={creating} onOpenChange={setCreating} newTab />
+        </>
+      )}
     </div>
   );
 }

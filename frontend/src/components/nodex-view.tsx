@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Clock, ExternalLink, LayoutGrid, MoreHorizontal, Pencil } from "lucide-react";
+import { ArrowLeft, Clock, ExternalLink, LayoutGrid, MoreHorizontal, Pencil, SquareSplitHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -20,9 +20,10 @@ import { domainOf, formatDateTime } from "@/lib/format";
 import { useRefreshLink } from "@/lib/queries/alerts";
 import { useDeleteNodex, useMarkOpened, useNodex, useRelated, useSetReadLater, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
 import { useUndoDelete } from "@/lib/queries/trash";
-import { showInTabs } from "@/lib/tabs";
-import { newTabClick, preventMiddleScroll, useOpenNodex } from "@/lib/use-open-nodex";
+import { clampSplit, closeTab, openRight, setSplit, showInRight, showInTabs, useTabs, type Side } from "@/lib/tabs";
+import { openTarget, preventMiddleScroll, useOpenNodex, type OpenTarget } from "@/lib/use-open-nodex";
 import type { Nodex, TaskInput } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const AUTOSAVE_MS = 1000;
 
@@ -288,7 +289,7 @@ function Properties({ nodex }: { nodex: Nodex }) {
   );
 }
 
-function Content({ nodex, startEditing }: { nodex: Nodex; startEditing: boolean }) {
+function Content({ nodex, startEditing, readOnly }: { nodex: Nodex; startEditing: boolean; readOnly: boolean }) {
   const update = useUpdateNodex();
   const [editing, setEditing] = useState(startEditing);
   const [draft, setDraft] = useState(nodex.content ?? "");
@@ -345,9 +346,11 @@ function Content({ nodex, startEditing }: { nodex: Nodex; startEditing: boolean 
           {editing && (
             <span role="status">{status === "saving" ? "Guardando…" : status === "dirty" ? "Sin guardar" : "Guardado"}</span>
           )}
+          {readOnly && <span>Edítalo en el panel izquierdo</span>}
           <Button
             variant={editing ? "default" : "outline"}
             size="sm"
+            className={cn(readOnly && "hidden")}
             onClick={() => {
               if (editing) return stopEditing();
               setDraft(nodex.content ?? "");
@@ -372,25 +375,25 @@ function Content({ nodex, startEditing }: { nodex: Nodex; startEditing: boolean 
           maxLength={50_000}
         />
       ) : shown.trim() ? (
-        <div onDoubleClick={() => setEditing(true)} className="rounded-2xl border bg-card p-5">
+        <div onDoubleClick={() => !readOnly && setEditing(true)} className="rounded-2xl border bg-card p-5">
           <Markdown>{shown}</Markdown>
         </div>
       ) : (
         <button
           type="button"
+          disabled={readOnly}
           onClick={() => setEditing(true)}
-          className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground hover:bg-muted"
+          className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground enabled:hover:bg-muted"
         >
-          Pulsa para escribir…
+          {readOnly ? "Sin contenido" : "Pulsa para escribir…"}
         </button>
       )}
     </section>
   );
 }
 
-export function NodexView({ id }: { id: string }) {
+function NodexPane({ id, side, startEditing, readOnly = false }: { id: string; side: Side; startEditing: boolean; readOnly?: boolean }) {
   const router = useRouter();
-  const params = useSearchParams();
   const nodex = useNodex(id);
   const related = useRelated(id);
   const deleteNodex = useDeleteNodex();
@@ -402,14 +405,13 @@ export function NodexView({ id }: { id: string }) {
 
   useEffect(() => {
     markOpened(id);
-    showInTabs(id);
   }, [id, markOpened]);
 
-  const [startEditing] = useState(params.get("editar") === "1");
-
-  useEffect(() => {
-    if (startEditing) window.history.replaceState(null, "", `/nodexs/${id}`);
-  }, [id, startEditing]);
+  function open(target: string, mode: OpenTarget) {
+    if (mode === "right") return openRight(target);
+    if (side === "right") return showInRight(target, mode === "newTab");
+    openNodex(target, mode);
+  }
 
   function back() {
     if (window.history.length > 1) router.back();
@@ -420,41 +422,60 @@ export function NodexView({ id }: { id: string }) {
     deleteNodex.mutate(id, {
       onSuccess: () => {
         toast.success("Enviado a la papelera", { action: { label: "Deshacer", onClick: () => undoDelete("nodexs", id) } });
-        router.push("/");
+        if (side === "right") closeTab("right", id);
+        else router.push("/");
       },
       onError: () => toast.error("No se ha podido borrar. Inténtalo de nuevo"),
     });
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-5">
-      <TopBar icon={LayoutGrid} location="Panel" crumb={nodex.data ? { label: nodex.data.title, onClear: back } : undefined} />
-      <NodexTabs />
-
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={back}>
-          <ArrowLeft /> Volver
-        </Button>
+    <div className="flex min-w-0 flex-col gap-5 pt-4">
+      <div className="flex items-center gap-1">
+        {side === "left" && (
+          <Button variant="ghost" size="sm" onClick={back}>
+            <ArrowLeft /> Volver
+          </Button>
+        )}
         {nodex.data && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Más acciones">
-                <MoreHorizontal />
+          <div className="ml-auto flex items-center gap-1">
+            {nodex.data.url && (
+              <Button variant="ghost" size="icon-sm" asChild>
+                <a href={nodex.data.url} target="_blank" rel="noreferrer" aria-label="Abrir enlace" title="Abrir enlace">
+                  <ExternalLink />
+                </a>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {nodex.data.url && (
-                <DropdownMenuItem asChild>
-                  <a href={nodex.data.url} target="_blank" rel="noreferrer">
-                    <ExternalLink /> Abrir enlace
-                  </a>
+            )}
+            {side === "left" && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="hidden md:inline-flex"
+                aria-label="Abrir a la derecha"
+                title="Abrir a la derecha"
+                onClick={() => openRight(id)}
+              >
+                <SquareSplitHorizontal />
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label="Más acciones">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {side === "left" && (
+                  <DropdownMenuItem className="hidden md:flex" onSelect={() => openRight(id)}>
+                    <SquareSplitHorizontal /> Abrir a la derecha
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
+                  Borrar
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
-                Borrar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </div>
 
@@ -462,9 +483,15 @@ export function NodexView({ id }: { id: string }) {
       {missing && (
         <div className="grid justify-items-center gap-3 py-12 text-center">
           <p className="text-muted-foreground">Este Nodex ya no existe</p>
-          <Button variant="outline" onClick={() => router.push("/")}>
-            Volver al panel
-          </Button>
+          {side === "left" ? (
+            <Button variant="outline" onClick={() => router.push("/")}>
+              Volver al panel
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => closeTab("right", id)}>
+              Cerrar
+            </Button>
+          )}
         </div>
       )}
       {nodex.isError && !missing && (
@@ -480,7 +507,7 @@ export function NodexView({ id }: { id: string }) {
         <article className="grid gap-6" key={nodex.data.id}>
           <Title key={nodex.data.title} nodex={nodex.data} />
           <Properties nodex={nodex.data} />
-          <Content nodex={nodex.data} startEditing={startEditing} />
+          <Content nodex={nodex.data} startEditing={startEditing} readOnly={readOnly} />
 
           {related.data && related.data.length > 0 && (
             <section className="grid gap-2">
@@ -490,9 +517,9 @@ export function NodexView({ id }: { id: string }) {
                   <li key={item.id}>
                     <button
                       type="button"
-                      onClick={(event) => openNodex(item.id, newTabClick(event))}
+                      onClick={(event) => open(item.id, openTarget(event))}
                       onMouseDown={preventMiddleScroll}
-                      onAuxClick={(event) => event.button === 1 && openNodex(item.id, true)}
+                      onAuxClick={(event) => event.button === 1 && open(item.id, "newTab")}
                       className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-muted"
                     >
                       <span className="font-medium">{item.title}</span>
@@ -513,6 +540,122 @@ export function NodexView({ id }: { id: string }) {
           />
         </article>
       )}
+    </div>
+  );
+}
+
+type SeparatorProps = {
+  container: React.RefObject<HTMLDivElement | null>;
+  split: number;
+  onPreview: (value: number | null) => void;
+};
+
+function PaneSeparator({ container, split, onPreview }: SeparatorProps) {
+  const live = useRef<number | null>(null);
+
+  function finish() {
+    if (live.current !== null) setSplit(live.current);
+    live.current = null;
+    onPreview(null);
+  }
+
+  function keyTo(event: React.KeyboardEvent, value: number) {
+    event.preventDefault();
+    setSplit(value);
+  }
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Ancho de los paneles"
+      aria-controls="panel-izquierdo"
+      aria-valuenow={Math.round(split)}
+      aria-valuemin={25}
+      aria-valuemax={75}
+      tabIndex={0}
+      title="Arrastra para cambiar el ancho · doble clic: 50 %"
+      className="group hidden w-4 shrink-0 cursor-col-resize touch-none justify-center self-stretch outline-none select-none md:flex"
+      onPointerDown={(event) => {
+        event.preventDefault();
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerMove={(event) => {
+        if (!event.currentTarget.hasPointerCapture(event.pointerId) || !container.current) return;
+        const rect = container.current.getBoundingClientRect();
+        live.current = clampSplit(((event.clientX - rect.left) / rect.width) * 100);
+        onPreview(live.current);
+      }}
+      onPointerUp={finish}
+      onLostPointerCapture={finish}
+      onDoubleClick={() => setSplit(50)}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowLeft") keyTo(event, split - 5);
+        if (event.key === "ArrowRight") keyTo(event, split + 5);
+        if (event.key === "Home") keyTo(event, 25);
+        if (event.key === "End") keyTo(event, 75);
+      }}
+    >
+      <span className="h-full w-px bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary" />
+    </div>
+  );
+}
+
+export function NodexView({ id }: { id: string }) {
+  const params = useSearchParams();
+  const [startEditing] = useState(params.get("editar") === "1");
+
+  useEffect(() => {
+    showInTabs(id);
+  }, [id]);
+
+  useEffect(() => {
+    if (startEditing) window.history.replaceState(null, "", `/nodexs/${id}`);
+  }, [id, startEditing]);
+
+  return (
+    <>
+      <NodexTabs side="left" />
+      <NodexPane id={id} side="left" startEditing={startEditing} />
+    </>
+  );
+}
+
+export function NodexSplit({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { left, right, split } = useTabs();
+  const nodex = useNodex(left.active ?? undefined);
+  const container = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState<number | null>(null);
+  const rightId = right?.active ?? null;
+
+  function back() {
+    if (window.history.length > 1) router.back();
+    else router.push("/");
+  }
+
+  return (
+    <div className={cn("mx-auto flex w-full min-w-0 flex-col gap-4", rightId ? "max-w-7xl" : "max-w-3xl")}>
+      <TopBar icon={LayoutGrid} location="Panel" crumb={nodex.data ? { label: nodex.data.title, onClear: back } : undefined} />
+      <div ref={container} className="flex min-w-0 items-start">
+        <section
+          id="panel-izquierdo"
+          aria-label={rightId ? "Panel izquierdo" : undefined}
+          style={{ "--split": `${preview ?? split}%` } as React.CSSProperties}
+          className={cn("min-w-0 flex-1", rightId && "md:flex-none md:basis-(--split)")}
+        >
+          {children}
+        </section>
+        {rightId && (
+          <>
+            <PaneSeparator container={container} split={preview ?? split} onPreview={setPreview} />
+            <section aria-label="Panel derecho" className="hidden min-w-0 flex-1 md:block">
+              <NodexTabs side="right" />
+              <NodexPane key={rightId} id={rightId} side="right" startEditing={false} readOnly={rightId === left.active} />
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }
