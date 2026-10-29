@@ -53,6 +53,23 @@ export function useRelated(id: string | undefined) {
   });
 }
 
+export function useRediscover(enabled: boolean) {
+  return useQuery({
+    queryKey: ["nodexs", "rediscover"],
+    queryFn: async () => (await api<{ nodexs: Nodex[] }>("/nodexs/rediscover")).nodexs,
+    enabled,
+  });
+}
+
+export function useMarkOpened() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/nodexs/${id}/open`, { method: "POST" }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["nodexs", "rediscover"] }),
+  });
+}
+
 export function useSearch(q: string) {
   return useQuery({
     queryKey: ["search", q],

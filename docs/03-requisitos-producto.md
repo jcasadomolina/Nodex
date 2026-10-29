@@ -129,6 +129,15 @@
 - **RF-19.2**: Quien abra el enlace debe ver los Nodexs del grupo sin necesidad de cuenta y sin poder modificarlos.
 - **RF-19.3**: El sistema debe permitir desactivar el enlace o generar uno nuevo, que invalida el anterior.
 
+### HU-20: Redescubre
+
+> Lo que se guarda y no se vuelve a mirar se pierde. Redescubre recupera cada día algunos Nodexs olvidados.
+
+- **RF-20.1**: El sistema debe registrar cuándo abre el usuario cada Nodex.
+- **RF-20.2**: El sistema debe mostrar cada día en el panel hasta 3 Nodexs que el usuario no abre desde hace 30 días o más, sin contar los de prioridad alta o urgente.
+- **RF-20.3**: El sistema debe dar preferencia a los Nodexs olvidados que se parezcan a lo que el usuario ha abierto en los últimos 7 días.
+- **RF-20.4**: El sistema debe permitir ocultar la sección hasta el día siguiente.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos

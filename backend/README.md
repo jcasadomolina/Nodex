@@ -113,6 +113,8 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `priority=low\|medium\|high\|urgent`, `limit` (1–100, 50 por defecto) y `cursor`. Orden: `sort=recent` (por defecto) o `sort=priority` (más prioritarios primero; sin prioridad al final) |
 | `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds?, tags? }`. `tags`: hasta 10; se normalizan (minúsculas, espacios a guiones, sin `#`, máximo 30 caracteres). `201 { nodex, duplicates }`. Los enlaces necesitan `url` (`http` o `https`). `duplicates`: Nodexs casi iguales ya guardados (misma URL o similitud ≥ 0,9), cada uno con `similarity`; el Nodex se crea igualmente |
 | `GET /api/nodexs/search` | `?q=` (1–200 caracteres) y `limit` (1–50, 20 por defecto). `200 { nodexs }` ordenados por `score`: mezcla el parecido de significado con la coincidencia de texto en título, contenido o URL |
+| `GET /api/nodexs/rediscover` | `200 { nodexs }`: hasta 3 Nodexs sin abrir desde hace 30 días (sin prioridad alta ni urgente), primero los parecidos a lo abierto en los últimos 7 días. La parte de azar cambia una vez al día (hora de España); la preferencia se actualiza con lo que abres |
+| `POST /api/nodexs/:id/open` | `204`. Marca el Nodex como abierto ahora (no cambia `updatedAt`) |
 | `GET /api/nodexs/:id` | `200 { nodex }` |
 | `GET /api/nodexs/:id/related` | `?limit=` (1–20, 5 por defecto). `200 { nodexs }`: los más parecidos (similitud ≥ 0,45), cada uno con `similarity` |
 | `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority?, tags? }` (`priority: null` la quita; `tags` sustituye todas las etiquetas). `200 { nodex }` |

@@ -6,6 +6,7 @@ import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { checkNewNodex, findRelated, processInBackground, searchNodexs } from "../ai/ai.service.js";
 import { previewFields, refreshPreviewInBackground } from "../links/links.service.js";
+import { findForgotten, markOpened } from "./rediscover.js";
 import {
   createNodexSchema,
   listNodexsSchema,
@@ -132,6 +133,19 @@ nodexsRouter.post("/", async (req, res) => {
   if (nodex.url) refreshPreviewInBackground(nodex.id);
   const duplicates = await loadInOrder(userId, await checkNewNodex(userId, nodex.id));
   res.status(201).json({ nodex: toNodex(nodex), duplicates });
+});
+
+nodexsRouter.get("/rediscover", async (req, res) => {
+  const userId = req.session.userId!;
+  res.json({ nodexs: await loadInOrder(userId, await findForgotten(userId)) });
+});
+
+nodexsRouter.post("/:id/open", async (req, res) => {
+  const id = parseId(req.params.id, NODEX_NOT_FOUND);
+  if ((await markOpened(req.session.userId!, id)) === 0) {
+    throw new HttpError(404, NODEX_NOT_FOUND);
+  }
+  res.status(204).end();
 });
 
 nodexsRouter.get("/:id", async (req, res) => {
