@@ -1,6 +1,7 @@
 "use client";
 
 import { LayoutGrid, Plus, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GroupFilter } from "@/components/group-filter";
 import { NodexDialog } from "@/components/nodex-dialog";
@@ -16,9 +17,10 @@ import { useNodexs, useSearch, type NodexQuery } from "@/lib/queries/nodexs";
 
 const INITIAL_QUERY: NodexQuery = { filter: { kind: "all" }, sort: "recent", priority: null };
 
-export function Board({ openId }: { openId?: string }) {
+export function Board() {
+  const router = useRouter();
   const [query, setQuery] = useState(INITIAL_QUERY);
-  const [dialog, setDialog] = useState({ open: Boolean(openId), id: openId ?? null });
+  const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const groups = useGroups();
@@ -39,17 +41,11 @@ export function Board({ openId }: { openId?: string }) {
   const filtered = filter.kind !== "all" || query.priority !== null;
 
   function openNodex(id: string) {
-    setDialog({ open: true, id });
-    window.history.pushState(null, "", `/nodexs/${id}`);
-  }
-
-  function changeDialog(open: boolean) {
-    setDialog((current) => ({ ...current, open }));
-    if (!open && window.location.pathname !== "/") window.history.pushState(null, "", "/");
+    router.push(`/nodexs/${id}`);
   }
 
   const createButton = (
-    <Button onClick={() => setDialog({ open: true, id: null })}>
+    <Button onClick={() => setCreating(true)}>
       <Plus /> Crear el primero
     </Button>
   );
@@ -119,13 +115,13 @@ export function Board({ openId }: { openId?: string }) {
         size="icon-lg"
         aria-label="Crear Nodex"
         data-tour="crear"
-        onClick={() => setDialog({ open: true, id: null })}
+        onClick={() => setCreating(true)}
         className="fixed right-6 bottom-24 z-30 size-14 rounded-full shadow-lg hover:scale-105 hover:bg-primary hover:shadow-[0_10px_30px_-8px_var(--primary)] active:scale-95 md:bottom-6 [&_svg]:transition-transform [&_svg]:duration-300 hover:[&_svg]:rotate-90 [&_svg:not([class*='size-'])]:size-6"
       >
         <Plus />
       </Button>
       <Tour />
-      <NodexDialog id={dialog.id} open={dialog.open} onOpenChange={changeDialog} onOpenNodex={openNodex} />
+      <NodexDialog open={creating} onOpenChange={setCreating} />
     </div>
   );
 }

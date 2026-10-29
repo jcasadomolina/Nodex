@@ -131,18 +131,50 @@ export function useCreateNodex() {
   });
 }
 
+type NodexUpdate = {
+  id: string;
+  changes: Partial<Omit<NodexInput, "type">>;
+  groupIds: string[];
+  previousGroupIds: string[];
+  task?: TaskInput | null;
+  reminder?: string | null;
+};
+
+function applyUpdate(nodex: Nodex, { changes, groupIds, task, reminder }: NodexUpdate): Nodex {
+  const fields = { ...changes };
+  delete fields.readLater;
+  return {
+    ...nodex,
+    ...fields,
+    type: changes.url === undefined ? nodex.type : changes.url ? "link" : "note",
+    groupIds,
+    task: task === undefined ? nodex.task : task && { ...task, completedAt: nodex.task?.completedAt ?? null },
+    reminder: reminder === undefined ? nodex.reminder : reminder ? { remindAt: reminder, sentAt: null, dismissedAt: null } : null,
+  };
+}
+
+export function fieldMessage(error: Error) {
+  if (!(error instanceof ApiError)) return "No se ha podido guardar";
+  return Object.values(error.fields)[0]?.[0] ?? error.message;
+}
+
 export function useUpdateNodex() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateNodexs();
 
   return useMutation({
-    mutationFn: async ({ id, changes, groupIds, previousGroupIds, task, reminder }: {
-      id: string;
-      changes: Partial<Omit<NodexInput, "type">>;
-      groupIds: string[];
-      previousGroupIds: string[];
-      task?: TaskInput | null;
-      reminder?: string | null;
-    }) => {
+    scope: { id: "update-nodex" },
+    onMutate: async (update: NodexUpdate) => {
+      await queryClient.cancelQueries({ queryKey: ["nodex", update.id] });
+      const previous = queryClient.getQueryData<Nodex>(["nodex", update.id]);
+      if (previous) queryClient.setQueryData<Nodex>(["nodex", update.id], applyUpdate(previous, update));
+      return { previous };
+    },
+    onError: (error, { id }, context) => {
+      if (context?.previous) queryClient.setQueryData(["nodex", id], context.previous);
+      toast.error(fieldMessage(error));
+    },
+    mutationFn: async ({ id, changes, groupIds, previousGroupIds, task, reminder }: NodexUpdate) => {
       if (Object.keys(changes).length > 0) await api(`/nodexs/${id}`, { method: "PATCH", body: changes });
       const added = groupIds.filter((g) => !previousGroupIds.includes(g));
       const removed = previousGroupIds.filter((g) => !groupIds.includes(g));

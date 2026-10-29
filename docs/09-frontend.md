@@ -66,12 +66,24 @@ Después de crear, editar o borrar, se **invalidan** las claves afectadas y TanS
 |------|---------|
 | `/login`, `/registro` | Formulario sobre un degradado naranja, con Google y GitHub. A la derecha queda el hueco del futuro carrusel |
 | `/` | Panel: barra superior con la ubicación y la búsqueda, etiquetas de grupo, "Ordenar y filtrar" y la rejilla de Nodexs |
-| `/nodexs/[id]` | El panel con la ventana de ese Nodex abierta (las notificaciones de recordatorio enlazan aquí) |
+| `/nodexs/[id]` | Página del Nodex: título, propiedades y contenido en Markdown (HU-22). Las notificaciones de recordatorio enlazan aquí |
 | `/perfil` | Foto (subir a Cloudinary o quitar), nombre, correo y cuentas vinculadas (vincular o desvincular) |
 | `/grafo` | Vista gráfica |
 | `/tareas` | Tablero y calendario de tareas |
 
-Al abrir un Nodex desde el panel, la URL cambia con `history.pushState`, sin navegar: el panel no se desmonta y conserva los filtros.
+Al pulsar un Nodex (panel, grafo, tareas, campana, Redescubre, sugerencias o relacionados) se navega a su página con `router.push`. "Volver" usa `router.back()`, así que el panel recupera su estado.
+
+### Página del Nodex (HU-22)
+
+Diseño: [especificación](superpowers/specs/2026-10-29-vista-nodex-design.md). `components/nodex-view.tsx`:
+
+- **Título** editable al pulsarlo; **propiedades** en una tabla como la de Obsidian, cada una guardándose al momento (solo envía su cambio). Los controles (prioridad, tarea, fecha, recordatorio, grupos) están en `components/nodex-fields.tsx` y los comparte la ventana de creación.
+- **Contenido en Markdown** con `react-markdown` + `remark-gfm` (`components/markdown.tsx`): tablas, casillas, tachado, código… No ejecuta HTML incrustado y descarta los enlaces `javascript:`. Los estilos están en `globals.css` (`.markdown`), con los colores del tema.
+- **Editar:** "Editar" o doble clic abre un `textarea`; se guarda 1 s después de dejar de escribir y también al salir del campo o de la página (una referencia guarda la última función de guardado para llamarla al desmontar). Mientras editas, el texto local manda: una recarga de datos no lo pisa.
+- **Guardar sin perder cambios:** `useUpdateNodex` actualiza la caché del Nodex antes de enviar la petición (actualización optimista) y la deshace si falla. Además, todas las ediciones van en una cola (`scope` de TanStack Query), así que dos cambios seguidos llegan al servidor en orden y el segundo parte del resultado del primero.
+- **Enlace y tipo:** el tipo sigue a la URL. Ponerle una URL a una nota la convierte en enlace (y aparece "Leer más tarde"); quitarla la convierte en nota.
+- **Crear:** la ventana "Nuevo Nodex" pide título, enlace y, en "Más opciones", el resto de propiedades. Al crear se abre la página en `?editar=1` para escribir el contenido.
+- `TopBar` pinta el enlace del perfil solo tras hidratar (`useSyncExternalStore`): en páginas que se hidratan tarde (dentro de `<Suspense>`), el usuario ya está en caché y el HTML no coincidiría con el del servidor.
 
 ### La rejilla tipo Keep (*masonry*)
 

@@ -118,7 +118,7 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/nodexs/:id/open` | `204`. Marca el Nodex como abierto ahora (no cambia `updatedAt`) |
 | `GET /api/nodexs/:id` | `200 { nodex }` |
 | `GET /api/nodexs/:id/related` | `?limit=` (1–20, 5 por defecto). `200 { nodexs }`: los más parecidos (similitud ≥ 0,45), cada uno con `similarity` |
-| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority?, tags?, readLater? }` (`priority: null` la quita; `tags` sustituye todas las etiquetas; `readLater: true` marca un enlace para leer más tarde sin cambiar la fecha si ya lo estaba, y `false` lo quita). `200 { nodex }` |
+| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority?, tags?, readLater? }` (`priority: null` la quita; `tags` sustituye todas las etiquetas; `readLater: true` marca un enlace para leer más tarde sin cambiar la fecha si ya lo estaba, y `false` lo quita). El tipo sigue a la URL: poner una URL convierte una nota en enlace y quitarla (`url: null`) convierte el enlace en nota. `200 { nodex }` |
 | `GET /api/tags` | `200 { tags }`: las etiquetas en uso, cada una con `nodexCount`, por orden alfabético |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |

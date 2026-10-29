@@ -144,6 +144,17 @@
 - **RF-21.2**: El sistema debe mostrar en el panel un filtro con los enlaces pendientes de leer, del más antiguo al más nuevo.
 - **RF-21.3**: El sistema debe estimar el tiempo de lectura de cada enlace y mostrarlo en su tarjeta y en su ventana.
 
+### HU-22: Vista del Nodex
+
+> Cada Nodex tiene su propia página, al estilo de Obsidian.
+
+- **RF-22.1**: Al abrir un Nodex, el sistema debe mostrar una página con su título, sus propiedades (enlace, prioridad, tarea, fecha límite, recordatorio, grupos, etiquetas, creado y modificado) y su contenido.
+- **RF-22.2**: El contenido debe mostrarse formateado en Markdown (títulos, listas, casillas, tablas, código, citas y enlaces) y poder editarse en texto plano, guardándose solo.
+- **RF-22.3**: Las propiedades y el título deben poder editarse directamente en la página.
+- **RF-22.4**: Crear un Nodex pide solo el título y, opcionalmente, las propiedades; el contenido se escribe después, en su página.
+- **RF-22.5** *(pendiente)*: El sistema debe permitir tener varios Nodexs abiertos en pestañas.
+- **RF-22.6** *(pendiente)*: El sistema debe permitir dividir la vista en dos paneles, cada uno con sus pestañas.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos

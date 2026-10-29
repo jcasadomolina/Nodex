@@ -128,8 +128,9 @@ nodexsRouter.post("/", async (req, res) => {
   const nodex = await prisma.nodex.create({
     data: {
       ...data,
+      type: data.url ? "link" : "note",
       userId,
-      readLaterAt: readLater && data.type === "link" ? new Date() : null,
+      readLaterAt: readLater && data.url ? new Date() : null,
       groups: { create: uniqueGroupIds.map((groupId) => ({ groupId })) },
       tags: { create: tags.map((name) => ({ name })) },
     },
@@ -180,16 +181,15 @@ nodexsRouter.patch("/:id", async (req, res) => {
   const { tags, readLater, ...data } = updateNodexSchema.parse(req.body);
   const current = await findNodex(req.session.userId!, id);
 
-  if (current.type === "link" && data.url === null) {
-    throw new HttpError(400, "Los enlaces necesitan una URL");
-  }
+  const type = data.url === undefined ? current.type : data.url ? "link" : "note";
 
   const nodex = await prisma.nodex.update({
     where: { id },
     data: {
       ...data,
-      ...(readLater === false && { readLaterAt: null }),
-      ...(readLater && current.type === "link" && !current.readLaterAt && { readLaterAt: new Date() }),
+      type,
+      ...((readLater === false || type === "note") && { readLaterAt: null }),
+      ...(readLater && type === "link" && !current.readLaterAt && { readLaterAt: new Date() }),
       ...(tags && { tags: { deleteMany: {}, create: tags.map((name) => ({ name })) } }),
     },
     select: nodexFields,
