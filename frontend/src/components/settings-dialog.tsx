@@ -1,6 +1,6 @@
 "use client";
 
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
@@ -58,6 +58,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <span>{me.data?.name ?? "Perfil"}</span>
                 <span className="text-xs font-normal text-muted-foreground">Ver y editar tu perfil</span>
               </span>
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/papelera" onClick={() => onOpenChange(false)}>
+              <Trash2 /> Papelera
             </Link>
           </Button>
           <Button variant="outline" asChild>

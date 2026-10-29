@@ -137,6 +137,11 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `DELETE /api/push/subscriptions` | Body `{ endpoint }`. `204`. Deja de enviar notificaciones a ese dispositivo |
 | `GET /api/links/broken` | `200 { links }`: enlaces rotos del usuario, con la copia de archive.org si existe |
 | `POST /api/links/:nodexId/refresh` | Vuelve a comprobar el enlace ahora. `200 { preview }`. Máximo 10 por minuto |
+| `GET /api/trash` | `200 { nodexs, groups }`: Nodexs y grupos borrados (papelera), del más reciente al más antiguo. Los grupos incluyen `nodexCount` |
+| `POST /api/trash/nodexs/:id/restore` | `204`. Restaura el Nodex con sus grupos, etiquetas, tarea y recordatorio |
+| `POST /api/trash/groups/:id/restore` | `200 { group }`. Si el nombre ya está en uso, se restaura como «Nombre (restaurado)», «(restaurado 2)»… |
+| `DELETE /api/trash/nodexs/:id`, `DELETE /api/trash/groups/:id` | `204`. Elimina para siempre uno que esté en la papelera |
+| `DELETE /api/trash` | `200 { nodexs, groups }`: vacía la papelera y dice cuántos se han eliminado. Además, cada hora se elimina para siempre lo que lleve más de 30 días en la papelera |
 
 Cada `nodex` incluye `groupIds`: los grupos (no borrados) en los que está, y `tags`: sus etiquetas, por orden alfabético. Un grupo o Nodex de otro usuario, o un ID con formato incorrecto, responde `404`.
 

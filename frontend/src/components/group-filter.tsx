@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCreateGroup, useDeleteGroup, useGroups, useRenameGroup } from "@/lib/queries/groups";
 import { useReadLaterCount } from "@/lib/queries/nodexs";
+import { useUndoDelete } from "@/lib/queries/trash";
 import { useRefreshing, useRefreshSuggestions } from "@/lib/queries/suggestions";
 import type { BoardFilter, Group } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
   const refreshSuggestions = useRefreshSuggestions();
   const refreshing = useRefreshing();
   const readLater = useReadLaterCount();
+  const undoDelete = useUndoDelete();
   const readLaterCount = readLater.data ?? 0;
   const [creating, setCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
     deleteGroup.mutate(group.id, {
       onSuccess: () => {
         if (value.kind === "group" && value.groupId === group.id) onChange({ kind: "all" });
-        toast.success("Grupo enviado a la papelera");
+        toast.success("Grupo enviado a la papelera", { action: { label: "Deshacer", onClick: () => undoDelete("groups", group.id) } });
       },
       onError,
     });

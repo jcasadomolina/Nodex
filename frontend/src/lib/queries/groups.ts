@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import type { Group } from "../types";
+import { useInvalidateNodexs } from "./nodexs";
 
 export function useGroups() {
   return useQuery({
@@ -9,15 +10,12 @@ export function useGroups() {
   });
 }
 
-function useGroupMutation<T>(mutationFn: (input: T) => Promise<unknown>, alsoNodexs = false) {
+function useGroupMutation<T>(mutationFn: (input: T) => Promise<unknown>) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["groups"] });
-      if (alsoNodexs) queryClient.invalidateQueries({ queryKey: ["nodexs"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["groups"] }),
   });
 }
 
@@ -32,5 +30,10 @@ export function useRenameGroup() {
 }
 
 export function useDeleteGroup() {
-  return useGroupMutation((id: string) => api<void>(`/groups/${id}`, { method: "DELETE" }), true);
+  const invalidate = useInvalidateNodexs();
+
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/groups/${id}`, { method: "DELETE" }),
+    onSuccess: () => invalidate(),
+  });
 }
