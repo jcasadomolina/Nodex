@@ -83,6 +83,15 @@ Diseño: [especificación](superpowers/specs/2026-10-29-vista-nodex-design.md). 
 - **Guardar sin perder cambios:** `useUpdateNodex` actualiza la caché del Nodex antes de enviar la petición (actualización optimista) y la deshace si falla. Además, todas las ediciones van en una cola (`scope` de TanStack Query), así que dos cambios seguidos llegan al servidor en orden y el segundo parte del resultado del primero.
 - **Enlace y tipo:** el tipo sigue a la URL. Ponerle una URL a una nota la convierte en enlace (y aparece "Leer más tarde"); quitarla la convierte en nota.
 - **Crear:** la ventana "Nuevo Nodex" pide título, enlace y, en "Más opciones", el resto de propiedades. Al crear se abre la página en `?editar=1` para escribir el contenido.
+### Pestañas (`RF-22.5`)
+
+Diseño: [especificación](superpowers/specs/2026-10-29-pestanas-nodex-design.md). Encima de la página del Nodex, `components/nodex-tabs.tsx` muestra los Nodexs abiertos, como en Obsidian:
+
+- **Clic normal** abre en la pestaña activa (o activa la que ya lo tiene); **Ctrl/Cmd + clic o clic central** abre en una pestaña nueva (tarjetas, relacionados, tareas y grafo). `useOpenNodex()` (`lib/use-open-nodex.ts`) hace la navegación y, si toca, deja la marca de "pestaña nueva".
+- **Estado** (`lib/tabs.ts`): un almacén pequeño con `useSyncExternalStore`, guardado en `localStorage` (`nodex-tabs`). La URL manda: al montarse, la página llama a `showInTabs(id)`. La marca de "pestaña nueva" guarda el id del Nodex que se va a abrir, así que solo afecta a esa apertura. Cerrar la pestaña activa usa `router.replace` para no dejar en el historial una entrada que, al pulsar Atrás, sustituiría otra pestaña. El clic central no activa el autodesplazamiento del navegador (`preventDefault` en `mousedown`). Máximo 20 pestañas.
+- **Cerrar** la activa lleva a la de la derecha, luego a la de la izquierda y, si no queda ninguna, al panel. Flechas izquierda/derecha para moverse. El botón "+ Nuevo" crea un Nodex en una pestaña nueva; para que no se confunda con "abrir otro", la barra muestra la pista "Ctrl + clic en un Nodex para abrirlo en otra pestaña" (⌘ en Mac) y el tutorial lo explica en el paso del panel.
+- **Detalle de Next 16:** con `cacheComponents`, Next conserva oculta la página anterior (`<Activity>`), así que puede haber dos barras en el DOM. Por eso no se usan `id` en las pestañas y el foco tras usar las flechas lo pone la barra de la página nueva al montarse.
+
 - `TopBar` pinta el enlace del perfil solo tras hidratar (`useSyncExternalStore`): en páginas que se hidratan tarde (dentro de `<Suspense>`), el usuario ya está en caché y el HTML no coincidiría con el del servidor.
 
 ### La rejilla tipo Keep (*masonry*)

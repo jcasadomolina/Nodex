@@ -1,7 +1,6 @@
 "use client";
 
 import { LayoutGrid, Plus, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GroupFilter } from "@/components/group-filter";
 import { NodexDialog } from "@/components/nodex-dialog";
@@ -13,12 +12,13 @@ import { SuggestionsButton } from "@/components/suggestions-button";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { useGroups } from "@/lib/queries/groups";
+import { useOpenNodex } from "@/lib/use-open-nodex";
 import { useNodexs, useSearch, type NodexQuery } from "@/lib/queries/nodexs";
 
 const INITIAL_QUERY: NodexQuery = { filter: { kind: "all" }, sort: "recent", priority: null };
 
 export function Board() {
-  const router = useRouter();
+  const openNodex = useOpenNodex();
   const [query, setQuery] = useState(INITIAL_QUERY);
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
@@ -39,10 +39,6 @@ export function Board() {
   const filterName = filter.kind === "orphans" ? "Huérfanos" : filter.kind === "readLater" ? "Leer más tarde" : groupName;
   const crumb = !searching && filterName ? { label: filterName, onClear: () => setQuery({ ...query, filter: { kind: "all" } }) } : undefined;
   const filtered = filter.kind !== "all" || query.priority !== null;
-
-  function openNodex(id: string) {
-    router.push(`/nodexs/${id}`);
-  }
 
   const createButton = (
     <Button onClick={() => setCreating(true)}>

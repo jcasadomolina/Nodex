@@ -6,7 +6,7 @@ import type { Group, Nodex } from "@/lib/types";
 type NodexGridProps = {
   nodexs: Nodex[];
   groups: Group[];
-  onOpen: (id: string) => void;
+  onOpen: (id: string, newTab?: boolean) => void;
   loading: boolean;
   empty: React.ReactNode;
   hasMore?: boolean;

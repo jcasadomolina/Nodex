@@ -18,6 +18,7 @@ import { NodexCard } from "@/components/nodex-card";
 import { Button } from "@/components/ui/button";
 import { matchesRule, type GraphSettings } from "@/lib/graph-settings";
 import type { Group, Nodex } from "@/lib/types";
+import { newTabClick } from "@/lib/use-open-nodex";
 
 type GraphNode = SimulationNodeDatum & {
   id: string;
@@ -39,7 +40,7 @@ type GraphViewProps = {
   pairs: { a: string; b: string }[];
   settings: GraphSettings;
   svgRef: React.RefObject<SVGSVGElement | null>;
-  onOpenNodex: (id: string) => void;
+  onOpenNodex: (id: string, newTab?: boolean) => void;
 };
 
 type GraphFilters = Pick<GraphSettings, "search" | "showTags" | "showOrphans" | "hiddenGroups" | "related">;
@@ -176,6 +177,8 @@ export function GraphView({ groups, nodexs, pairs, settings, svgRef, onOpenNodex
   }
 
   function onPointerDown(event: React.PointerEvent, node: GraphNode) {
+    if (event.button > 1) return;
+    if (event.button === 1) event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { node, moved: false, startX: event.clientX, startY: event.clientY };
   }
@@ -207,7 +210,7 @@ export function GraphView({ groups, nodexs, pairs, settings, svgRef, onOpenNodex
     if (!current) return;
     const nodex = current.node.nodex;
     if (current.moved || !nodex) return;
-    if (event.pointerType === "mouse") onOpenNodex(nodex.id);
+    if (event.pointerType === "mouse") onOpenNodex(nodex.id, newTabClick(event));
     else setPreview({ nodex, x: event.clientX, y: event.clientY, touch: true });
   }
 
