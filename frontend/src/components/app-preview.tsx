@@ -54,7 +54,7 @@ function Frame({ label, children }: { label: string; children: React.ReactNode }
 export function AppPreview({ className }: { className?: string }) {
   return (
     <div aria-hidden="true" inert className={className}>
-      <div className="relative h-[26rem] overflow-hidden rounded-3xl border bg-background/95 text-sm shadow-2xl">
+      <div className="relative h-[26rem] overflow-hidden rounded-[12px] border bg-background text-sm shadow-[0_4px_12px_rgb(0_0_0/0.1)]">
         <Frame label="Panel">
           <div className="columns-2 gap-3 [&_button]:mb-3">
             {board.map((nodex) => (
