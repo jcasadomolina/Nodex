@@ -1,4 +1,4 @@
-import { Bell, Clock, Link2 } from "lucide-react";
+import { ArrowUpRight, Bell, Clock, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { domainOf, formatDateTime, PRIORITY_LABELS } from "@/lib/format";
 import type { Group, Nodex, Task } from "@/lib/types";
@@ -12,10 +12,11 @@ function taskLabel(task: Task) {
 type NodexCardProps = {
   nodex: Nodex;
   groups: Group[];
+  index?: number;
   onOpen: (id: string) => void;
 };
 
-export function NodexCard({ nodex, groups, onOpen }: NodexCardProps) {
+export function NodexCard({ nodex, groups, index = 0, onOpen }: NodexCardProps) {
   const groupNames = groups.filter((g) => nodex.groupIds.includes(g.id)).map((g) => g.name);
   const image = nodex.linkPreview?.imageUrl;
   const urgent = nodex.priority === "urgent" || nodex.priority === "high";
@@ -23,27 +24,38 @@ export function NodexCard({ nodex, groups, onOpen }: NodexCardProps) {
   const broken = nodex.linkPreview?.status === "broken";
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(nodex.id)}
-      aria-label={nodex.title}
-      className="mb-4 grid w-full break-inside-avoid gap-2 overflow-hidden rounded-2xl border bg-card p-4 text-left text-card-foreground transition-shadow hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+    <article
+      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+      className="lift relative mb-4 grid w-full break-inside-avoid gap-2 overflow-hidden rounded-2xl border bg-card p-4 text-card-foreground animate-in fade-in slide-in-from-bottom-2 fill-mode-both has-[button:focus-visible]:ring-3 has-[button:focus-visible]:ring-ring/50"
     >
       {image && (
         <img src={image} alt="" loading="lazy" className="-mx-4 -mt-4 mb-1 max-h-48 w-[calc(100%+2rem)] max-w-none object-cover" />
       )}
-      <h3 className="font-medium break-words">{nodex.title}</h3>
+      <h3 className="font-medium break-words">
+        <button type="button" onClick={() => onOpen(nodex.id)} className="text-left outline-none after:absolute after:inset-0">
+          {nodex.title}
+        </button>
+      </h3>
       {nodex.content && <p className="line-clamp-8 text-sm break-words whitespace-pre-line text-muted-foreground">{nodex.content}</p>}
       {nodex.url && (
-        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Link2 className="size-3.5" />
-          {domainOf(nodex.url)}
+        <p className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+          <a
+            href={nodex.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Abrir ${domainOf(nodex.url)} en una pestaña nueva`}
+            className="relative z-10 -my-1 inline-flex items-center gap-1 rounded-full py-1 pr-1.5 transition-colors hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <Link2 className="size-3.5" />
+            {domainOf(nodex.url)}
+            <ArrowUpRight className="size-3" aria-hidden="true" />
+          </a>
           {nodex.linkPreview?.readingMinutes && (
-            <>
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
               <span aria-hidden="true">·</span>
               <Clock className="size-3.5" aria-hidden="true" />
               {nodex.linkPreview.readingMinutes} min de lectura
-            </>
+            </span>
           )}
         </p>
       )}
@@ -67,6 +79,6 @@ export function NodexCard({ nodex, groups, onOpen }: NodexCardProps) {
           ))}
         </div>
       )}
-    </button>
+    </article>
   );
 }

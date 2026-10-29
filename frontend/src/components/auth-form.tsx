@@ -62,7 +62,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <div className="grid gap-5">
-      <h2 className="text-xl font-bold">{isLogin ? "Inicia sesión" : "Crea tu cuenta gratis"}</h2>
+      <h2 className="font-sans text-xl font-extrabold tracking-tight">{isLogin ? "Inicia sesión" : "Crea tu cuenta gratis"}</h2>
 
       {notice && <p className="rounded-lg bg-muted p-3 text-sm">{notice}</p>}
 

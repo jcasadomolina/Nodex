@@ -22,7 +22,7 @@ type GroupFilterProps = {
   onChange: (filter: BoardFilter) => void;
 };
 
-const chipClass = "flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-sm transition-colors";
+const chipClass = "flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-sm transition-[color,background-color,border-color,scale] duration-200 ease-out active:scale-95";
 
 function chipState(active: boolean) {
   return active ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted";

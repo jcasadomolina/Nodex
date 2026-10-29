@@ -57,7 +57,7 @@ export function Rediscover({ onOpen }: { onOpen: (id: string) => void }) {
             <button
               type="button"
               onClick={() => onOpen(nodex.id)}
-              className="grid h-full w-full gap-1 rounded-xl border bg-card p-3 text-left text-sm transition-shadow hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="lift grid h-full w-full gap-1 rounded-xl border bg-card p-3 text-left text-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               <span className="line-clamp-2 font-medium break-words">{nodex.title}</span>
               <span className="text-xs text-muted-foreground">

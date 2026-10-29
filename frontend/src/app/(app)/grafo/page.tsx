@@ -1,6 +1,6 @@
 "use client";
 
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Waypoints } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { GraphPanel } from "@/components/graph-panel";
@@ -77,7 +77,7 @@ export default function GraphPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-4">
-      <TopBar location="Vista gráfica" />
+      <TopBar icon={Waypoints} location="Vista gráfica" />
       <div className="relative h-[calc(100dvh-9rem)] min-h-96 overflow-hidden rounded-3xl border bg-card md:h-[calc(100dvh-6rem)]">
         {board.isPending && <Spinner className="absolute inset-0 m-auto size-8 text-primary" />}
         {board.isError && (

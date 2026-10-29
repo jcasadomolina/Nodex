@@ -9,7 +9,7 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const itemClass =
-  "flex size-11 items-center justify-center rounded-xl text-primary-foreground transition-colors hover:bg-white/30";
+  "nav-item flex size-11 items-center justify-center rounded-xl text-primary-foreground hover:bg-white/30";
 
 const NAV = [
   { href: "/", label: "Panel", tour: "panel", icon: LayoutGrid, match: (p: string) => p === "/" || p.startsWith("/nodexs") },
@@ -21,7 +21,7 @@ function NavLinks({ pathname }: { pathname: string | null }) {
   return NAV.map(({ href, label, tour, icon: Icon, match }) => {
     const active = pathname !== null && match(pathname);
     return (
-      <Link key={href} href={href} aria-label={label} data-tour={tour} aria-current={active ? "page" : undefined} className={cn(itemClass, active && "bg-white/40")}>
+      <Link key={href} href={href} aria-label={label} data-tour={tour} aria-current={active ? "page" : undefined} className={cn(itemClass, active && "bg-primary-foreground text-primary hover:bg-primary-foreground")}>
         <Icon />
       </Link>
     );

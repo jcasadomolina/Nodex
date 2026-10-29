@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Folder } from "lucide-react";
+import { FileText, Folder, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Spinner } from "@/components/spinner";
@@ -84,7 +84,7 @@ export default function TrashPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4">
-      <TopBar location="Papelera" />
+      <TopBar icon={Trash2} location="Papelera" />
 
       {trash.isPending && <Spinner className="mx-auto my-12 size-8 text-primary" />}
       {trash.isError && (
