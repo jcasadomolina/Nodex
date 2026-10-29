@@ -207,6 +207,63 @@
   34% { opacity: 0; transform: translateY(-8px); }
 }
 
+.lift {
+  transition: translate 200ms ease-out, scale 150ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+}
+
+.lift:hover {
+  translate: 0 -2px;
+  border-color: color-mix(in oklch, var(--primary) 45%, transparent);
+  box-shadow: 0 12px 28px -12px rgb(0 0 0 / 0.35);
+}
+
+.lift:active {
+  scale: 0.98;
+}
+
+.nav-item {
+  position: relative;
+  transition: background-color 200ms ease-out, color 200ms ease-out, scale 150ms ease-out;
+}
+
+.nav-item:active {
+  scale: 0.92;
+}
+
+.nav-item svg {
+  transition: scale 200ms ease-out;
+}
+
+.nav-item:hover svg {
+  scale: 1.1;
+}
+
+@media (min-width: 48rem) {
+  .nav-item::after {
+    content: attr(aria-label);
+    position: absolute;
+    left: calc(100% + 0.875rem);
+    top: 50%;
+    translate: -4px -50%;
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.5rem;
+    background: var(--foreground);
+    color: var(--background);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease-out, translate 150ms ease-out;
+  }
+
+  .nav-item:is(:hover, :focus-visible):not([aria-expanded="true"])::after {
+    opacity: 1;
+    translate: 0 -50%;
+  }
+}
+
 [data-tour].tour-target {
   outline: 3px solid var(--primary);
   outline-offset: 4px;
@@ -224,5 +281,11 @@
 
   .preview-view:first-child {
     opacity: 1;
+  }
+
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

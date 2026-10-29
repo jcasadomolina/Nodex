@@ -30,8 +30,8 @@ export function NodexGrid({ nodexs, groups, onOpen, loading, empty, hasMore, loa
   return (
     <>
       <div className={columns}>
-        {nodexs.map((nodex) => (
-          <NodexCard key={nodex.id} nodex={nodex} groups={groups} onOpen={onOpen} />
+        {nodexs.map((nodex, index) => (
+          <NodexCard key={nodex.id} nodex={nodex} groups={groups} index={index} onOpen={onOpen} />
         ))}
       </div>
       {hasMore && (

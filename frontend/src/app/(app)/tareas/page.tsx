@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, SquareCheckBig } from "lucide-react";
 import { useState } from "react";
 import { NodexDialog } from "@/components/nodex-dialog";
 import { Spinner } from "@/components/spinner";
@@ -27,7 +27,7 @@ export default function TasksPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4">
-      <TopBar location="Tareas" />
+      <TopBar icon={SquareCheckBig} location="Tareas" />
 
       <div role="tablist" aria-label="Vista de tareas" className="flex gap-2">
         {TABS.map(({ id, label }) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { LayoutGrid, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GroupFilter } from "@/components/group-filter";
 import { NodexDialog } from "@/components/nodex-dialog";
@@ -34,15 +34,8 @@ export function Board({ openId }: { openId?: string }) {
 
   const { filter } = query;
   const groupName = filter.kind === "group" ? groupList.find((g) => g.id === filter.groupId)?.name : null;
-  const location = searching
-    ? "Buscar"
-    : filter.kind === "orphans"
-      ? "Panel · Huérfanos"
-      : filter.kind === "readLater"
-        ? "Panel · Leer más tarde"
-        : groupName
-          ? `Panel · ${groupName}`
-          : "Panel";
+  const filterName = filter.kind === "orphans" ? "Huérfanos" : filter.kind === "readLater" ? "Leer más tarde" : groupName;
+  const crumb = !searching && filterName ? { label: filterName, onClear: () => setQuery({ ...query, filter: { kind: "all" } }) } : undefined;
   const filtered = filter.kind !== "all" || query.priority !== null;
 
   function openNodex(id: string) {
@@ -93,7 +86,13 @@ export function Board({ openId }: { openId?: string }) {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4">
-      <TopBar location={location} search={search} onSearchChange={setSearch} />
+      <TopBar
+        icon={searching ? Search : LayoutGrid}
+        location={searching ? "Buscar" : "Panel"}
+        crumb={crumb}
+        search={search}
+        onSearchChange={setSearch}
+      />
       {searching ? (
         <NodexGrid nodexs={results.data ?? []} groups={groupList} onOpen={openNodex} loading={results.isPending} empty={empty} />
       ) : (
@@ -121,7 +120,7 @@ export function Board({ openId }: { openId?: string }) {
         aria-label="Crear Nodex"
         data-tour="crear"
         onClick={() => setDialog({ open: true, id: null })}
-        className="fixed right-6 bottom-24 z-30 size-14 rounded-full shadow-lg md:bottom-6 [&_svg:not([class*='size-'])]:size-6"
+        className="fixed right-6 bottom-24 z-30 size-14 rounded-full shadow-lg hover:scale-105 hover:bg-primary hover:shadow-[0_10px_30px_-8px_var(--primary)] active:scale-95 md:bottom-6 [&_svg]:transition-transform [&_svg]:duration-300 hover:[&_svg]:rotate-90 [&_svg:not([class*='size-'])]:size-6"
       >
         <Plus />
       </Button>

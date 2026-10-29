@@ -79,7 +79,7 @@ export function AlertsButton({ className }: { className?: string }) {
       >
         <Bell />
         {count > 0 && (
-          <span className="absolute top-1 right-1 grid min-w-4 place-content-center rounded-full bg-destructive px-1 text-[10px] leading-4 font-medium text-white">
+          <span className="absolute top-1 right-1 grid animate-in zoom-in duration-300 min-w-4 place-content-center rounded-full bg-destructive px-1 text-[10px] leading-4 font-medium text-white">
             {count > 99 ? "99+" : count}
           </span>
         )}

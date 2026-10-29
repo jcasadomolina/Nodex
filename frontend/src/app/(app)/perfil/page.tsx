@@ -1,5 +1,6 @@
 "use client";
 
+import { UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -180,7 +181,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <TopBar location="Perfil" />
+      <TopBar icon={UserRound} location="Perfil" />
       <Suspense>
         <LinkNotice />
       </Suspense>
