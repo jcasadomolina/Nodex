@@ -2,10 +2,10 @@
 
 import { SlidersHorizontal, Waypoints } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { GraphPanel } from "@/components/graph-panel";
 import { GraphView } from "@/components/graph-view";
-import { NodexDialog } from "@/components/nodex-dialog";
 import { Spinner } from "@/components/spinner";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ export default function GraphPage() {
   const board = useBoard();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [panelOpen, setPanelOpen] = useState<boolean | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const router = useRouter();
   const related = useRelatedPairs(settings.related);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -103,7 +103,7 @@ export default function GraphPage() {
             pairs={related.data ?? NO_PAIRS}
             settings={settings}
             svgRef={svgRef}
-            onOpenNodex={setOpenId}
+            onOpenNodex={(id) => router.push(`/nodexs/${id}`)}
           />
         )}
         {panelOpen !== false && (
@@ -128,7 +128,6 @@ export default function GraphPage() {
           </Button>
         )}
       </div>
-      <NodexDialog id={openId} open={openId !== null} onOpenChange={(open) => !open && setOpenId(null)} onOpenNodex={setOpenId} />
     </div>
   );
 }

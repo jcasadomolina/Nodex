@@ -2,7 +2,7 @@
 
 import { ChevronRight, Search, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Avatar } from "@/components/avatar";
 import { useMe } from "@/lib/queries/auth";
 import { cn } from "@/lib/utils";
@@ -22,12 +22,15 @@ function greeting() {
   return "Buenas noches";
 }
 
+const subscribeNever = () => () => {};
+
 function isTyping(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 }
 
 export function TopBar({ icon: Icon, location, crumb, search = "", onSearchChange }: TopBarProps) {
   const me = useMe();
+  const hydrated = useSyncExternalStore(subscribeNever, () => true, () => false);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -93,7 +96,7 @@ export function TopBar({ icon: Icon, location, crumb, search = "", onSearchChang
       ) : (
         <div className="flex-1" />
       )}
-      {me.data && (
+      {hydrated && me.data && (
         <Link
           href="/perfil"
           aria-label="Tu perfil"

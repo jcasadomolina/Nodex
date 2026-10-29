@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, SquareCheckBig } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { NodexDialog } from "@/components/nodex-dialog";
 import { Spinner } from "@/components/spinner";
@@ -19,11 +20,12 @@ const TABS = [
 export default function TasksPage() {
   const board = useTaskBoard();
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("board");
-  const [dialog, setDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
   const empty = board.data && Object.values(board.data).every((cards) => cards.length === 0);
 
-  const openNodex = (id: string) => setDialog({ open: true, id });
-  const createTask = () => setDialog({ open: true, id: null });
+  const openNodex = (id: string) => router.push(`/nodexs/${id}`);
+  const createTask = () => setCreating(true);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4">
@@ -78,13 +80,7 @@ export default function TasksPage() {
       >
         <Plus />
       </Button>
-      <NodexDialog
-        id={dialog.id}
-        defaultTask
-        open={dialog.open}
-        onOpenChange={(open) => setDialog((current) => ({ ...current, open }))}
-        onOpenNodex={openNodex}
-      />
+      <NodexDialog defaultTask open={creating} onOpenChange={setCreating} />
     </div>
   );
 }
