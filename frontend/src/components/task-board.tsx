@@ -22,13 +22,14 @@ import { TaskCardView } from "@/components/task-card";
 import { TASK_STATUS_LABELS } from "@/lib/format";
 import { useMoveTask } from "@/lib/queries/tasks";
 import type { TaskCard, TaskStatus } from "@/lib/types";
+import { newTabClick, preventMiddleScroll } from "@/lib/use-open-nodex";
 import { cn } from "@/lib/utils";
 
 type Columns = Record<TaskStatus, TaskCard[]>;
 
 const STATUSES = Object.keys(TASK_STATUS_LABELS) as TaskStatus[];
 
-function SortableTask({ card, onOpen }: { card: TaskCard; onOpen: (id: string) => void }) {
+function SortableTask({ card, onOpen }: { card: TaskCard; onOpen: (id: string, newTab?: boolean) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.nodex.id });
 
   return (
@@ -39,7 +40,12 @@ function SortableTask({ card, onOpen }: { card: TaskCard; onOpen: (id: string) =
       {...listeners}
       aria-roledescription="tarea arrastrable"
       aria-label={card.nodex.title}
-      onClick={() => onOpen(card.nodex.id)}
+      onClick={(event) => onOpen(card.nodex.id, newTabClick(event))}
+      onMouseDown={(event) => {
+        preventMiddleScroll(event);
+        listeners?.onMouseDown?.(event);
+      }}
+      onAuxClick={(event) => event.button === 1 && onOpen(card.nodex.id, true)}
       onKeyDown={(event) => {
         listeners?.onKeyDown?.(event);
         if (event.key === "Enter" && !isDragging) onOpen(card.nodex.id);
@@ -51,7 +57,7 @@ function SortableTask({ card, onOpen }: { card: TaskCard; onOpen: (id: string) =
   );
 }
 
-function Column({ status, cards, onOpen }: { status: TaskStatus; cards: TaskCard[]; onOpen: (id: string) => void }) {
+function Column({ status, cards, onOpen }: { status: TaskStatus; cards: TaskCard[]; onOpen: (id: string, newTab?: boolean) => void }) {
   const { setNodeRef } = useDroppable({ id: status });
 
   return (
@@ -74,7 +80,7 @@ function Column({ status, cards, onOpen }: { status: TaskStatus; cards: TaskCard
   );
 }
 
-export function TaskBoard({ columns, onOpen }: { columns: Columns; onOpen: (id: string) => void }) {
+export function TaskBoard({ columns, onOpen }: { columns: Columns; onOpen: (id: string, newTab?: boolean) => void }) {
   const move = useMoveTask();
   const [items, setItems] = useState(columns);
   const [source, setSource] = useState(columns);

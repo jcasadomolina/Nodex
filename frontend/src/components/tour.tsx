@@ -15,7 +15,7 @@ const STEPS = [
   { target: "nuevo-grupo", title: "Crea un grupo", text: "Agrupa tus Nodexs por temas: cocina, viajes, trabajo… Un Nodex puede estar en varios." },
   { target: "ordenar", title: "Ordena y filtra", text: "Pon primero lo más urgente o muestra solo una prioridad." },
   { target: "crear", title: "Crea tu primer Nodex", text: "Escribe una nota o pega un enlace. Te avisaremos si ya tenías algo parecido." },
-  { target: "panel", title: "Tu panel", text: "Aquí vuelves siempre para ver todos tus Nodexs." },
+  { target: "panel", title: "Tu panel", text: "Aquí vuelves siempre para ver todos tus Nodexs. Ctrl + clic (⌘ + clic en Mac) en uno lo abre en otra pestaña." },
   { target: "grafo", title: "Vista gráfica", text: "Mira tus Nodexs como un mapa: cada grupo en el centro, rodeado de sus Nodexs." },
   { target: "tareas", title: "Tareas", text: "Tus Nodexs con fecha y estado, en un tablero o en un calendario. Convierte cualquier Nodex en tarea desde su ventana." },
   { target: "avisos", title: "Avisos", text: "Aquí llegan tus recordatorios y los enlaces que han dejado de funcionar." },

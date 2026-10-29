@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Markdown } from "@/components/markdown";
+import { NodexTabs } from "@/components/nodex-tabs";
 import { DueDateInput, GroupToggles, PrioritySelect, ReminderInput, Switch, TaskStatusSelect } from "@/components/nodex-fields";
 import { Spinner } from "@/components/spinner";
 import { TagInput } from "@/components/tag-input";
@@ -19,6 +20,8 @@ import { domainOf, formatDateTime } from "@/lib/format";
 import { useRefreshLink } from "@/lib/queries/alerts";
 import { useDeleteNodex, useMarkOpened, useNodex, useRelated, useSetReadLater, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
 import { useUndoDelete } from "@/lib/queries/trash";
+import { showInTabs } from "@/lib/tabs";
+import { newTabClick, preventMiddleScroll, useOpenNodex } from "@/lib/use-open-nodex";
 import type { Nodex, TaskInput } from "@/lib/types";
 
 const AUTOSAVE_MS = 1000;
@@ -394,10 +397,12 @@ export function NodexView({ id }: { id: string }) {
   const undoDelete = useUndoDelete();
   const { mutate: markOpened } = useMarkOpened();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const openNodex = useOpenNodex();
   const missing = nodex.error instanceof ApiError && nodex.error.status === 404;
 
   useEffect(() => {
     markOpened(id);
+    showInTabs(id);
   }, [id, markOpened]);
 
   const [startEditing] = useState(params.get("editar") === "1");
@@ -424,6 +429,7 @@ export function NodexView({ id }: { id: string }) {
   return (
     <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-5">
       <TopBar icon={LayoutGrid} location="Panel" crumb={nodex.data ? { label: nodex.data.title, onClear: back } : undefined} />
+      <NodexTabs />
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={back}>
@@ -484,7 +490,9 @@ export function NodexView({ id }: { id: string }) {
                   <li key={item.id}>
                     <button
                       type="button"
-                      onClick={() => router.push(`/nodexs/${item.id}`)}
+                      onClick={(event) => openNodex(item.id, newTabClick(event))}
+                      onMouseDown={preventMiddleScroll}
+                      onAuxClick={(event) => event.button === 1 && openNodex(item.id, true)}
                       className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-muted"
                     >
                       <span className="font-medium">{item.title}</span>

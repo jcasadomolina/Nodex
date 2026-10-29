@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { domainOf, looksLikeUrl } from "@/lib/format";
 import { useCreateNodex, useDeleteNodex } from "@/lib/queries/nodexs";
+import { requestNewTab } from "@/lib/tabs";
 import type { NodexMatch, Priority, TaskInput } from "@/lib/types";
 
 function showSaveError(error: Error) {
@@ -210,13 +211,15 @@ type NodexDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultTask?: boolean;
+  newTab?: boolean;
 };
 
-export function NodexDialog({ open, onOpenChange, defaultTask = false }: NodexDialogProps) {
+export function NodexDialog({ open, onOpenChange, defaultTask = false, newTab = false }: NodexDialogProps) {
   const router = useRouter();
 
   function openNodex(id: string, edit = false) {
     onOpenChange(false);
+    if (newTab) requestNewTab(id);
     router.push(`/nodexs/${id}${edit ? "?editar=1" : ""}`);
   }
 

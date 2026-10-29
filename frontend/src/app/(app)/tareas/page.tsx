@@ -1,7 +1,6 @@
 "use client";
 
 import { Plus, SquareCheckBig } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { NodexDialog } from "@/components/nodex-dialog";
 import { Spinner } from "@/components/spinner";
@@ -10,6 +9,7 @@ import { TaskCalendar } from "@/components/task-calendar";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { useTaskBoard } from "@/lib/queries/tasks";
+import { useOpenNodex } from "@/lib/use-open-nodex";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -20,11 +20,10 @@ const TABS = [
 export default function TasksPage() {
   const board = useTaskBoard();
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("board");
-  const router = useRouter();
+  const openNodex = useOpenNodex();
   const [creating, setCreating] = useState(false);
   const empty = board.data && Object.values(board.data).every((cards) => cards.length === 0);
 
-  const openNodex = (id: string) => router.push(`/nodexs/${id}`);
   const createTask = () => setCreating(true);
 
   return (
