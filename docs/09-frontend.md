@@ -133,6 +133,14 @@ Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualq
 - **Arrastrar:** con el ratón empieza tras moverse 5 px (así un clic abre el Nodex); con el dedo, tras mantener 200 ms (así se puede seguir haciendo scroll); con el teclado, espacio para coger y soltar, flechas para mover, `Esc` para cancelar e `Intro` para abrir.
 - **Fechas:** el `<input type="date">` da `AAAA-MM-DD`; se guarda como las 00:00 de ese día en hora local (`fromDateInput`) y se lee con `toLocaleDateString("sv-SE")` (`toDateInput`), que devuelve el mismo formato. Así la tarea cae en el mismo día en cualquier pantalla.
 
+## Leer más tarde (HU-21)
+
+Diseño: [especificación](superpowers/specs/2026-10-29-leer-mas-tarde-design.md).
+
+- **Marcar:** en la ventana de un enlace, "Leer más tarde" / "Marcar como leído" hace `PATCH /nodexs/:id { readLater }` al momento, sin cerrar la ventana ni perder lo que estés escribiendo. Al crear un enlace hay un interruptor con el mismo nombre.
+- **Filtro:** el chip "Leer más tarde N" (`GET /nodexs/read-later/count`) aparece junto a "Huérfanos" cuando hay alguno y muestra los enlaces del más antiguo al más nuevo (`GET /nodexs?readLater=true`).
+- **Tiempo de lectura:** al descargar la vista previa, el backend (`readingMinutes` en `lib/html-meta.ts`) busca el contenido en `<article>`, `<main>` o `<body>`, quita scripts, menús y cabeceras, cuenta solo las palabras de los párrafos (`<p>`) y divide entre 200 por minuto. Con menos de 100 palabras no se muestra. Contar solo párrafos evita que tablas, listas de referencias o menús laterales inflen el tiempo. Se recorre el HTML con `indexOf` en una sola pasada: las expresiones regulares con `[\s\S]*?` tardaban unos 30 s con 1 MB de `<p>` sin cerrar y bloqueaban todo el servidor. Con este filtro, el orden por prioridad no se aplica: siempre va del más antiguo al más nuevo.
+
 ## Redescubre (HU-20)
 
 Diseño: [especificación](superpowers/specs/2026-10-28-redescubre-design.md). Encima de la rejilla del panel (solo en "Todos", sin prioridad ni búsqueda), `components/rediscover.tsx` muestra hasta 3 Nodexs olvidados de `GET /nodexs/rediscover`:

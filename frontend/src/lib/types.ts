@@ -42,6 +42,7 @@ export type LinkPreview = {
   siteName: string | null;
   archiveUrl: string | null;
   lastCheckedAt: string | null;
+  readingMinutes: number | null;
 };
 
 export type Reminder = {
@@ -64,6 +65,7 @@ export type Nodex = {
   linkPreview: LinkPreview | null;
   task: Task | null;
   reminder: Reminder | null;
+  readLaterAt: string | null;
 };
 
 export type TaskCard = Task & {
@@ -84,7 +86,7 @@ export type NodexMatch = Nodex & { similarity: number };
 
 export type NodexResult = Nodex & { score: number };
 
-export type BoardFilter = { kind: "all" } | { kind: "orphans" } | { kind: "group"; groupId: string };
+export type BoardFilter = { kind: "all" } | { kind: "orphans" } | { kind: "readLater" } | { kind: "group"; groupId: string };
 
 export type Suggestion = {
   id: string;

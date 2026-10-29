@@ -33,6 +33,7 @@ export const nodexFields = {
   metadata: true,
   createdAt: true,
   updatedAt: true,
+  readLaterAt: true,
   groups: { where: { group: { deletedAt: null } }, select: { groupId: true } },
   task: { select: { status: true, dueAt: true, completedAt: true } },
   reminder: { select: { remindAt: true, sentAt: true, dismissedAt: true } },
@@ -79,7 +80,7 @@ nodexsRouter.get("/search", async (req, res) => {
 });
 
 nodexsRouter.get("/", async (req, res) => {
-  const { groupId, orphan, type, priority, sort, cursor, limit } = listNodexsSchema.parse(req.query);
+  const { groupId, orphan, type, priority, readLater, sort, cursor, limit } = listNodexsSchema.parse(req.query);
   const activeGroup = { group: { deletedAt: null } };
 
   const nodexs = await prisma.nodex.findMany({
@@ -88,13 +89,16 @@ nodexsRouter.get("/", async (req, res) => {
       deletedAt: null,
       type,
       priority,
+      ...(readLater && { readLaterAt: { not: null } }),
       groups: groupId ? { some: { groupId, ...activeGroup } } : orphan ? { none: activeGroup } : undefined,
     },
-    orderBy: [
-      ...(sort === "priority" ? [{ priority: { sort: "desc", nulls: "last" } } as const] : []),
-      { createdAt: "desc" },
-      { id: "desc" },
-    ],
+    orderBy: readLater
+      ? [{ readLaterAt: "asc" }, { id: "asc" }]
+      : [
+          ...(sort === "priority" ? [{ priority: { sort: "desc", nulls: "last" } } as const] : []),
+          { createdAt: "desc" },
+          { id: "desc" },
+        ],
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     select: nodexFields,
@@ -111,7 +115,7 @@ nodexsRouter.get("/", async (req, res) => {
 
 nodexsRouter.post("/", async (req, res) => {
   const userId = req.session.userId!;
-  const { groupIds, tags = [], ...data } = createNodexSchema.parse(req.body);
+  const { groupIds, tags = [], readLater, ...data } = createNodexSchema.parse(req.body);
   const uniqueGroupIds = [...new Set(groupIds)];
 
   const ownedGroups = await prisma.group.count({
@@ -125,6 +129,7 @@ nodexsRouter.post("/", async (req, res) => {
     data: {
       ...data,
       userId,
+      readLaterAt: readLater && data.type === "link" ? new Date() : null,
       groups: { create: uniqueGroupIds.map((groupId) => ({ groupId })) },
       tags: { create: tags.map((name) => ({ name })) },
     },
@@ -133,6 +138,13 @@ nodexsRouter.post("/", async (req, res) => {
   if (nodex.url) refreshPreviewInBackground(nodex.id);
   const duplicates = await loadInOrder(userId, await checkNewNodex(userId, nodex.id));
   res.status(201).json({ nodex: toNodex(nodex), duplicates });
+});
+
+nodexsRouter.get("/read-later/count", async (req, res) => {
+  const count = await prisma.nodex.count({
+    where: { userId: req.session.userId!, deletedAt: null, readLaterAt: { not: null } },
+  });
+  res.json({ count });
 });
 
 nodexsRouter.get("/rediscover", async (req, res) => {
@@ -165,7 +177,7 @@ nodexsRouter.get("/:id/related", async (req, res) => {
 
 nodexsRouter.patch("/:id", async (req, res) => {
   const id = parseId(req.params.id, NODEX_NOT_FOUND);
-  const { tags, ...data } = updateNodexSchema.parse(req.body);
+  const { tags, readLater, ...data } = updateNodexSchema.parse(req.body);
   const current = await findNodex(req.session.userId!, id);
 
   if (current.type === "link" && data.url === null) {
@@ -174,7 +186,12 @@ nodexsRouter.patch("/:id", async (req, res) => {
 
   const nodex = await prisma.nodex.update({
     where: { id },
-    data: { ...data, ...(tags && { tags: { deleteMany: {}, create: tags.map((name) => ({ name })) } }) },
+    data: {
+      ...data,
+      ...(readLater === false && { readLaterAt: null }),
+      ...(readLater && current.type === "link" && !current.readLaterAt && { readLaterAt: new Date() }),
+      ...(tags && { tags: { deleteMany: {}, create: tags.map((name) => ({ name })) } }),
+    },
     select: nodexFields,
   });
   if (data.title !== undefined || data.content !== undefined || data.url !== undefined) {

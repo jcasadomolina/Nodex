@@ -1,4 +1,4 @@
-import { Bell, Link2 } from "lucide-react";
+import { Bell, Clock, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { domainOf, formatDateTime, PRIORITY_LABELS } from "@/lib/format";
 import type { Group, Nodex, Task } from "@/lib/types";
@@ -38,11 +38,19 @@ export function NodexCard({ nodex, groups, onOpen }: NodexCardProps) {
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <Link2 className="size-3.5" />
           {domainOf(nodex.url)}
+          {nodex.linkPreview?.readingMinutes && (
+            <>
+              <span aria-hidden="true">·</span>
+              <Clock className="size-3.5" aria-hidden="true" />
+              {nodex.linkPreview.readingMinutes} min de lectura
+            </>
+          )}
         </p>
       )}
       {nodex.tags.length > 0 && <p className="text-xs font-medium text-primary">{nodex.tags.map((t) => `#${t}`).join(" ")}</p>}
-      {(nodex.priority || nodex.task || pendingReminder || broken || groupNames.length > 0) && (
+      {(nodex.priority || nodex.task || nodex.readLaterAt || pendingReminder || broken || groupNames.length > 0) && (
         <div className="flex flex-wrap gap-1">
+          {nodex.readLaterAt && <Badge variant="secondary">Para leer</Badge>}
           {broken && <Badge variant="destructive">Enlace roto</Badge>}
           {pendingReminder && (
             <Badge variant="secondary">

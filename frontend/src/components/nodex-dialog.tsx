@@ -1,5 +1,6 @@
 "use client";
 
+import { Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -24,7 +25,16 @@ import {
 } from "@/lib/format";
 import { useRefreshLink } from "@/lib/queries/alerts";
 import { useGroups } from "@/lib/queries/groups";
-import { useCreateNodex, useDeleteNodex, useMarkOpened, useNodex, useRelated, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
+import {
+  useCreateNodex,
+  useDeleteNodex,
+  useMarkOpened,
+  useNodex,
+  useRelated,
+  useSetReadLater,
+  useUpdateNodex,
+  type NodexInput,
+} from "@/lib/queries/nodexs";
 import type { Nodex, NodexMatch, Priority, TaskInput, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -111,6 +121,8 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
   const [reminderOn, setReminderOn] = useState(Boolean(nodex?.reminder));
   const [remindAt, setRemindAt] = useState<string | null>(nodex?.reminder?.remindAt ?? null);
   const refreshLink = useRefreshLink();
+  const setReadLater = useSetReadLater();
+  const [readLater, setReadLaterOnCreate] = useState(false);
   const [task, setTask] = useState<TaskInput | null>(
     nodex?.task ? { status: nodex.task.status, dueAt: nodex.task.dueAt } : defaultTask ? { status: "todo", dueAt: null } : null,
   );
@@ -158,7 +170,7 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
     }
 
     createNodex.mutate(
-      { type: input.url ? "link" : "note", ...input, task: task ?? undefined, reminder: reminderOn && remindAt ? remindAt : undefined },
+      { type: input.url ? "link" : "note", ...input, readLater: Boolean(input.url) && readLater, task: task ?? undefined, reminder: reminderOn && remindAt ? remindAt : undefined },
       {
         onSuccess: ({ nodex: saved, duplicates }) => {
           if (duplicates.length > 0) {
@@ -331,6 +343,43 @@ function NodexForm({ nodex, defaultTask = false, onDone, onOpenNodex }: NodexFor
           </div>
         )}
       </div>
+
+      {nodex?.type === "link" && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Button
+            type="button"
+            variant={nodex.readLaterAt ? "default" : "outline"}
+            size="sm"
+            disabled={setReadLater.isPending}
+            onClick={() =>
+              setReadLater.mutate(
+                { id: nodex.id, readLater: !nodex.readLaterAt },
+                {
+                  onSuccess: () => toast.success(nodex.readLaterAt ? "Marcado como leído" : "Guardado para leer más tarde"),
+                  onError: (error) => toast.error(error.message),
+                },
+              )
+            }
+          >
+            {setReadLater.isPending && <Spinner />}
+            {nodex.readLaterAt ? "Marcar como leído" : "Leer más tarde"}
+          </Button>
+          {nodex.linkPreview?.readingMinutes && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Clock className="size-3.5" aria-hidden="true" /> {nodex.linkPreview.readingMinutes} min de lectura
+            </span>
+          )}
+        </div>
+      )}
+
+      {!nodex && url.trim() && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium" id="nodex-read-later">
+            Leer más tarde
+          </span>
+          <Switch checked={readLater} labelledBy="nodex-read-later" onChange={() => setReadLaterOnCreate(!readLater)} />
+        </div>
+      )}
 
       {nodex?.url && (nodex.linkPreview?.status === "broken" || nodex.linkPreview?.status === "unreachable") && (
         <div className="grid gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm">

@@ -107,6 +107,7 @@ El nombre es único por usuario entre los grupos no borrados.
 | `created_at`, `updated_at` | timestamptz | |
 | `deleted_at` | timestamptz | Borrado lógico |
 | `last_opened_at` | timestamptz | Última vez que el usuario abrió el Nodex (HU-20, Redescubre). `null` si nunca se ha abierto. No cambia `updated_at` |
+| `read_later_at` | timestamptz | Cuándo se marcó el enlace para leer más tarde (HU-21). `null` si no está en la lista |
 
 ### `group_nodexs` (`RF-05.2`, `RF-04.4`)
 
@@ -207,6 +208,7 @@ Vista previa y estado del enlace de un Nodex: como mucho una fila por Nodex con 
 | `title`, `description`, `image_url`, `site_name` | text | Datos de la vista previa |
 | `archive_url` | text | Copia en archive.org, si el enlace está roto o no accesible |
 | `last_checked_at` | timestamptz | Última comprobación |
+| `reading_minutes` | smallint | Minutos estimados de lectura (HU-21); `null` si la página no parece un artículo |
 | `created_at`, `updated_at` | timestamptz | |
 
 Índices: `last_checked_at` (para el proceso periódico) y `(user_id, status)` (para la lista de rotos).
@@ -256,7 +258,7 @@ En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcio
 ## Implementación
 
 - Esquema: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma). Los modelos usan PascalCase y los campos camelCase, como es habitual en TypeScript; `@@map` y `@map` los traducen a nombres en snake_case en la base.
-- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`; `*_add_tasks` crea la tabla `tasks`; `*_add_reminders_and_push` crea `reminders` y `push_subscriptions`; `*_add_link_previews` crea `link_previews`; `*_add_nodex_tags` crea `nodex_tags`.
+- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`; `*_add_tasks` crea la tabla `tasks`; `*_add_reminders_and_push` crea `reminders` y `push_subscriptions`; `*_add_link_previews` crea `link_previews`; `*_add_nodex_tags` crea `nodex_tags`; `*_add_nodex_last_opened_at` añade `nodexs.last_opened_at`; `*_add_read_later` añade `nodexs.read_later_at` y `link_previews.reading_minutes`.
 - `priority` es la única excepción a la regla de "texto en vez de ENUM": se guarda como número para poder **ordenar** por ella (urgente > alta > media > baja). Con texto, el orden sería alfabético, que aquí no tiene sentido.
 - `embedding` es de un tipo que Prisma no conoce (`vector`), así que en el esquema aparece como `Unsupported("vector(384)")` y se lee y escribe con SQL (`$queryRaw` / `$executeRaw`).
 - Configuración de la CLI: [`backend/prisma.config.ts`](../backend/prisma.config.ts). Carga el `.env` de la raíz y usa `DIRECT_URL` para las migraciones. La aplicación se conectará con `DATABASE_URL` (pooling) en el bloque de backend.

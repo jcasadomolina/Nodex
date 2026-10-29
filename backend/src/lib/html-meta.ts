@@ -49,3 +49,65 @@ export function parsePreview(html: string, pageUrl: string) {
     siteName: clean(meta["og:site_name"], 100) ?? new URL(pageUrl).hostname.replace(/^www\./, ""),
   };
 }
+
+const WORDS_PER_MINUTE = 200;
+const MIN_ARTICLE_WORDS = 100;
+const NOISE_TAGS = new Set(["script", "style", "noscript", "nav", "header", "footer", "aside", "svg"]);
+
+function tagAt(lower: string, index: number) {
+  return /^<(\/?)([a-z][a-z0-9-]*)/.exec(lower.slice(index, index + 20));
+}
+
+function stripNoise(html: string) {
+  const lower = html.toLowerCase();
+  const parts: string[] = [];
+  let from = 0;
+  let index = lower.indexOf("<");
+  while (index !== -1) {
+    const tag = tagAt(lower, index);
+    if (tag && !tag[1] && NOISE_TAGS.has(tag[2]!)) {
+      parts.push(html.slice(from, index), " ");
+      const close = lower.indexOf(`</${tag[2]}`, index);
+      if (close === -1) return parts.join("");
+      from = close + tag[2]!.length + 2;
+    }
+    index = lower.indexOf("<", Math.max(index + 1, from));
+  }
+  parts.push(html.slice(from));
+  return parts.join("");
+}
+
+function outer(html: string, lower: string, name: string) {
+  const open = lower.indexOf(`<${name}`);
+  if (open === -1 || /[a-z0-9-]/.test(lower[open + name.length + 1] ?? "")) return null;
+  const close = lower.lastIndexOf(`</${name}`);
+  return html.slice(open, close > open ? close : undefined);
+}
+
+function paragraphs(html: string) {
+  const lower = html.toLowerCase();
+  const texts: string[] = [];
+  let close = lower.indexOf("</p");
+  let index = lower.indexOf("<p");
+  while (index !== -1) {
+    const next = lower.indexOf("<p", index + 2);
+    const tag = tagAt(lower, index);
+    if (tag?.[2] === "p") {
+      if (close !== -1 && close < index) close = lower.indexOf("</p", index);
+      const end = [next, close].filter((i) => i !== -1).reduce((a, b) => Math.min(a, b), html.length);
+      const gt = lower.slice(index, index + 500).indexOf(">");
+      texts.push(html.slice(gt === -1 ? index + 2 : index + gt + 1, end));
+    }
+    index = next;
+  }
+  return texts.join(" ");
+}
+
+export function readingMinutes(html: string) {
+  const cleaned = stripNoise(html);
+  const lower = cleaned.toLowerCase();
+  const container = outer(cleaned, lower, "article") ?? outer(cleaned, lower, "main") ?? outer(cleaned, lower, "body") ?? cleaned;
+  const text = decodeEntities(paragraphs(container).replace(/<[^<>]*>?/g, " "));
+  const count = text.split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
+  return count < MIN_ARTICLE_WORDS ? null : Math.max(1, Math.round(count / WORDS_PER_MINUTE));
+}

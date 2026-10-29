@@ -32,6 +32,7 @@ const fields = {
     .optional()
     .transform((p) => (p ? priorityToNumber(p) : p)),
   tags: tagList.optional(),
+  readLater: z.boolean().optional(),
 };
 
 export const createNodexSchema = z
@@ -55,6 +56,10 @@ export const listNodexsSchema = z.object({
     .optional(),
   type: nodexType.optional(),
   priority: priorityName.transform(priorityToNumber).optional(),
+  readLater: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .optional(),
   sort: z.enum(["recent", "priority"]).default("recent"),
   cursor: z.uuid().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
