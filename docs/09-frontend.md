@@ -133,6 +133,15 @@ Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualq
 - **Arrastrar:** con el ratón empieza tras moverse 5 px (así un clic abre el Nodex); con el dedo, tras mantener 200 ms (así se puede seguir haciendo scroll); con el teclado, espacio para coger y soltar, flechas para mover, `Esc` para cancelar e `Intro` para abrir.
 - **Fechas:** el `<input type="date">` da `AAAA-MM-DD`; se guarda como las 00:00 de ese día en hora local (`fromDateInput`) y se lee con `toLocaleDateString("sv-SE")` (`toDateInput`), que devuelve el mismo formato. Así la tarea cae en el mismo día en cualquier pantalla.
 
+## Redescubre (HU-20)
+
+Diseño: [especificación](superpowers/specs/2026-10-28-redescubre-design.md). Encima de la rejilla del panel (solo en "Todos", sin prioridad ni búsqueda), `components/rediscover.tsx` muestra hasta 3 Nodexs olvidados de `GET /nodexs/rediscover`:
+
+- **Olvidado:** sin abrir desde hace 30 días (o desde que se creó, si nunca se abrió) y sin prioridad alta ni urgente.
+- **Orden:** primero los parecidos a lo que has abierto en los últimos 7 días (embeddings), más un poco de azar que solo cambia de un día a otro (`md5(id + fecha en hora de España)`), para que la franja no cambie en cada recarga. Al abrir un Nodex la preferencia se actualiza, así que la franja puede cambiar durante el día.
+- **Abrir:** la ventana del Nodex llama una vez a `POST /nodexs/:id/open` al abrirse (en un efecto que depende del id). No se usa `GET /nodexs/:id` porque TanStack Query lo repite al recargar datos y contaría aperturas falsas. Abrir un Nodex lo "renueva": tarda 30 días en volver a salir.
+- **Ocultar hasta mañana:** guarda la fecha de hoy en `localStorage` (`nodex-rediscover-hidden`).
+
 ## Perfil (`/perfil`, HU-02)
 
 - **Foto:** "Cambiar foto" abre un `<input type="file">` oculto. Antes de enviar se comprueba el tipo (JPG, PNG, WebP o GIF) y el tamaño (5 MB como máximo), y se sube con `PUT /me/avatar` como `FormData`; `api()` detecta `FormData` y no le pone `Content-Type`, para que el navegador añada el *boundary*. Sin foto se muestra la inicial (`components/avatar.tsx`), que también aparece en Ajustes.

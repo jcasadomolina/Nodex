@@ -106,6 +106,7 @@ El nombre es único por usuario entre los grupos no borrados.
 | `embedding` | vector(384) | Vector que representa el significado del Nodex, calculado por la IA. `null` hasta que se calcula |
 | `created_at`, `updated_at` | timestamptz | |
 | `deleted_at` | timestamptz | Borrado lógico |
+| `last_opened_at` | timestamptz | Última vez que el usuario abrió el Nodex (HU-20, Redescubre). `null` si nunca se ha abierto. No cambia `updated_at` |
 
 ### `group_nodexs` (`RF-05.2`, `RF-04.4`)
 

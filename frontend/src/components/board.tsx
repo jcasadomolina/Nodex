@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { GroupFilter } from "@/components/group-filter";
 import { NodexDialog } from "@/components/nodex-dialog";
 import { NodexGrid } from "@/components/nodex-grid";
+import { Rediscover } from "@/components/rediscover";
 import { Tour } from "@/components/tour";
 import { SortMenu } from "@/components/sort-menu";
 import { SuggestionsButton } from "@/components/suggestions-button";
@@ -100,6 +101,7 @@ export function Board({ openId }: { openId?: string }) {
             <SuggestionsButton onOpen={openNodex} />
             <SortMenu sort={query.sort} priority={query.priority} onChange={(v) => setQuery({ ...query, ...v })} />
           </div>
+          {!filtered && <Rediscover onOpen={openNodex} />}
           <NodexGrid
             nodexs={nodexs.data?.pages.flatMap((page) => page.nodexs) ?? []}
             groups={groupList}

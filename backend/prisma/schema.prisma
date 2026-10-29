@@ -84,19 +84,20 @@ model Group {
 }
 
 model Nodex {
-  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String                      @map("user_id") @db.Uuid
-  type      String // note | link
-  title     String
-  content   String?
-  url       String?
-  source    String                      @default("manual") // manual | share
-  priority  Int?                        @db.SmallInt
-  metadata  Json                        @default("{}")
-  embedding Unsupported("vector(384)")?
-  createdAt DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt DateTime?                   @map("deleted_at") @db.Timestamptz(6)
+  id           String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String                      @map("user_id") @db.Uuid
+  type         String // note | link
+  title        String
+  content      String?
+  url          String?
+  source       String                      @default("manual") // manual | share
+  priority     Int?                        @db.SmallInt
+  metadata     Json                        @default("{}")
+  embedding    Unsupported("vector(384)")?
+  createdAt    DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?                   @map("deleted_at") @db.Timestamptz(6)
+  lastOpenedAt DateTime?                   @map("last_opened_at") @db.Timestamptz(6)
 
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   groups        GroupNodex[]

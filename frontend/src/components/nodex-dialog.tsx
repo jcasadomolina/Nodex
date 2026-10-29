@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { TagInput } from "@/components/tag-input";
@@ -24,7 +24,7 @@ import {
 } from "@/lib/format";
 import { useRefreshLink } from "@/lib/queries/alerts";
 import { useGroups } from "@/lib/queries/groups";
-import { useCreateNodex, useDeleteNodex, useNodex, useRelated, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
+import { useCreateNodex, useDeleteNodex, useMarkOpened, useNodex, useRelated, useUpdateNodex, type NodexInput } from "@/lib/queries/nodexs";
 import type { Nodex, NodexMatch, Priority, TaskInput, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -425,6 +425,11 @@ type NodexDialogProps = {
 
 export function NodexDialog({ id, defaultTask, open, onOpenChange, onOpenNodex }: NodexDialogProps) {
   const nodex = useNodex(id ?? undefined);
+  const { mutate: markOpened } = useMarkOpened();
+
+  useEffect(() => {
+    if (open && id) markOpened(id);
+  }, [open, id, markOpened]);
   const missing = nodex.error instanceof ApiError && nodex.error.status === 404;
   const close = () => onOpenChange(false);
 
