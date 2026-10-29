@@ -32,7 +32,7 @@ Orden acordado el 28/10/2026 para terminar la aplicación web. Cada punto se dis
 6. **Compartir grupos** (HU-19).
 7. **Paleta de comandos** (HU-17).
 8. **Interfaz en inglés** (`RNF-07.5`): al final, cuando ya no se añaden pantallas.
-9. **Vista del Nodex** (HU-22): página con propiedades y Markdown y pestañas (`RF-22.5`) (hecho); después, dos paneles (`RF-22.6`).
+9. **Vista del Nodex** (HU-22): página con propiedades y Markdown, pestañas (`RF-22.5`) y dos paneles (`RF-22.6`) (hecho).
 10. **Modo demo** (HU-14): justo antes de alojar la aplicación, para que los datos de ejemplo enseñen todo.
 
 Después: bloque de pruebas, alojamiento, PWA (`RF-05.6`, notificaciones push), aplicación de escritorio, APK y distribución.

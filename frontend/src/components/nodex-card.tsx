@@ -2,7 +2,7 @@ import { ArrowUpRight, Bell, Clock, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { domainOf, formatDateTime, PRIORITY_LABELS } from "@/lib/format";
 import type { Group, Nodex, Task } from "@/lib/types";
-import { newTabClick, preventMiddleScroll } from "@/lib/use-open-nodex";
+import { openTarget, preventMiddleScroll, type OpenTarget } from "@/lib/use-open-nodex";
 
 function taskLabel(task: Task) {
   if (task.status === "done") return "Hecha";
@@ -14,7 +14,7 @@ type NodexCardProps = {
   nodex: Nodex;
   groups: Group[];
   index?: number;
-  onOpen: (id: string, newTab?: boolean) => void;
+  onOpen: (id: string, target?: OpenTarget) => void;
 };
 
 export function NodexCard({ nodex, groups, index = 0, onOpen }: NodexCardProps) {
@@ -35,9 +35,9 @@ export function NodexCard({ nodex, groups, index = 0, onOpen }: NodexCardProps) 
       <h3 className="font-medium break-words">
         <button
           type="button"
-          onClick={(event) => onOpen(nodex.id, newTabClick(event))}
+          onClick={(event) => onOpen(nodex.id, openTarget(event))}
           onMouseDown={preventMiddleScroll}
-          onAuxClick={(event) => event.button === 1 && onOpen(nodex.id, true)}
+          onAuxClick={(event) => event.button === 1 && onOpen(nodex.id, "newTab")}
           className="text-left outline-none after:absolute after:inset-0">
           {nodex.title}
         </button>

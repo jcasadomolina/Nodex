@@ -153,7 +153,7 @@
 - **RF-22.3**: Las propiedades y el título deben poder editarse directamente en la página.
 - **RF-22.4**: Crear un Nodex pide solo el título y, opcionalmente, las propiedades; el contenido se escribe después, en su página.
 - **RF-22.5**: El sistema debe permitir tener varios Nodexs abiertos en pestañas.
-- **RF-22.6** *(pendiente)*: El sistema debe permitir dividir la vista en dos paneles, cada uno con sus pestañas.
+- **RF-22.6**: El sistema debe permitir dividir la vista en dos paneles, cada uno con sus pestañas.
 
 ## 2. Requisitos no funcionales
 
