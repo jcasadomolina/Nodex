@@ -16,12 +16,14 @@ export type NodexInput = {
   url: string | null;
   priority: Priority | null;
   tags: string[];
+  readLater?: boolean;
 };
 
 function listParams({ filter, sort, priority }: NodexQuery, cursor?: string) {
   const params = new URLSearchParams({ sort, limit: "50" });
   if (filter.kind === "group") params.set("groupId", filter.groupId);
   if (filter.kind === "orphans") params.set("orphan", "true");
+  if (filter.kind === "readLater") params.set("readLater", "true");
   if (priority) params.set("priority", priority);
   if (cursor) params.set("cursor", cursor);
   return params;
@@ -50,6 +52,23 @@ export function useRelated(id: string | undefined) {
     queryKey: ["related", id],
     queryFn: async () => (await api<{ nodexs: NodexMatch[] }>(`/nodexs/${id}/related`)).nodexs,
     enabled: Boolean(id),
+  });
+}
+
+export function useReadLaterCount() {
+  return useQuery({
+    queryKey: ["nodexs", "read-later-count"],
+    queryFn: async () => (await api<{ count: number }>("/nodexs/read-later/count")).count,
+  });
+}
+
+export function useSetReadLater() {
+  const invalidate = useInvalidateNodexs();
+
+  return useMutation({
+    mutationFn: ({ id, readLater }: { id: string; readLater: boolean }) =>
+      api<{ nodex: Nodex }>(`/nodexs/${id}`, { method: "PATCH", body: { readLater } }),
+    onSettled: (_data, _error, { id }) => invalidate(id),
   });
 }
 

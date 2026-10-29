@@ -38,9 +38,11 @@ export function Board({ openId }: { openId?: string }) {
     ? "Buscar"
     : filter.kind === "orphans"
       ? "Panel · Huérfanos"
-      : groupName
-        ? `Panel · ${groupName}`
-        : "Panel";
+      : filter.kind === "readLater"
+        ? "Panel · Leer más tarde"
+        : groupName
+          ? `Panel · ${groupName}`
+          : "Panel";
   const filtered = filter.kind !== "all" || query.priority !== null;
 
   function openNodex(id: string) {

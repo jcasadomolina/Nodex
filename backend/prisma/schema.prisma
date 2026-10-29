@@ -98,6 +98,7 @@ model Nodex {
   updatedAt    DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt    DateTime?                   @map("deleted_at") @db.Timestamptz(6)
   lastOpenedAt DateTime?                   @map("last_opened_at") @db.Timestamptz(6)
+  readLaterAt  DateTime?                   @map("read_later_at") @db.Timestamptz(6)
 
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   groups        GroupNodex[]
@@ -233,19 +234,20 @@ model PushSubscription {
 }
 
 model LinkPreview {
-  nodexId       String    @id @map("nodex_id") @db.Uuid
-  userId        String    @map("user_id") @db.Uuid
-  url           String
-  status        String    @default("pending")
-  httpStatus    Int?      @map("http_status")
-  title         String?
-  description   String?
-  imageUrl      String?   @map("image_url")
-  siteName      String?   @map("site_name")
-  archiveUrl    String?   @map("archive_url")
-  lastCheckedAt DateTime? @map("last_checked_at") @db.Timestamptz(6)
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  nodexId        String    @id @map("nodex_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  url            String
+  status         String    @default("pending")
+  httpStatus     Int?      @map("http_status")
+  title          String?
+  description    String?
+  imageUrl       String?   @map("image_url")
+  siteName       String?   @map("site_name")
+  archiveUrl     String?   @map("archive_url")
+  lastCheckedAt  DateTime? @map("last_checked_at") @db.Timestamptz(6)
+  readingMinutes Int?      @map("reading_minutes") @db.SmallInt
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
 

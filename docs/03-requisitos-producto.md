@@ -138,6 +138,12 @@
 - **RF-20.3**: El sistema debe dar preferencia a los Nodexs olvidados que se parezcan a lo que el usuario ha abierto en los últimos 7 días.
 - **RF-20.4**: El sistema debe permitir ocultar la sección hasta el día siguiente.
 
+### HU-21: Leer más tarde
+
+- **RF-21.1**: El sistema debe permitir marcar un enlace para leerlo más tarde y quitar la marca al leerlo.
+- **RF-21.2**: El sistema debe mostrar en el panel un filtro con los enlaces pendientes de leer, del más antiguo al más nuevo.
+- **RF-21.3**: El sistema debe estimar el tiempo de lectura de cada enlace y mostrarlo en su tarjeta y en su ventana.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos

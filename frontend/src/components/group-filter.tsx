@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCreateGroup, useDeleteGroup, useGroups, useRenameGroup } from "@/lib/queries/groups";
+import { useReadLaterCount } from "@/lib/queries/nodexs";
 import { useRefreshing, useRefreshSuggestions } from "@/lib/queries/suggestions";
 import type { BoardFilter, Group } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,8 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
   const deleteGroup = useDeleteGroup();
   const refreshSuggestions = useRefreshSuggestions();
   const refreshing = useRefreshing();
+  const readLater = useReadLaterCount();
+  const readLaterCount = readLater.data ?? 0;
   const [creating, setCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Group | null>(null);
@@ -96,6 +99,12 @@ export function GroupFilter({ value, onChange }: GroupFilterProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {(readLaterCount > 0 || value.kind === "readLater") && (
+        <button type="button" className={cn(chipClass, chipState(value.kind === "readLater"))} onClick={() => onChange({ kind: "readLater" })}>
+          Leer más tarde <span className="opacity-60">{readLaterCount}</span>
+        </button>
+      )}
 
       {groups.data?.map((group) => {
         if (renamingId === group.id) {
