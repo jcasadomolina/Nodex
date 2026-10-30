@@ -163,6 +163,30 @@ La causa no está identificada. Lo que se ha descartado:
 
 La CI se ejecuta en Linux. Si allí no aparece, el problema es propio de Windows.
 
+## Pruebas del frontend
+
+Son unitarias de la lógica que no depende de pantallas: la de `src/lib/` y la normalización de etiquetas. Los componentes de React no se prueban uno a uno; de eso se encargan los recorridos end-to-end.
+
+```bash
+cd frontend
+npm test
+```
+
+| Archivo | Qué comprueba |
+|---------|---------------|
+| `lib/format.test.ts` | Fechas de ida y vuelta entre la API y los campos de fecha, el formato en español, `domainOf` y `looksLikeUrl` |
+| `lib/tabs.test.ts` | Abrir, sustituir y cerrar pestañas, el máximo de 20, el panel derecho, la división entre 25 y 75 %, y lo guardado en `localStorage` (también si está corrupto) |
+| `lib/graph-settings.test.ts` | Las reglas de color del grafo (`grupo:`, `etiqueta:`, `prioridad:`, `tipo:` y texto libre) y los ajustes guardados |
+| `lib/api.test.ts` | La función `api()`: cómo pide, el `204`, los errores con sus campos y la falta de red |
+| `components/tag-input.test.ts` | `normalizeTag` |
+
+Algunos detalles:
+
+- **Navegador simulado:** `tabs` y `graph-settings` usan `localStorage`, que no existe en Node. Por eso empiezan con `// @vitest-environment jsdom`. Esa línea pide a Vitest un navegador simulado (**jsdom**) solo para ese archivo; el resto corre en Node, que es más rápido.
+- **Estado de módulo:** `tabs.ts` guarda el estado en una variable del módulo. Para que cada test empiece limpio, el test vacía `localStorage`, llama a `vi.resetModules()` y vuelve a importar el módulo.
+- **`fetch` simulado:** `api.test.ts` sustituye `fetch` con `vi.stubGlobal` y lo restaura después de cada test con `vi.unstubAllGlobals()`.
+- **Alias `@/`:** `vitest.config.mts` lo define igual que `tsconfig.json`. Usa la extensión `.mts` porque el frontend no es un paquete ESM (`"type": "module"`).
+
 ## Integración continua (CI)
 
 La **CI** ejecuta los tests sola en los servidores de GitHub cada vez que se abre o actualiza un PR, y en cada push a `develop` y `main`. Si algo falla, el PR lo muestra en rojo antes de integrarlo.
@@ -173,4 +197,6 @@ El archivo es `.github/workflows/tests.yml` (GitHub Actions). El trabajo **backe
 2. Instala Node 24 y las dependencias (`npm ci`), y genera el cliente de Prisma.
 3. Comprueba los tipos y ejecuta `npm test`.
 
-Guarda en caché el modelo de IA (`backend/.cache/models`) para no descargarlo en cada ejecución. Si un día falla al descargarlo desde Hugging Face, basta con volver a lanzar el trabajo desde la pestaña *Actions* del repositorio.
+El trabajo **frontend** instala las dependencias y pasa `lint`, `typecheck` y `npm test`. No necesita base de datos.
+
+El trabajo backend guarda en caché el modelo de IA (`backend/.cache/models`) para no descargarlo en cada ejecución. Si un día falla al descargarlo desde Hugging Face, basta con volver a lanzar el trabajo desde la pestaña *Actions* del repositorio.
