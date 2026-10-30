@@ -21,7 +21,7 @@ export const publicUser = {
 
 const dummyHash = await argon2.hash("nodex-dummy-password");
 
-const authLimiter = rateLimit({
+export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: "draft-8",

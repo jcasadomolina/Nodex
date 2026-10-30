@@ -12,7 +12,7 @@ import { createDemoUser, prepareDemoAi } from "./demo.service.js";
 
 export const demoRouter = Router();
 
-const demoLimiter = rateLimit({
+export const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 5,
   standardHeaders: "draft-8",
