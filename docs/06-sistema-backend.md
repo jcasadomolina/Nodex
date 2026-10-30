@@ -51,7 +51,9 @@ Cada rama sale de `develop` y vuelve a `develop` con un pull request.
 | `feature/recordatorios` | Personalidad recordatorio y notificaciones push | `RF-12.7` |
 | `feature/enlaces` | Vista previa de enlaces y comprobación de enlaces rotos | `RF-12.3` |
 | `feature/ia-busqueda` | Búsqueda por significado, relacionados y duplicados | `RF-05.7`–`RF-05.9` |
-| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos (hecho: [especificación](superpowers/specs/2026-10-28-ia-grupos-nuevos-design.md)) | `RF-04.3` |
+| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos (hecho: [especificación](disenos/2026-10-28-ia-grupos-nuevos-design.md)) | `RF-04.3` |
+
+Todas las ramas de la tabla están hechas. Después llegaron `feature/papelera` (HU-15), `feature/redescubre` (HU-20), `feature/leer-mas-tarde` (HU-21) y `feature/compartir` (`RF-05.6`). El estado general está en el [plan de implementación](02-plan-de-implementacion.md#estado-de-los-requisitos).
 
 ## Personalidades (HU-12): diseño
 

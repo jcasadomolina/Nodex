@@ -2,7 +2,7 @@
 
 Interfaz web de Nodex: lo que ve y usa el usuario. Pide los datos a la API del backend ([Sistema de backend](06-sistema-backend.md)).
 
-Esta primera versión es el **esqueleto funcional**: login, registro, panel con grupos y Nodexs, prioridad y búsqueda, con la estructura de los [bocetos](bocetos/bocetos-v1.jpg) pero con colores y logo provisionales. Diseño y plan: [especificación](superpowers/specs/2026-10-24-frontend-esqueleto-design.md) y [plan](superpowers/plans/2026-10-24-frontend-esqueleto.md).
+Esta primera versión es el **esqueleto funcional**: login, registro, panel con grupos y Nodexs, prioridad y búsqueda, con la estructura de los [bocetos](bocetos/bocetos-v1.jpg) pero con colores y logo provisionales. Diseño y plan: [especificación](disenos/2026-10-24-frontend-esqueleto-design.md) y [plan](planes/2026-10-24-frontend-esqueleto.md).
 
 ## Stack (aprobado)
 
@@ -75,7 +75,7 @@ Al pulsar un Nodex (panel, grafo, tareas, campana, Redescubre, sugerencias o rel
 
 ### Página del Nodex (HU-22)
 
-Diseño: [especificación](superpowers/specs/2026-10-29-vista-nodex-design.md). `components/nodex-view.tsx`:
+Diseño: [especificación](disenos/2026-10-29-vista-nodex-design.md). `components/nodex-view.tsx`:
 
 - **Título** editable al pulsarlo; **propiedades** en una tabla como la de Obsidian, cada una guardándose al momento (solo envía su cambio). Los controles (prioridad, tarea, fecha, recordatorio, grupos) están en `components/nodex-fields.tsx` y los comparte la ventana de creación.
 - **Contenido en Markdown** con `react-markdown` + `remark-gfm` (`components/markdown.tsx`): tablas, casillas, tachado, código… No ejecuta HTML incrustado y descarta los enlaces `javascript:`. Los estilos están en `globals.css` (`.markdown`), con los colores del tema.
@@ -87,7 +87,7 @@ Diseño: [especificación](superpowers/specs/2026-10-29-vista-nodex-design.md). 
 
 ### Pestañas (`RF-22.5`)
 
-Diseño: [especificación](superpowers/specs/2026-10-29-pestanas-nodex-design.md). Encima de la página del Nodex, `components/nodex-tabs.tsx` muestra los Nodexs abiertos, como en Obsidian:
+Diseño: [especificación](disenos/2026-10-29-pestanas-nodex-design.md). Encima de la página del Nodex, `components/nodex-tabs.tsx` muestra los Nodexs abiertos, como en Obsidian:
 
 - **Clic normal** abre en la pestaña activa (o activa la que ya lo tiene); **Ctrl/Cmd + clic o clic central** abre en una pestaña nueva (tarjetas, relacionados, tareas y grafo). `useOpenNodex()` (`lib/use-open-nodex.ts`) hace la navegación y, si toca, deja la marca de "pestaña nueva".
 - **Estado** (`lib/tabs.ts`): un almacén pequeño con `useSyncExternalStore`, guardado en `localStorage` (`nodex-tabs`). La URL manda: al montarse, la página llama a `showInTabs(id)`. La marca de "pestaña nueva" guarda el id del Nodex que se va a abrir, así que solo afecta a esa apertura. Cerrar la pestaña activa usa `router.replace` para no dejar en el historial una entrada que, al pulsar Atrás, sustituiría otra pestaña. El clic central no activa el autodesplazamiento del navegador (`preventDefault` en `mousedown`). Máximo 20 pestañas.
@@ -96,7 +96,7 @@ Diseño: [especificación](superpowers/specs/2026-10-29-pestanas-nodex-design.md
 
 ### Dos paneles (`RF-22.6`)
 
-Diseño: [especificación](superpowers/specs/2026-10-29-dos-paneles-design.md). La página del Nodex se puede dividir en dos paneles, cada uno con sus pestañas:
+Diseño: [especificación](disenos/2026-10-29-dos-paneles-design.md). La página del Nodex se puede dividir en dos paneles, cada uno con sus pestañas:
 
 - **Abrir a la derecha:** botón "Dividir" (icono `SquareSplitHorizontal`) junto a "Abrir enlace" (↗) y "⋯"; "Abrir a la derecha" en el menú; o **Ctrl/Cmd + Alt + clic** en tarjetas, relacionados, tareas y grafo. `openTarget(event)` traduce el clic a `"active"`, `"newTab"` o `"right"`.
 - **Estado** (`lib/tabs.ts`): `{ left, right, split }`. El panel izquierdo sigue a la URL; el derecho solo vive en `localStorage` (no cambia la URL). Las pestañas guardadas con el formato anterior se convierten en `left`.
@@ -111,7 +111,7 @@ Se hace con **columnas CSS** (`columns-1 sm:columns-2 lg:columns-3 xl:columns-4`
 
 ## La primera vez en Nodex
 
-Diseño: [especificación](superpowers/specs/2026-10-27-primera-vez-design.md).
+Diseño: [especificación](disenos/2026-10-27-primera-vez-design.md).
 
 ### Pantalla de inicio (`/login` y `/registro`)
 
@@ -153,7 +153,7 @@ En el Popover ✨, el apartado "Grupos nuevos" deja cambiar el nombre antes de p
 
 ## Tareas (`/tareas`, `RF-12.4` a `RF-12.6`)
 
-Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualquier Nodex puede ser una tarea: en su ventana, el interruptor "Tarea" muestra el estado (Pendiente, En curso, Hecha) y una fecha límite opcional. La tarea se guarda dentro del mismo guardado del Nodex (`PUT` o `DELETE /tasks/:id`, solo si ha cambiado), así que hay un único botón y un único error. Las tarjetas del panel llevan la etiqueta "Tarea · 3 nov" o "Hecha".
+Diseño: [especificación](disenos/2026-10-28-tareas-design.md). Cualquier Nodex puede ser una tarea: en su ventana, el interruptor "Tarea" muestra el estado (Pendiente, En curso, Hecha) y una fecha límite opcional. La tarea se guarda dentro del mismo guardado del Nodex (`PUT` o `DELETE /tasks/:id`, solo si ha cambiado), así que hay un único botón y un único error. Las tarjetas del panel llevan la etiqueta "Tarea · 3 nov" o "Hecha".
 
 | Pieza | Qué hace |
 |-------|----------|
@@ -167,7 +167,7 @@ Diseño: [especificación](superpowers/specs/2026-10-28-tareas-design.md). Cualq
 
 ## Papelera (`/papelera`, HU-15)
 
-Diseño: [especificación](superpowers/specs/2026-10-29-papelera-design.md). Se llega desde Ajustes. Dos pestañas (Nodexs y Grupos) con "Restaurar" y "Eliminar para siempre" en cada fila, y "Vaciar papelera". Cada fila dice cuántos días le quedan antes de que el proceso del backend lo elimine (30 días).
+Diseño: [especificación](disenos/2026-10-29-papelera-design.md). Se llega desde Ajustes. Dos pestañas (Nodexs y Grupos) con "Restaurar" y "Eliminar para siempre" en cada fila, y "Vaciar papelera". Cada fila dice cuántos días le quedan antes de que el proceso del backend lo elimine (30 días).
 
 - **Restaurar un grupo** cuyo nombre ya usa otro grupo lo renombra a «Nombre (restaurado)», «(restaurado 2)»… para no chocar con el índice único.
 - **Deshacer:** los avisos "Enviado a la papelera" (ventana del Nodex y menú del grupo) tienen un botón "Deshacer". Usa una función normal en vez de una mutación de TanStack Query porque la ventana ya se ha cerrado cuando pulsas el botón.
@@ -175,7 +175,7 @@ Diseño: [especificación](superpowers/specs/2026-10-29-papelera-design.md). Se 
 
 ## Leer más tarde (HU-21)
 
-Diseño: [especificación](superpowers/specs/2026-10-29-leer-mas-tarde-design.md).
+Diseño: [especificación](disenos/2026-10-29-leer-mas-tarde-design.md).
 
 - **Marcar:** en la ventana de un enlace, "Leer más tarde" / "Marcar como leído" hace `PATCH /nodexs/:id { readLater }` al momento, sin cerrar la ventana ni perder lo que estés escribiendo. Al crear un enlace hay un interruptor con el mismo nombre.
 - **Filtro:** el chip "Leer más tarde N" (`GET /nodexs/read-later/count`) aparece junto a "Huérfanos" cuando hay alguno y muestra los enlaces del más antiguo al más nuevo (`GET /nodexs?readLater=true`).
@@ -183,7 +183,7 @@ Diseño: [especificación](superpowers/specs/2026-10-29-leer-mas-tarde-design.md
 
 ## Redescubre (HU-20)
 
-Diseño: [especificación](superpowers/specs/2026-10-28-redescubre-design.md). Encima de la rejilla del panel (solo en "Todos", sin prioridad ni búsqueda), `components/rediscover.tsx` muestra hasta 3 Nodexs olvidados de `GET /nodexs/rediscover`:
+Diseño: [especificación](disenos/2026-10-28-redescubre-design.md). Encima de la rejilla del panel (solo en "Todos", sin prioridad ni búsqueda), `components/rediscover.tsx` muestra hasta 3 Nodexs olvidados de `GET /nodexs/rediscover`:
 
 - **Olvidado:** sin abrir desde hace 30 días (o desde que se creó, si nunca se abrió) y sin prioridad alta ni urgente.
 - **Orden:** primero los parecidos a lo que has abierto en los últimos 7 días (embeddings), más un poco de azar que solo cambia de un día a otro (`md5(id + fecha en hora de España)`), para que la franja no cambie en cada recarga. Al abrir un Nodex la preferencia se actualiza, así que la franja puede cambiar durante el día.
@@ -199,7 +199,7 @@ Diseño: [especificación](superpowers/specs/2026-10-28-redescubre-design.md). E
 
 ## Avisos: recordatorios y enlaces rotos (`RF-12.3`, `RF-12.7`)
 
-Diseño: [especificación](superpowers/specs/2026-10-28-recordatorios-enlaces-design.md). La **campana** de la barra lateral (`components/alerts-button.tsx`) es el centro de avisos:
+Diseño: [especificación](disenos/2026-10-28-recordatorios-enlaces-design.md). La **campana** de la barra lateral (`components/alerts-button.tsx`) es el centro de avisos:
 
 - El número rojo cuenta los recordatorios vencidos y sin descartar. La consulta se repite cada 60 s mientras la pestaña está visible.
 - Al pulsarla, un Popover muestra "Ahora" (con Descartar), "Próximos" y "Enlaces rotos" (con "Ver copia" de archive.org si existe). "Abrir" navega a `/nodexs/:id`.
@@ -211,7 +211,7 @@ Las notificaciones push al móvil se activan en Ajustes: ver [Notificaciones pus
 
 ## Vista gráfica (`/grafo`, `RF-04.5`)
 
-Diseño: [especificación](superpowers/specs/2026-10-27-grafo-design.md). Funciona como el grafo de Obsidian: los grupos son nodos grandes y sus Nodexs se unen a ellos.
+Diseño: [especificación](disenos/2026-10-27-grafo-design.md). Funciona como el grafo de Obsidian: los grupos son nodos grandes y sus Nodexs se unen a ellos.
 
 | Pieza | Qué hace |
 |-------|----------|

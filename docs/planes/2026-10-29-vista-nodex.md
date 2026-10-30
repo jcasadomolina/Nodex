@@ -2,7 +2,7 @@
 
 > **Para agentes:** superpowers:executing-plans (modo nativo).
 
-**Especificación:** `docs/superpowers/specs/2026-10-29-vista-nodex-design.md`
+**Especificación:** `docs/disenos/2026-10-29-vista-nodex-design.md`
 
 ## Restricciones globales
 

@@ -22,20 +22,52 @@
 
 ## Hoja de ruta de funcionalidades
 
-Orden acordado el 28/10/2026 para terminar la aplicación web. Cada punto se diseña y se aprueba antes de implementarlo.
+Orden acordado el 28/10/2026 para terminar la aplicación web. Cada punto se diseña y se aprueba antes de implementarlo. Estado revisado el 30/10/2026.
 
-1. **Pendiente de la hoja de ruta anterior**: personalidades en la interfaz (tareas, calendario, recordatorios y salud de enlaces, HU-12), perfil completo (HU-02), grupos nuevos con IA (`RF-04.3`) *Redescubre* (HU-20, hecho) y *Leer más tarde* (HU-21, hecho).
-2. **Papelera** (HU-15, hecho).
-3. **Resumen automático de enlaces** (`RF-05.10`).
-4. **Importar y exportar** (HU-16).
-5. **Guardar desde el navegador** (HU-18).
-6. **Compartir grupos** (HU-19).
-7. **Paleta de comandos** (HU-17).
-8. **Interfaz en inglés** (`RNF-07.5`): al final, cuando ya no se añaden pantallas.
-9. **Vista del Nodex** (HU-22): página con propiedades y Markdown, pestañas (`RF-22.5`) y dos paneles (`RF-22.6`) (hecho).
-10. **Modo demo** (HU-14): justo antes de alojar la aplicación, para que los datos de ejemplo enseñen todo.
+| # | Funcionalidad | Estado |
+|---|---------------|--------|
+| 1 | Personalidades en la interfaz (tareas, calendario, recordatorios y salud de enlaces, HU-12), perfil completo (HU-02), grupos nuevos con IA (`RF-04.3`), *Redescubre* (HU-20) y *Leer más tarde* (HU-21) | Hecho |
+| 2 | **Papelera** (HU-15) | Hecho |
+| 3 | **Resumen automático de enlaces** (`RF-05.10`) | Aplazado |
+| 4 | **Importar y exportar** (HU-16) | Aplazado |
+| 5 | **Guardar desde el navegador** (HU-18) | Aplazado |
+| 6 | **Compartir grupos** (HU-19) | Aplazado |
+| 7 | **Paleta de comandos** (HU-17) | Aplazado |
+| 8 | **Interfaz en inglés** (`RNF-07.5`): al final, cuando ya no se añaden pantallas | Aplazado |
+| 9 | **Vista del Nodex** (HU-22): página con propiedades y Markdown, pestañas (`RF-22.5`) y dos paneles (`RF-22.6`) | Hecho |
+| 10 | **Modo demo** (HU-14): justo antes de alojar la aplicación, para que los datos de ejemplo enseñen todo | **Siguiente** |
 
-Después: bloque de pruebas, alojamiento, PWA (`RF-05.6`, notificaciones push), aplicación de escritorio, APK y distribución.
+Los puntos 3 a 8 se aplazaron el 30/10/2026 para publicar antes una primera versión en el portfolio. Se retomarán después del alojamiento.
+
+Después del modo demo:
+
+| Paso | Estado |
+|------|--------|
+| PWA: instalable, página sin conexión, compartir enlaces (`RF-05.6`) y notificaciones push (`RF-12.7`) | Hecho (falta probarla en un móvil, con HTTPS) |
+| Bloque de pruebas | Pendiente. Hoy solo hay tres archivos de tests unitarios en el backend |
+| Alojamiento | Pendiente |
+| Aplicación de escritorio, APK y distribución | Pendiente |
+
+## Estado de los requisitos
+
+| Historia | Estado |
+|----------|--------|
+| HU-01 Gestión de usuarios | Hecho |
+| HU-02 Perfil | Hecho, salvo `RF-02.5` (WhatsApp, ampliación futura) |
+| HU-03 WhatsApp | Ampliación futura |
+| HU-04 Grupos | Hecho |
+| HU-05 Nodexs | Hecho `RF-05.1`, `05.2`, `05.6`–`05.9`. Pendientes `RF-05.4` y `RF-05.5` (la tabla `nodex_enrichments` existe, pero sin código) y `RF-05.10`. `RF-05.3` es ampliación futura |
+| HU-10 Tutorial | Hecho |
+| HU-11 Prioridad | Hecho |
+| HU-12 Personalidades | Hecho |
+| HU-13 Etiquetas | Hecho |
+| HU-14 Modo demo | Siguiente |
+| HU-15 Papelera | Hecho |
+| HU-16 a HU-19 | Aplazadas |
+| HU-20 Redescubre | Hecho |
+| HU-21 Leer más tarde | Hecho |
+| HU-22 Vista del Nodex | Hecho |
+| `RNF-07.5` Inglés | Aplazado |
 
 ## Repositorio y flujo Git
 

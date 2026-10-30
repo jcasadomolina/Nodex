@@ -25,3 +25,6 @@ generated/
 
 # Modelos de IA descargados (se bajan solos la primera vez)
 .cache/
+
+# Archivos de trabajo de las herramientas de IA
+.superpowers/

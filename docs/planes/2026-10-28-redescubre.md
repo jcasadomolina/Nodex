@@ -2,7 +2,7 @@
 
 > **Para agentes:** superpowers:executing-plans (modo nativo).
 
-**Especificación:** `docs/superpowers/specs/2026-10-28-redescubre-design.md`
+**Especificación:** `docs/disenos/2026-10-28-redescubre-design.md`
 
 ## Restricciones globales
 
