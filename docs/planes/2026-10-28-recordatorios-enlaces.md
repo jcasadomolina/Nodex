@@ -6,7 +6,7 @@
 
 **Arquitectura:** sin cambios en el backend. El recordatorio se guarda dentro de las mutaciones de Nodex, igual que la tarea. La campana es un Popover en la barra lateral que lee tres consultas bajo la clave `["alerts"]`.
 
-**Especificación:** `docs/superpowers/specs/2026-10-28-recordatorios-enlaces-design.md`
+**Especificación:** `docs/disenos/2026-10-28-recordatorios-enlaces-design.md`
 
 ## Restricciones globales
 

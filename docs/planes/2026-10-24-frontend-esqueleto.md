@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16.4, React, TypeScript, Tailwind CSS 4, shadcn/ui, TanStack Query 5, next-themes, Sonner.
 
-**Spec:** [`docs/superpowers/specs/2026-10-24-frontend-esqueleto-design.md`](../specs/2026-10-24-frontend-esqueleto-design.md)
+**Spec:** [`docs/disenos/2026-10-24-frontend-esqueleto-design.md`](../disenos/2026-10-24-frontend-esqueleto-design.md)
 
 ## Global Constraints
 

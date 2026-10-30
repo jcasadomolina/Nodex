@@ -4,7 +4,7 @@
 
 **Objetivo:** que "Revisar huérfanos" proponga grupos nuevos para huérfanos parecidos y que el Popover ✨ permita crearlos o rechazarlos.
 
-**Especificación:** `docs/superpowers/specs/2026-10-28-ia-grupos-nuevos-design.md`
+**Especificación:** `docs/disenos/2026-10-28-ia-grupos-nuevos-design.md`
 
 ## Restricciones globales
 

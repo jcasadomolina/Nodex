@@ -5,7 +5,7 @@
 **Goal:** Pantalla de inicio estilo portada, carrusel de bienvenida y tutorial con bocadillos.
 **Architecture:** Todo en el frontend; el backend ya guarda `tutorialCompletedVersion`. Componentes nuevos en `src/components/`, ruta nueva `app/bienvenida/`.
 **Tech Stack:** Next.js 16, Tailwind 4, shadcn/ui (Popover), TanStack Query. Sin dependencias nuevas.
-**Spec:** [`docs/superpowers/specs/2026-10-27-primera-vez-design.md`](../specs/2026-10-27-primera-vez-design.md)
+**Spec:** [`docs/disenos/2026-10-27-primera-vez-design.md`](../disenos/2026-10-27-primera-vez-design.md)
 
 ## Global Constraints
 
