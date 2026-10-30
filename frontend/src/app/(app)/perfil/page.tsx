@@ -6,6 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ConvertDialog } from "@/components/convert-dialog";
 import { Spinner } from "@/components/spinner";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,20 @@ function AccountsSection({ profile }: { profile: Profile }) {
   );
 }
 
+function DemoNotice() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="grid gap-3 rounded-xl bg-primary/15 p-4 text-sm">
+      <p>Crea tu cuenta para cambiar la foto y vincular Google o GitHub</p>
+      <Button className="justify-self-start" onClick={() => setOpen(true)}>
+        Crear cuenta
+      </Button>
+      <ConvertDialog open={open} onOpenChange={setOpen} />
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const profile = useProfile();
 
@@ -197,13 +212,22 @@ export default function ProfilePage() {
       {profile.data && (
         <section className="mx-auto mt-8 grid w-full max-w-md gap-6 rounded-2xl border bg-card p-6">
           <h1 className="sr-only">Perfil</h1>
-          <PhotoSection profile={profile.data} />
-          <NameSection key={profile.data.name} profile={profile.data} />
-          <div className="grid gap-1.5">
-            <span className="text-sm font-medium">Correo</span>
-            <p className="text-muted-foreground">{profile.data.email}</p>
-          </div>
-          <AccountsSection profile={profile.data} />
+          {profile.data.demoExpiresAt ? (
+            <>
+              <NameSection key={profile.data.name} profile={profile.data} />
+              <DemoNotice />
+            </>
+          ) : (
+            <>
+              <PhotoSection profile={profile.data} />
+              <NameSection key={profile.data.name} profile={profile.data} />
+              <div className="grid gap-1.5">
+                <span className="text-sm font-medium">Correo</span>
+                <p className="text-muted-foreground">{profile.data.email}</p>
+              </div>
+              <AccountsSection profile={profile.data} />
+            </>
+          )}
         </section>
       )}
     </>

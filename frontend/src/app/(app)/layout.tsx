@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DemoBanner } from "@/components/demo-banner";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         )}
+        <DemoBanner />
         {children}
       </main>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />

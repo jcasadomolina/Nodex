@@ -35,11 +35,11 @@ Orden acordado el 28/10/2026 para terminar la aplicación web. Cada punto se dis
 | 7 | **Paleta de comandos** (HU-17) | Aplazado |
 | 8 | **Interfaz en inglés** (`RNF-07.5`): al final, cuando ya no se añaden pantallas | Aplazado |
 | 9 | **Vista del Nodex** (HU-22): página con propiedades y Markdown, pestañas (`RF-22.5`) y dos paneles (`RF-22.6`) | Hecho |
-| 10 | **Modo demo** (HU-14): justo antes de alojar la aplicación, para que los datos de ejemplo enseñen todo | **Siguiente** |
+| 10 | **Modo demo** (HU-14): justo antes de alojar la aplicación, para que los datos de ejemplo enseñen todo | Hecho |
 
 Los puntos 3 a 8 se aplazaron el 30/10/2026 para publicar antes una primera versión en el portfolio. Se retomarán después del alojamiento.
 
-Después del modo demo:
+Después del modo demo (siguiente: bloque de pruebas):
 
 | Paso | Estado |
 |------|--------|
@@ -61,7 +61,7 @@ Después del modo demo:
 | HU-11 Prioridad | Hecho |
 | HU-12 Personalidades | Hecho |
 | HU-13 Etiquetas | Hecho |
-| HU-14 Modo demo | Siguiente |
+| HU-14 Modo demo | Hecho |
 | HU-15 Papelera | Hecho |
 | HU-16 a HU-19 | Aplazadas |
 | HU-20 Redescubre | Hecho |

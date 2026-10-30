@@ -19,14 +19,15 @@ datasource db {
 }
 
 model User {
-  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                     String
-  email                    String   @unique // se guarda siempre en minúsculas
-  passwordHash             String?  @map("password_hash") // null si solo entra con Google o GitHub
-  avatarUrl                String?  @map("avatar_url")
-  tutorialCompletedVersion Int?     @map("tutorial_completed_version")
-  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  email                    String    @unique // se guarda siempre en minúsculas
+  passwordHash             String?   @map("password_hash") // null si solo entra con Google o GitHub
+  avatarUrl                String?   @map("avatar_url")
+  tutorialCompletedVersion Int?      @map("tutorial_completed_version")
+  demoExpiresAt            DateTime? @map("demo_expires_at") @db.Timestamptz(6)
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   oauthAccounts     OAuthAccount[]
   pushSubscriptions PushSubscription[]
