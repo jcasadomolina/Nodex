@@ -5,6 +5,7 @@ import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { deleteAvatar, storageEnabled, uploadAvatar } from "../../lib/storage.js";
 import { requireAuth } from "../../middleware/require-auth.js";
+import { requireRealUser } from "../../middleware/require-real-user.js";
 import { publicUser } from "../auth/auth.routes.js";
 import { registerSchema } from "../auth/auth.schemas.js";
 import { PROVIDERS } from "../auth/oauth.routes.js";
@@ -54,7 +55,7 @@ meRouter.patch("/", async (req, res) => {
   res.json({ user });
 });
 
-meRouter.put("/avatar", requireStorage, upload.single("avatar"), async (req, res) => {
+meRouter.put("/avatar", requireRealUser, requireStorage, upload.single("avatar"), async (req, res) => {
   if (!req.file) {
     throw new HttpError(400, "Sube una imagen JPG, PNG, WebP o GIF en el campo avatar");
   }

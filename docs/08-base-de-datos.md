@@ -51,6 +51,7 @@ Todas las fechas son `timestamptz` (fecha y hora con zona horaria). `created_at`
 | `password_hash` | text | Contraseña cifrada (`RF-01.4`). Vacío si el usuario entra solo con Google o GitHub |
 | `avatar_url` | text | Opcional (`RF-02.3`) |
 | `tutorial_completed_version` | integer | Última versión del tutorial que ha visto (`RF-10.4`). `null` si nunca lo ha visto |
+| `demo_expires_at` | timestamptz | Solo en las cuentas del modo demo (HU-14): cuándo se borran. `null` en las cuentas normales. Migración `*_add_demo_expires_at` |
 | `created_at`, `updated_at` | timestamptz | |
 
 ### `oauth_accounts` (`RF-01.2`)

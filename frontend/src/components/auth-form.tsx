@@ -4,12 +4,13 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
-import { useLogin, useRegister } from "@/lib/queries/auth";
+import { useLogin, useRegister, useStartDemo } from "@/lib/queries/auth";
 
 const PROVIDER_NAMES: Record<string, string> = { google: "Google", github: "GitHub" };
 
@@ -43,6 +44,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const login = useLogin();
   const register = useRegister();
   const mutation = isLogin ? login : register;
+  const demo = useStartDemo();
   const params = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -138,6 +140,23 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           {isLogin ? "Entrar" : "Registrarme"}
         </Button>
       </form>
+
+      {isLogin && (
+        <>
+          <div className="flex items-center gap-3 font-mono text-xs tracking-[-0.02em] text-muted-foreground uppercase">
+            <span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" />
+          </div>
+          <Button
+            variant="outline"
+            size="lg"
+            disabled={demo.isPending}
+            onClick={() => demo.mutate({}, { onError: (error) => toast.error(error.message) })}
+          >
+            {demo.isPending && <Spinner />}
+            Probar sin registrarse
+          </Button>
+        </>
+      )}
 
       <p className="text-center text-sm text-muted-foreground">
         {isLogin ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}

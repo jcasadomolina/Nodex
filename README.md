@@ -2,7 +2,7 @@
 
 Aplicación web para guardar notas y enlaces en un solo sitio y dejar que una IA los ordene. Cada nota o enlace es un **Nodex**. Los Nodexs se agrupan, se relacionan entre sí por su significado y se pueden ver como un grafo.
 
-> **Estado:** en desarrollo. Las funcionalidades principales están hechas. Falta el modo demo y publicarla en Internet.
+> **Estado:** en desarrollo. Las funcionalidades principales están hechas. Falta publicarla en Internet. Se podrá probar sin registrarse con el modo demo.
 
 ## Funcionalidades
 
@@ -15,6 +15,7 @@ Aplicación web para guardar notas y enlaces en un solo sitio y dejar que una IA
 - **Vista de trabajo.** Pestañas y dos paneles, como un editor de código.
 - **Cuentas.** Registro con email o con Google y GitHub, perfil con foto y tutorial de bienvenida.
 - **PWA.** Se instala en el móvil, guarda enlaces desde el menú Compartir de Android y muestra una página propia sin conexión.
+- **Modo demo.** Un botón crea una cuenta de prueba con datos de ejemplo que se borra a las 24 horas, o se convierte en cuenta real sin perder nada.
 
 ## Stack
 

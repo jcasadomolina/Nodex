@@ -7,6 +7,7 @@ import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { startSession } from "../../lib/session.js";
 import { requireAuth } from "../../middleware/require-auth.js";
+import { requireRealUser } from "../../middleware/require-real-user.js";
 
 export const PROVIDERS = ["google", "github"] as const;
 
@@ -181,7 +182,7 @@ for (const provider of PROVIDERS) {
     passport.authenticate(provider, { session: false })(req, res, next);
   });
 
-  oauthRouter.get(`/${provider}/link`, requireAuth, requireProvider(provider), (req, res, next) => {
+  oauthRouter.get(`/${provider}/link`, requireAuth, requireRealUser, requireProvider(provider), (req, res, next) => {
     req.session.linkUserId = req.session.userId!;
     passport.authenticate(provider, { session: false })(req, res, next);
   });

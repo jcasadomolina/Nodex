@@ -6,6 +6,7 @@ export type User = {
   email: string;
   avatarUrl: string | null;
   tutorialCompletedVersion: number | null;
+  demoExpiresAt: string | null;
 };
 
 export type Profile = User & { hasPassword: boolean; providers: ("google" | "github")[] };

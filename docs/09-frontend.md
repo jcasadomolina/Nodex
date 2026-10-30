@@ -125,6 +125,15 @@ El layout de la app manda aquí a quien no ha completado el tutorial (`tutorialC
 
 "Entrar a Nodex" deja la marca `nodex-tour` en `sessionStorage` y va al panel. Mientras exista, el layout no vuelve a redirigir a la bienvenida, y `Tour` muestra 7 bocadillos anclados con el Popover de Radix a los elementos con `data-tour` (búsqueda, grupos, "+ Grupo", ordenar, "+", Panel y Ajustes). Los pasos cuyo elemento no se ve se saltan. Al terminar, saltarlo o pulsar `Esc`, se guarda `PUT /me/tutorial { version: 1 }`, así que no vuelve a salir en ningún dispositivo. Si se cierra la pestaña a medias, saldrá otra vez porque no se completó. Para repetirlo: Ajustes → "Ver la bienvenida otra vez".
 
+### Modo demo (HU-14)
+
+Diseño: [especificación](disenos/2026-10-30-modo-demo-design.md).
+
+- **Portada:** bajo el formulario de login, el botón "Probar sin registrarse" (`useStartDemo`). Muestra la rueda mientras el backend prepara la demo (unos segundos) y está desactivado para no crear dos. Como la cuenta no ha visto el tutorial, el layout la lleva a la bienvenida.
+- **Franja de demo** (`components/demo-banner.tsx`): sale arriba en todas las pantallas si `user.demoExpiresAt` tiene fecha. Dice "Estás en la demo · se borra en N h" ("Demo · N h" en móvil) y tiene el botón "Crear cuenta".
+- **Diálogo "Crea tu cuenta"** (`components/convert-dialog.tsx`, `useConvertDemo`): nombre, email y contraseña. Si el email ya existe, el error sale bajo ese campo sin borrar lo escrito. Al terminar, el usuario nuevo sustituye al de `["me"]` y la franja desaparece sola.
+- **Perfil:** en la demo solo se puede cambiar el nombre. En lugar de la foto, el email interno y las cuentas vinculadas, sale un aviso con "Crear cuenta".
+
 ## Etiquetas (HU-13)
 
 En la ventana del Nodex, el campo "Etiquetas" (`components/tag-input.tsx`) convierte lo que escribes en una etiqueta al pulsar `Enter` o escribir una coma, con la misma normalización que el backend. Las sugerencias salen de `GET /api/tags` con un `<datalist>`, el autocompletado nativo del navegador. Las tarjetas muestran las etiquetas como `#cocina`, y la búsqueda del panel también encuentra por etiqueta.

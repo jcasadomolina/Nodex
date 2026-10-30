@@ -433,6 +433,38 @@ Se probó con 12 Nodexs de temas variados (cocina, programación, viajes, impues
 
 Un índice HNSW acelera la búsqueda de vectores parecidos, pero es **aproximado** y se aplica antes del filtro por usuario: con muchos usuarios podría devolver menos resultados de los esperados. Cada consulta solo mira los Nodexs de un usuario (cientos o pocos miles), y compararlos todos uno a uno es rápido y exacto. Se añadirá si el volumen lo pide (ver [la base de datos](08-base-de-datos.md)).
 
+## Modo demo (`feature/modo-demo`)
+
+Diseño: [especificación](disenos/2026-10-30-modo-demo-design.md). Permite probar Nodex sin registrarse (HU-14). Todo vive en `modules/demo/`.
+
+### Cómo se crea una demo (`POST /api/auth/demo`)
+
+1. **Usuario temporal.** Se llama "Invitado", no tiene contraseña y su email es interno: `demo-<uuid>@demo.nodex.invalid`. `.invalid` es un dominio reservado que nunca existe, así que no choca con nadie. `demo_expires_at` queda a 24 horas.
+2. **Datos de ejemplo** (`demo.data.ts`). Son 26 Nodexs sobre aprender a programar, pensados para que se vea cada función:
+   - grupos;
+   - huérfanos para las sugerencias de la IA, y cuatro de CSS para que proponga un grupo nuevo;
+   - tareas, un recordatorio, etiquetas y "leer más tarde";
+   - Nodexs abiertos hace más de 30 días, para *Redescubre*.
+
+   Las fechas se guardan como "hace N días" y se calculan al crear la cuenta, así la demo siempre parece reciente.
+3. **Pocas consultas.** Los ids se generan en Node (`randomUUID`) y cada tabla se rellena con un solo `createMany`, todo dentro de una transacción. Crear los Nodexs uno a uno con sus relaciones anidadas hacía decenas de viajes a Neon y pasaba del límite de 5 s de las transacciones de Prisma.
+4. **IA.** Se calcula el vector de cada Nodex y su sugerencia de grupo, primero los que tienen grupo y luego los huérfanos, porque la sugerencia compara con el "centro" de cada grupo. Después se calculan las propuestas de grupos nuevos. Cada paso va en su `try/catch`: si la IA falla, la demo se crea igual (`RNF-08`). Las vistas previas de los enlaces se cargan en segundo plano.
+5. **Sesión.** Se abre como en un login normal. Con el modelo de IA ya cargado, la respuesta tarda unos 5 segundos. La primera demo tras arrancar el servidor tarda más, porque antes hay que cargar el modelo.
+
+Un límite de **5 demos por hora y por IP** evita que alguien llene la base creando cuentas.
+
+### Pasar a cuenta real (`POST /api/auth/demo/convert`)
+
+La misma cuenta recibe nombre, email y contraseña (validados como en el registro) y `demo_expires_at` vuelve a `null`. Los datos no se mueven: ya son suyos. La sesión se regenera, como al entrar.
+
+### Qué no se puede hacer en la demo
+
+`middleware/require-real-user.ts` responde `403` en la subida de foto (usa la cuenta de Cloudinary) y en la vinculación de Google o GitHub (una cuenta que se borra no debe quedarse con cuentas externas).
+
+### Limpieza (`demo.worker.ts`)
+
+Cada hora borra las demos caducadas. Al borrar el usuario, la base borra en cascada sus grupos, Nodexs, tareas y demás. Las **sesiones** se borran en la misma sentencia SQL, solo las de los usuarios que de verdad se han borrado: así una demo que se convierte justo en ese momento no pierde nada. La tabla `sessions` no está enlazada con `users`: el id del usuario va dentro del JSON de la sesión. Si no se borraran, la cookie seguiría pasando `requireAuth` y daría errores en vez de un `401`.
+
 ## Decisiones tomadas
 
 - **Almacenamiento de imágenes:** **Cloudinary**, plan gratuito sin tarjeta (25 créditos al mes compartidos entre almacenamiento, tráfico y transformaciones). Las fotos se reducen a 256×256 en WebP (unos 15 KB). Todo el acceso irá en un único archivo, `lib/storage.ts`, para poder pasar a Cloudflare R2 si el tráfico crece. Las fotos de Google y GitHub no se guardan: solo su URL.

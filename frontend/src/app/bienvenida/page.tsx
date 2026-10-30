@@ -28,7 +28,7 @@ const SLIDES = [
   {
     icon: <Bell className="size-16 text-primary" />,
     title: "Tareas, recordatorios y permisos",
-    text: "Convierte un Nodex en tarea o ponle un recordatorio. Solo te pediremos un permiso, el de enviarte notificaciones, y únicamente cuando crees tu primer recordatorio.",
+    text: "Convierte un Nodex en tarea o ponle un recordatorio. Si quieres que los avisos te lleguen al móvil, actívalos en Ajustes: solo entonces te pediremos permiso para enviarte notificaciones.",
   },
 ];
 

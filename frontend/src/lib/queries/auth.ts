@@ -68,6 +68,23 @@ export function useRegister() {
   return useEnter("/auth/register");
 }
 
+export function useStartDemo() {
+  return useEnter("/auth/demo");
+}
+
+export function useConvertDemo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: Record<string, string>) =>
+      (await api<{ user: User }>("/auth/demo/convert", { method: "POST", body })).user,
+    onSuccess: (user) => {
+      queryClient.setQueryData(["me"], user);
+      return queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   const router = useRouter();
