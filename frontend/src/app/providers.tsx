@@ -2,7 +2,7 @@
 
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { ApiError } from "@/lib/api";
 
@@ -36,6 +36,10 @@ function createQueryClient() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(createQueryClient);
+
+  useEffect(() => {
+    navigator.serviceWorker?.register("/sw.js");
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

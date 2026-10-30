@@ -225,6 +225,23 @@ Diseño: [especificación](superpowers/specs/2026-10-27-grafo-design.md). Funcio
 - **Vista rápida:** en el ordenador, la tarjeta del Nodex sale al pasar el ratón y el clic abre la ventana de edición; en el móvil sale al tocar, con un botón "Abrir".
 - **Simplificaciones:** las fuerzas son fijas (Obsidian deja ajustarlas) y con miles de nodos el SVG puede ir lento; en ese caso se pasaría a `<canvas>`.
 
+## PWA instalable
+
+Una **PWA** (*Progressive Web App*) es la misma web, pero el móvil la puede instalar como si fuera una app: icono en la pantalla de inicio y ventana propia, sin barra del navegador. Necesita tres cosas:
+
+1. **Manifest** (`app/manifest.ts`). Es una ficha que dice nombre, colores, iconos y cómo se abre (`display: "standalone"`). Next lo sirve en `/manifest.webmanifest` y añade el `<link>` en el `<head>` solo, sin librerías.
+2. **Iconos** en `public/`: 192 px y 512 px para Android, y uno *maskable* (fondo naranja a sangre, logo más pequeño) para que Android lo recorte en círculo o en gota sin cortar el dibujo. `app/apple-icon.png` es el de iPhone; Next le pone su `<link>` solo. Se sacaron de `app/icon.svg` una sola vez.
+3. **Service worker** (`public/sw.js`). Es un script que el navegador ejecuta aparte de la página y que puede interceptar sus peticiones. Se registra en `providers.tsx` al cargar la app.
+
+El service worker hace lo mínimo: al instalarse guarda `offline.html` en caché; cuando una navegación falla por falta de red, devuelve esa página ("Estás sin conexión" con botón "Reintentar"). No guarda datos de usuario en caché: Nodex sigue necesitando Internet para funcionar.
+
+Otros detalles:
+
+- `proxy.ts` deja pasar sin sesión cualquier ruta con punto (`sw.js`, `manifest.webmanifest`, iconos, `offline.html`). Si no, el navegador recibiría una redirección a `/login` en lugar del archivo.
+- El color de la barra del sistema (`themeColor` en `layout.tsx`) sigue al tema claro u oscuro.
+- Una PWA solo funciona con **HTTPS** (o en `localhost`). En el móvil se podrá instalar cuando la web esté alojada.
+- Para probarla: DevTools → Application → Manifest / Service workers. Ojo: la opción "Offline" de la pestaña Network no corta la red del service worker. Para ver la página sin conexión hay que parar el servidor y recargar.
+
 ## Estados y errores
 
 | Situación | Qué ve el usuario |
