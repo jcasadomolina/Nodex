@@ -62,7 +62,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <div className="grid gap-5">
-      <h2 className="font-sans text-xl font-extrabold tracking-tight">{isLogin ? "Inicia sesión" : "Crea tu cuenta gratis"}</h2>
+      <h2 className="flex items-center gap-2 font-mono text-xs tracking-[-0.02em] uppercase">
+        <span aria-hidden="true" className="live size-1.5 rounded-full bg-primary" />
+        {isLogin ? "Inicia sesión" : "Crea tu cuenta gratis"}
+      </h2>
 
       {notice && <p className="rounded-lg bg-muted p-3 text-sm">{notice}</p>}
 
@@ -81,7 +84,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         </Button>
       </div>
 
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 font-mono text-xs tracking-[-0.02em] text-muted-foreground uppercase">
         <span className="h-px flex-1 bg-border" />o con tu correo<span className="h-px flex-1 bg-border" />
       </div>
 
