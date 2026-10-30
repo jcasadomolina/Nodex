@@ -242,6 +242,21 @@ Otros detalles:
 - Una PWA solo funciona con **HTTPS** (o en `localhost`). En el móvil se podrá instalar cuando la web esté alojada.
 - Para probarla: DevTools → Application → Manifest / Service workers. Ojo: la opción "Offline" de la pestaña Network no corta la red del service worker. Para ver la página sin conexión hay que parar el servidor y recargar.
 
+### Compartir enlaces (`RF-05.6`)
+
+Con la PWA instalada en Android, Nodex aparece en el menú **Compartir** del móvil. Lo hace posible el bloque `share_target` del manifest: le dice al sistema "manda lo compartido a `/compartir?title=…&text=…&url=…`".
+
+La página `app/(app)/compartir/page.tsx` no tiene interfaz propia, solo la rueda de carga:
+
+1. Busca el enlace en `url` y, si no viene, dentro de `text`. Muchas apps Android (Chrome, YouTube…) lo mandan en `text`, a veces con más palabras alrededor.
+2. Crea un Nodex de tipo enlace con `source: "share"`, sin grupo. Así queda **huérfano** y la IA puede sugerir dónde ponerlo. El título es el que manda la app o, si no hay, la propia URL; la vista previa se rellena después, como siempre.
+3. Abre el Nodex nuevo. Si lo compartido no tiene enlace, avisa y vuelve al panel.
+
+Límites conocidos:
+
+- **iPhone no lo admite.** Safari no deja que una PWA salga en el menú Compartir.
+- Si la sesión ha caducado, `proxy.ts` manda a `/login` y se pierde el enlace compartido. Hay que volver a compartirlo tras entrar.
+
 ## Estados y errores
 
 | Situación | Qué ve el usuario |

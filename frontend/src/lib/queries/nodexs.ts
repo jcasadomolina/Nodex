@@ -17,6 +17,7 @@ export type NodexInput = {
   priority: Priority | null;
   tags: string[];
   readLater?: boolean;
+  source?: "manual" | "share";
 };
 
 function listParams({ filter, sort, priority }: NodexQuery, cursor?: string) {
