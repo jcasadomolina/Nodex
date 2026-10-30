@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Nunito } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -21,6 +21,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nodex",
   description: "Tus notas y enlaces, conectados",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f5f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c1a18" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
