@@ -4,6 +4,7 @@ import { Monitor, Moon, Sun, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
+import { PushButton } from "@/components/push-button";
 import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -48,6 +49,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </Button>
             ))}
           </div>
+        </section>
+
+        <section className="grid gap-2">
+          <h3 className="font-medium">Avisos de recordatorios</h3>
+          <PushButton />
         </section>
 
         <div className="grid gap-2 border-t pt-4">

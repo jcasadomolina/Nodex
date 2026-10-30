@@ -207,7 +207,7 @@ Diseño: [especificación](superpowers/specs/2026-10-28-recordatorios-enlaces-de
 
 En la ventana del Nodex, la sección "Recordatorio" tiene un `<input type="datetime-local">` (hora local) y los atajos "En 1 hora", "Esta tarde (18:00)" y "Mañana a las 9:00". Se guarda junto con el Nodex (`PUT` o `DELETE /reminders/:id`). Si la fecha ya pasó, el backend responde con un error que se muestra bajo el campo. Los enlaces rotos o que no responden muestran "Comprobar ahora" (`POST /links/:id/refresh`) y "Ver copia".
 
-Las notificaciones push al móvil llegarán con la PWA, porque necesitan un *service worker*.
+Las notificaciones push al móvil se activan en Ajustes: ver [Notificaciones push](#notificaciones-push-rf-127) en la sección de la PWA.
 
 ## Vista gráfica (`/grafo`, `RF-04.5`)
 
@@ -256,6 +256,25 @@ Límites conocidos:
 
 - **iPhone no lo admite.** Safari no deja que una PWA salga en el menú Compartir.
 - Si la sesión ha caducado, `proxy.ts` manda a `/login` y se pierde el enlace compartido. Hay que volver a compartirlo tras entrar.
+
+### Notificaciones push (`RF-12.7`)
+
+El backend ya envía los recordatorios por Web Push (ver [backend](06-sistema-backend.md#recordatorios-y-notificaciones-push-featurerecordatorios)). El frontend pone las dos piezas que faltaban:
+
+1. **Suscribirse**: en Ajustes, "Avisos de recordatorios" muestra el botón `components/push-button.tsx`. Al pulsar "Activar avisos":
+   - pide permiso al usuario (`Notification.requestPermission()`);
+   - pide al backend la clave pública VAPID (`GET /api/push/public-key`);
+   - crea la suscripción con `pushManager.subscribe()`. El navegador devuelve una dirección (`endpoint`) de su servicio push y dos claves para cifrar;
+   - la guarda en el backend (`POST /api/push/subscriptions`).
+
+   "Desactivar avisos" la borra del backend (`DELETE`) y del navegador (`unsubscribe()`). La suscripción es **por dispositivo**: activarla en el móvil no la activa en el ordenador.
+2. **Mostrar el aviso**: `public/sw.js` escucha el evento `push`, lee `{ title, body, url }` y llama a `showNotification`. Al tocar el aviso (`notificationclick`), abre el Nodex.
+
+Casos especiales:
+
+- Si el usuario bloqueó las notificaciones, se avisa de que las active en los ajustes del navegador. La web no puede volver a preguntar.
+- Si el servidor no tiene claves VAPID, el backend responde `503` y se muestra ese error.
+- En iPhone, el push solo existe con la PWA instalada. En Safari normal el botón no aparece; sale un texto que invita a instalarla. Los recordatorios se siguen viendo en la campana.
 
 ## Estados y errores
 

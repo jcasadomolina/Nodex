@@ -315,7 +315,7 @@ Es el estándar que permite a una web enviar notificaciones al móvil o al orden
 
 - **El servidor tiene que estar despierto.** Algunos alojamientos gratuitos "duermen" el servidor si nadie lo usa durante un rato; mientras duerme, el proceso no se ejecuta y los avisos llegarían tarde. Lo tendremos en cuenta al elegir el alojamiento. Una solución gratuita habitual es un servicio externo que llame al servidor cada pocos minutos.
 - **Un error del servicio push no se reintenta:** el recordatorio se marca como enviado antes de mandarlo. Así nunca llega dos veces, a cambio de que, si el servicio push falla justo en ese momento, ese aviso se pierda. Aun así seguiría apareciendo dentro de la app.
-- **Las notificaciones llegarán de verdad cuando exista el frontend**, que es quien pide permiso al usuario y registra el *service worker* de la PWA.
+- **El frontend** pide permiso, registra la suscripción y muestra el aviso desde el *service worker* (ver [frontend](09-frontend.md#notificaciones-push-rf-127)).
 
 ## Enlaces: vista previa y enlaces rotos (`feature/enlaces`)
 
