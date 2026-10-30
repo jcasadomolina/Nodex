@@ -94,30 +94,38 @@ export function NodexTabs({ side }: { side: Side }) {
   if (tabs.length === 0) return null;
 
   return (
-    <div className="flex items-end gap-1 overflow-x-auto border-b">
-      <div
-        ref={tablist}
-        role="tablist"
-        aria-label={side === "left" ? "Nodexs abiertos" : "Nodexs abiertos a la derecha"}
-        className="flex items-end gap-1"
-        onKeyDown={(event) => {
-          if (event.key === "ArrowRight") move(1);
-          if (event.key === "ArrowLeft") move(-1);
-          if (event.key === "Delete" && active) close(active);
-        }}
-      >
-        {tabs.map((id) => (
-          <Tab key={id} id={id} active={id === active} onSelect={() => select(id)} onClose={() => close(id)} />
-        ))}
-      </div>
-      {side === "left" && (
-        <>
+    <div className="flex items-end gap-2 border-b">
+      <div className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto [scrollbar-width:thin]">
+        <div
+          ref={tablist}
+          role="tablist"
+          aria-label={side === "left" ? "Nodexs abiertos" : "Nodexs abiertos a la derecha"}
+          className="flex items-end gap-1"
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight") move(1);
+            if (event.key === "ArrowLeft") move(-1);
+            if (event.key === "Delete" && active) close(active);
+          }}
+        >
+          {tabs.map((id) => (
+            <Tab key={id} id={id} active={id === active} onSelect={() => select(id)} onClose={() => close(id)} />
+          ))}
+        </div>
+        {side === "left" && (
           <Button variant="ghost" size="sm" className="mb-1 shrink-0" title="Crear un Nodex nuevo en otra pestaña" onClick={() => setCreating(true)}>
             <Plus /> Nuevo
           </Button>
-          <p className="mb-2 ml-auto hidden shrink-0 pl-2 text-xs text-muted-foreground lg:block">
-            <kbd className="rounded border px-1 font-mono">{modifierKey()}</kbd> + clic: otra pestaña ·{" "}
-            <kbd className="rounded border px-1 font-mono">{modifierKey()}</kbd> + <kbd className="rounded border px-1 font-mono">{altKey()}</kbd> + clic: a la derecha
+        )}
+      </div>
+      {side === "left" && (
+        <>
+          <p className="mb-2 hidden shrink-0 items-center gap-1.5 text-xs text-muted-foreground lg:flex">
+            <kbd className="cursor-help rounded border px-1 font-mono" title="Abrir en otra pestaña">
+              {modifierKey()} + clic
+            </kbd>
+            <kbd className="cursor-help rounded border px-1 font-mono" title="Abrir a la derecha">
+              {modifierKey()} + {altKey()} + clic
+            </kbd>
           </p>
           <NodexDialog open={creating} onOpenChange={setCreating} newTab />
         </>
