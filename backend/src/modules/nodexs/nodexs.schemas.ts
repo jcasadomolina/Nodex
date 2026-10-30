@@ -40,6 +40,7 @@ export const createNodexSchema = z
     type: nodexType,
     ...fields,
     groupIds: z.array(z.uuid()).max(50).default([]),
+    source: z.enum(["manual", "share"]).default("manual"),
   })
   .refine((data) => data.type !== "link" || data.url, {
     message: "Los enlaces necesitan una URL",

@@ -409,6 +409,8 @@ Si el modelo falla, la búsqueda no se rompe (`RNF-08`): se registra el error y 
 
 ### Duplicados (`RF-05.9`)
 
+`POST /api/nodexs` acepta `source`: `manual` (por defecto) o `share`, cuando el Nodex llega desde el menú Compartir de la PWA (`RF-05.6`).
+
 Al crear un Nodex, `POST /api/nodexs` calcula su vector **en el momento** (no en segundo plano, como antes) y responde con `duplicates`: los Nodexs que ya tenía el usuario con la **misma URL** (sin contar la `/` final) o una similitud **≥ 0,9**. El Nodex se guarda igualmente: el frontend muestra el aviso y el usuario decide si lo borra.
 
 Para no hacer esperar al usuario, la comprobación tiene un límite de **3 segundos** (`Promise.race`). Si el modelo tarda más (por ejemplo, la primera vez, mientras se carga) o falla, la respuesta sale sin duplicados y el resto del trabajo (vector y sugerencia de grupo) sigue en segundo plano.
