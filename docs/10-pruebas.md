@@ -19,7 +19,7 @@ Se escriben muchas unitarias, bastantes de integración y pocas end-to-end. Es l
 ## Herramientas
 
 - **Vitest:** ejecuta los tests y da `test`, `expect` y las simulaciones (`vi.mock`). Entiende TypeScript sin compilar antes.
-- **Supertest:** hace peticiones a una app de Express sin abrir un puerto. Ya lo usa `middleware/error-handler.test.ts`; la rama de integración lo usa con la API entera.
+- **Supertest:** hace peticiones a una app de Express sin tener que arrancar el servidor (abre un puerto temporal por su cuenta). Ya lo usa `middleware/error-handler.test.ts`; la rama de integración lo usa con la API entera.
 - **Playwright:** maneja un navegador de verdad (llega en la rama de end-to-end).
 
 ## La base de datos de pruebas
@@ -83,6 +83,85 @@ Unitarias del backend hoy:
 | `modules/nodexs/nodexs.schemas.test.ts` | Prioridades, etiquetas y validación de enlaces |
 | `modules/trash/trash.names.test.ts` | Los nombres "(restaurado)" de la papelera |
 | `modules/demo/demo.data.test.ts` | Que los datos de la demo son válidos y enseñan todo |
+
+## Pruebas de integración del backend
+
+Comprueban la API entera: la petición entra por Express, pasa por la validación y la sesión, y llega a la base de Docker. Hay un archivo `<módulo>.routes.test.ts` por cada módulo de `src/modules/`. Las excepciones son health y el login con Google y GitHub, que van en `auth.routes.test.ts`, y las etiquetas, que van en `board.routes.test.ts`.
+
+### Cómo se escribe una
+
+```ts
+import { expect, test } from "vitest";
+import { createNodex, newUser } from "../../test/helpers.js";
+
+test("otro usuario no puede ver un Nodex ajeno", async () => {
+  const { agent: a } = await newUser();
+  const { agent: b } = await newUser();
+  const nodex = await createNodex(a, { title: "Secreto de A" });
+
+  expect((await b.get(`/api/nodexs/${nodex.id}`)).status).toBe(404);
+});
+```
+
+- **Supertest** (`request(app)`) arranca la app en un puerto libre temporal, hace la petición y lo cierra, sin que tengas que levantar el servidor. Un **`agent`** es como un navegador: guarda la cookie de sesión y la manda en las siguientes peticiones.
+- Los **helpers** (`src/test/helpers.ts`) evitan repetir lo de siempre:
+  - `newUser()` registra un usuario con email aleatorio y devuelve su `agent`;
+  - `anonymous()` hace peticiones sin sesión;
+  - `createNodex()` y `createGroup()` crean datos;
+  - `warmUpAi()` y `waitForEmbeddings()` sirven para los tests de IA (ver más abajo).
+- Cada test crea sus propios usuarios, así que **no hace falta vaciar la base** y los tests no dependen del orden. Se ha comprobado ejecutándolos en orden aleatorio (`npx vitest run --sequence.shuffle`).
+
+### Qué se comprueba en cada endpoint
+
+1. **El caso bueno:** el código (`200`, `201`, `204`) y la forma de la respuesta.
+2. **La validación:** datos incorrectos dan `400` y dicen qué campo falla.
+3. **Sin sesión:** `401`.
+4. **El aislamiento:** un segundo usuario recibe `404` con los Nodexs, grupos, tareas, recordatorios, papelera y sugerencias del primero, y sus listas no los muestran. Es la prueba más importante para la seguridad: un fallo aquí dejaría ver datos de otras personas.
+
+### Simular servicios externos
+
+Los tests no pueden depender de webs ajenas ni de servicios de pago. La única excepción es la primera descarga del modelo de IA desde Hugging Face, que luego se queda en `.cache/models`. Con **`vi.mock`** se sustituye un módulo por una versión de prueba:
+
+```ts
+vi.mock("../../lib/safe-fetch.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/safe-fetch.js")>()),
+  safeFetch: vi.fn(),
+}));
+```
+
+- `importOriginal` conserva el resto del módulo y solo cambia lo indicado.
+- Se simulan:
+  - las visitas a webs (`safe-fetch`) y archive.org (`fetch`, con `vi.stubGlobal`);
+  - el envío push (`lib/push`);
+  - Cloudinary (`lib/storage`);
+  - la carga de vistas previas en segundo plano (`refreshPreviewInBackground`).
+- **Cuidado:** `vi.mock` solo afecta a los módulos que todavía no se han cargado. Por eso `src/test/setup.ts`, que se ejecuta antes de cada archivo, importa las rutas *dentro* del `beforeEach` y no arriba del todo. Si las importara arriba, las simulaciones llegarían tarde y los tests harían peticiones reales a Internet.
+
+### La IA en los tests
+
+La IA **no se simula**: así se prueba de verdad que la búsqueda, los relacionados, las sugerencias y la demo funcionan. Dos detalles:
+
+- Al crear un Nodex, la aplicación espera a su vector como mucho 3 segundos y después sigue en segundo plano. El primer Nodex de cada proceso tarda más, porque carga el modelo. Por eso los archivos de IA llaman a `warmUpAi()` en un `beforeAll`, y antes de buscar esperan a los vectores con `waitForEmbeddings()`.
+- Los textos de prueba tienen que parecerse de verdad. Los relacionados exigen una similitud de 0,45 o más. Por ejemplo, "paella" y "arroz con pollo" solo llegan a 0,35, y "Viaje a Lisboa" y "Qué ver en Lisboa" a 0,78.
+
+### Procesos de fondo y límites
+
+- Los procesos que se ejecutan solos en el servidor se prueban llamando a su función con fechas puestas a mano: `sendDueReminders`, `checkStaleLinks`, `purgeTrash` y `purgeDemos`.
+- Los límites de peticiones (login, demo y comprobar enlaces) se reinician antes de cada test con `resetKey`. Si no, cada test registraría usuarios y al décimo saltaría el `429`. Hay tests aparte que comprueban que el límite sí salta.
+
+### Tiempo y memoria
+
+La suite completa tarda alrededor de **1 min 25 s** y llega a unos **1,8 GB** de memoria, con 2 procesos y el modelo cargado en cada uno.
+
+**Problema abierto en Windows.** Alrededor de 1 de cada 3 o 4 ejecuciones, un proceso de Vitest se cierra de golpe con el código `0xC0000409`, una salida forzada de código nativo. Pasa mientras se ejecuta un archivo, y ha ocurrido en `nodexs`, `tasks` y `board`. La suite entera sale entonces en rojo y hay que repetirla.
+
+La causa no está identificada. Lo que se ha descartado:
+
+- **Que se cierre con trabajo de IA a medias al terminar el archivo:** esperar a todos los vectores pendientes no lo evitó (2 cierres en 6 ejecuciones).
+- **Que la IA falle al calcular varios vectores a la vez:** 8 cálculos simultáneos, durante 30 rondas, no fallaron ninguna vez fuera de Vitest.
+- **`--pool=threads`:** es peor, porque se cae el proceso entero sin resumen.
+
+La CI se ejecuta en Linux. Si allí no aparece, el problema es propio de Windows.
 
 ## Integración continua (CI)
 

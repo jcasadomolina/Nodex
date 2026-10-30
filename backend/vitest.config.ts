@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     env: testEnv(),
     globalSetup: "src/test/global-setup.ts",
+    setupFiles: ["src/test/setup.ts"],
     maxWorkers: 2,
     testTimeout: 30_000,
     hookTimeout: 120_000,
