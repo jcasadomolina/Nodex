@@ -44,7 +44,7 @@ Después del modo demo:
 | Paso | Estado |
 |------|--------|
 | PWA: instalable, página sin conexión, compartir enlaces (`RF-05.6`) y notificaciones push (`RF-12.7`) | Hecho (falta probarla en un móvil, con HTTPS) |
-| Bloque de pruebas ([10-pruebas.md](10-pruebas.md)) | En curso: base de Docker, Vitest, CI e integración del backend hechos; faltan frontend y end-to-end |
+| Bloque de pruebas ([10-pruebas.md](10-pruebas.md)) | En curso: backend (unitarias e integración) y frontend hechos, con CI; falta end-to-end |
 | Alojamiento (Vercel + Oracle Cloud, elegido el 30/10/2026) | Siguiente, al acabar las pruebas |
 | Aplicación de escritorio, APK y distribución | Pendiente |
 
