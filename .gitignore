@@ -28,3 +28,8 @@ generated/
 
 # Archivos de trabajo de las herramientas de IA
 .superpowers/
+
+# Pruebas end-to-end
+e2e/.auth/
+e2e/test-results/
+e2e/playwright-report/

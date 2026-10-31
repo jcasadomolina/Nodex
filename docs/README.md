@@ -13,7 +13,7 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Brief de diseño](07-brief-de-diseno.md) | Estilo visual, color, tipografía, bocetos | Completo |
 | [Base de datos](08-base-de-datos.md) | PostgreSQL en Neon, tablas, relaciones y reglas de evolución | Completo |
 | [Frontend](09-frontend.md) | Stack, conexión con el backend, pantallas y estados | En curso |
-| [Pruebas](10-pruebas.md) | Tipos de prueba, base de Docker, cómo ejecutarlas y CI | En curso |
+| [Pruebas](10-pruebas.md) | Tipos de prueba, base de Docker, cómo ejecutarlas y CI | Completo |
 | [`disenos/`](disenos) y [`planes/`](planes) | Diseño aprobado y plan de trabajo de cada funcionalidad | Uno por rama |
 
 ## Glosario

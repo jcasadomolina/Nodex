@@ -200,3 +200,34 @@ El archivo es `.github/workflows/tests.yml` (GitHub Actions). El trabajo **backe
 El trabajo **frontend** instala las dependencias y pasa `lint`, `typecheck` y `npm test`. No necesita base de datos.
 
 El trabajo backend guarda en caché el modelo de IA (`backend/.cache/models`) para no descargarlo en cada ejecución. Si un día falla al descargarlo desde Hugging Face, basta con volver a lanzar el trabajo desde la pestaña *Actions* del repositorio.
+
+## Pruebas end-to-end (Playwright)
+
+Prueban la aplicación entera en un navegador de verdad (Chromium), como lo usaría una persona. Están en la carpeta `e2e/`.
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+npm test
+```
+
+Playwright arranca solo el backend (puerto 4100) contra la base de Docker y el frontend compilado para producción (`next build` y `next start`, puerto 3100). Se usa la versión de producción porque en desarrollo el botón flotante de Next.js tapa la barra de navegación del móvil.
+
+| Recorrido | Qué hace |
+|-----------|----------|
+| `cuenta` | Registrarse, cerrar sesión, contraseña incorrecta y volver a entrar |
+| `nota` | Crear una nota con prioridad y etiqueta, escribir Markdown y comprobar que se guarda |
+| `grupo` | Crear un grupo, meter un Nodex y filtrar el panel |
+| `busqueda` | Buscar por significado |
+| `tarea` | Convertir un Nodex en tarea y moverla de columna con el teclado |
+| `papelera` | Borrar, deshacer y restaurar desde la papelera |
+| `demo` | Probar sin registrarse, aceptar una sugerencia de la IA y crear la cuenta |
+| `movil` | Barra inferior y crear un Nodex a 375 px |
+
+Cosas a saber:
+
+- **Usuario compartido:** el login tiene un límite de 10 intentos cada 15 minutos por IP, y en estas pruebas todas las peticiones llegan desde la misma. Por eso `preparar.setup.ts` registra un usuario una vez y guarda su sesión (`storageState`), y los recorridos la reutilizan. Solo `cuenta` y `demo` empiezan sin sesión. Cada recorrido usa títulos únicos para no pisarse.
+- **Sin pausas fijas:** se espera a lo que se ve (`expect(...).toBeVisible()`), a los anuncios de accesibilidad del tablero, o a que la API confirme el guardado (`expect.poll`) antes de recargar.
+- **Selectores por rol y texto visible** (`getByRole`, `getByLabel`), como los usaría un lector de pantalla.
+- En la CI, el trabajo **e2e** se ejecuta después de backend y frontend, con 1 reintento. Si falla, sube el informe de Playwright como artefacto.
