@@ -14,6 +14,7 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Base de datos](08-base-de-datos.md) | PostgreSQL en Neon, tablas, relaciones y reglas de evolución | Completo |
 | [Frontend](09-frontend.md) | Stack, conexión con el backend, pantallas y estados | En curso |
 | [Pruebas](10-pruebas.md) | Tipos de prueba, base de Docker, cómo ejecutarlas y CI | Completo |
+| [Despliegue](11-despliegue.md) | Vercel + Oracle Cloud: arquitectura y paso a paso | Completo |
 | [`disenos/`](disenos) y [`planes/`](planes) | Diseño aprobado y plan de trabajo de cada funcionalidad | Uno por rama |
 
 ## Glosario

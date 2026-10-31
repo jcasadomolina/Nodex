@@ -45,7 +45,7 @@ Después del modo demo:
 |------|--------|
 | PWA: instalable, página sin conexión, compartir enlaces (`RF-05.6`) y notificaciones push (`RF-12.7`) | Hecho (falta probarla en un móvil, con HTTPS) |
 | Bloque de pruebas ([10-pruebas.md](10-pruebas.md)) | Hecho: unitarias, integración y end-to-end, con CI en cada PR |
-| Alojamiento (Vercel + Oracle Cloud, elegido el 30/10/2026) | Siguiente |
+| Alojamiento (Vercel + Oracle Cloud, [11-despliegue.md](11-despliegue.md)) | Preparado: falta crear las cuentas y el servidor |
 | Aplicación de escritorio, APK y distribución | Pendiente |
 
 ## Estado de los requisitos
