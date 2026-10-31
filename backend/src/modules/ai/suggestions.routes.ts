@@ -1,19 +1,31 @@
 import { Router } from "express";
+import { z } from "zod";
+import { isUniqueViolation } from "../../lib/db-errors.js";
 import { HttpError } from "../../lib/http-error.js";
 import { parseId } from "../../lib/params.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { suggestGroup, updateEmbedding } from "./ai.service.js";
+import { createGroupSchema } from "../groups/groups.schemas.js";
+import { lockNewGroups, proposeNewGroups, suggestGroup, updateEmbedding } from "./ai.service.js";
 
 export const suggestionsRouter = Router();
 
 suggestionsRouter.use(requireAuth);
 
 const SUGGESTION_NOT_FOUND = "Sugerencia no encontrada";
+const PROPOSAL_NOT_FOUND = "Propuesta de grupo no encontrada";
+
+const proposalSchema = z.object({ name: z.string().trim().min(1).max(80) });
+const acceptProposalSchema = proposalSchema.extend({ groupName: createGroupSchema.shape.name });
 
 const activeOrphan = {
   deletedAt: null,
   groups: { none: { group: { deletedAt: null } } },
+};
+
+const unassignedOrphan = {
+  ...activeOrphan,
+  aiSuggestions: { none: { kind: "assign_group", status: "pending", group: { deletedAt: null } } },
 };
 
 async function findPending(userId: string, id: string) {
@@ -28,7 +40,7 @@ async function findPending(userId: string, id: string) {
 
 suggestionsRouter.get("/", async (req, res) => {
   const suggestions = await prisma.aiSuggestion.findMany({
-    where: { userId: req.session.userId!, status: "pending", nodex: activeOrphan, group: { deletedAt: null } },
+    where: { userId: req.session.userId!, kind: "assign_group", status: "pending", nodex: activeOrphan, group: { deletedAt: null } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -38,7 +50,18 @@ suggestionsRouter.get("/", async (req, res) => {
       group: { select: { id: true, name: true } },
     },
   });
-  res.json({ suggestions });
+  const proposals = await prisma.aiSuggestion.findMany({
+    where: { userId: req.session.userId!, kind: "new_group", status: "pending", nodex: unassignedOrphan },
+    orderBy: { createdAt: "asc" },
+    select: { suggestedName: true, nodex: { select: { id: true, title: true, type: true } } },
+  });
+  const byName = new Map<string, (typeof proposals)[number]["nodex"][]>();
+  for (const { suggestedName, nodex } of proposals) {
+    byName.set(suggestedName!, [...(byName.get(suggestedName!) ?? []), nodex]);
+  }
+  const newGroups = [...byName].map(([name, nodexs]) => ({ name, nodexs })).filter((g) => g.nodexs.length >= 2);
+
+  res.json({ suggestions, newGroups });
 });
 
 suggestionsRouter.post("/refresh", async (req, res) => {
@@ -59,9 +82,55 @@ suggestionsRouter.post("/refresh", async (req, res) => {
   }
 
   const pending = await prisma.aiSuggestion.count({
-    where: { userId, status: "pending", nodex: activeOrphan, group: { deletedAt: null } },
+    where: { userId, kind: "assign_group", status: "pending", nodex: activeOrphan, group: { deletedAt: null } },
   });
-  res.json({ reviewed: orphans.length, pending });
+  const newGroups = await proposeNewGroups(userId);
+  res.json({ reviewed: orphans.length, pending, newGroups });
+});
+
+suggestionsRouter.post("/new-groups/accept", async (req, res) => {
+  const userId = req.session.userId!;
+  const { name, groupName } = acceptProposalSchema.parse(req.body);
+  const where = { userId, kind: "new_group", status: "pending", suggestedName: name };
+
+  try {
+    const group = await prisma.$transaction(async (tx) => {
+      await lockNewGroups(tx, userId);
+      const rows = await tx.aiSuggestion.findMany({ where, select: { nodexId: true } });
+      if (rows.length === 0) {
+        throw new HttpError(404, PROPOSAL_NOT_FOUND);
+      }
+      const orphans = await tx.nodex.findMany({
+        where: { id: { in: rows.map((r) => r.nodexId) }, userId, ...unassignedOrphan },
+        select: { id: true },
+      });
+      if (orphans.length === 0) {
+        throw new HttpError(409, "Los Nodexs de esta propuesta ya no son huérfanos");
+      }
+      const created = await tx.group.create({ data: { userId, name: groupName }, select: { id: true, name: true } });
+      await tx.groupNodex.createMany({
+        data: orphans.map(({ id }) => ({ groupId: created.id, nodexId: id, userId, addedBy: "ai" })),
+      });
+      await tx.aiSuggestion.updateMany({ where, data: { status: "accepted", resolvedAt: new Date() } });
+      return created;
+    });
+    res.status(201).json({ group });
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new HttpError(409, "Ya tienes un grupo con ese nombre");
+    throw err;
+  }
+});
+
+suggestionsRouter.post("/new-groups/reject", async (req, res) => {
+  const { name } = proposalSchema.parse(req.body);
+  const { count } = await prisma.aiSuggestion.updateMany({
+    where: { userId: req.session.userId!, kind: "new_group", status: "pending", suggestedName: name },
+    data: { status: "rejected", resolvedAt: new Date() },
+  });
+  if (count === 0) {
+    throw new HttpError(404, PROPOSAL_NOT_FOUND);
+  }
+  res.status(204).end();
 });
 
 suggestionsRouter.post("/:id/accept", async (req, res) => {
@@ -89,6 +158,6 @@ suggestionsRouter.post("/:id/reject", async (req, res) => {
     where: { id: suggestion.id },
     data: { status: "rejected", resolvedAt: new Date() },
   });
-  await suggestGroup(userId, suggestion.nodexId);
+  suggestGroup(userId, suggestion.nodexId).catch((err) => console.error(`Error de IA con el Nodex ${suggestion.nodexId}:`, err));
   res.status(204).end();
 });

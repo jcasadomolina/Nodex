@@ -48,6 +48,7 @@
 - **RF-05.7**: El sistema debe permitir buscar Nodexs por significado, aunque no compartan palabras con la búsqueda.
 - **RF-05.8**: El sistema debe mostrar, al abrir un Nodex, otros Nodexs relacionados con su contenido.
 - **RF-05.9**: El sistema debe avisar cuando un Nodex nuevo sea igual o casi igual a otro ya guardado.
+- **RF-05.10**: El sistema debe mostrar en los Nodexs con enlace un resumen automático de unas 3 frases del contenido de la página, elegidas con los embeddings que ya usa la aplicación (sin LLM de pago).
 
 ### HU-10: Tutorial de bienvenida
 
@@ -79,6 +80,81 @@
 - **RF-12.6** *(tarea)*: El sistema debe mostrar las tareas en un tablero de tres columnas (pendiente, en curso y hecha) y permitir moverlas entre columnas.
 - **RF-12.7** *(recordatorio)*: El sistema debe permitir programar un recordatorio en un Nodex y enviar una notificación push cuando llegue la hora.
 
+### HU-13: Etiquetas de los Nodexs
+
+> Una etiqueta es una palabra libre (`#cocina`, `#urgente-trabajo`) que el usuario pone a sus Nodexs. A diferencia de los grupos, no se gestionan aparte: existen mientras algún Nodex las use.
+
+- **RF-13.1**: El sistema debe permitir añadir y quitar etiquetas a un Nodex al crearlo o editarlo (máximo 10 por Nodex).
+- **RF-13.2**: El sistema debe normalizar las etiquetas: minúsculas, sin espacios (se sustituyen por guiones) y de 30 caracteres como máximo.
+- **RF-13.3**: El sistema debe sugerir las etiquetas que el usuario ya usa mientras escribe una.
+- **RF-13.4**: El sistema debe mostrar las etiquetas en las tarjetas y permitir encontrar los Nodexs por etiqueta en la búsqueda.
+
+### HU-14: Modo demo
+
+> Pensado para el portfolio: quien visite la aplicación debe poder probarla sin registrarse.
+
+- **RF-14.1**: El sistema debe ofrecer en la portada un botón "Probar sin registrarse" que inicie sesión en una cuenta temporal nueva.
+- **RF-14.2**: La cuenta temporal debe incluir grupos, Nodexs y etiquetas de ejemplo que muestren las funciones principales (IA, grafo, prioridades).
+- **RF-14.3**: El sistema debe mostrar un aviso visible de que se está en modo demo y ofrecer crear una cuenta de verdad.
+- **RF-14.4**: El sistema debe borrar las cuentas temporales y todos sus datos 24 horas después de crearlas.
+
+### HU-15: Papelera
+
+- **RF-15.1**: El sistema debe mostrar los Nodexs y grupos borrados en una papelera.
+- **RF-15.2**: El sistema debe permitir restaurar un elemento de la papelera, con sus etiquetas y sus grupos.
+- **RF-15.3**: El sistema debe permitir vaciar la papelera, previa confirmación.
+- **RF-15.4**: El sistema debe borrar definitivamente los elementos que lleven más de 30 días en la papelera.
+
+### HU-16: Importar y exportar
+
+- **RF-16.1**: El sistema debe permitir importar los marcadores exportados desde el navegador (archivo HTML): cada carpeta se convierte en un grupo y cada marcador en un Nodex con enlace.
+- **RF-16.2**: El sistema debe permitir exportar todos los datos del usuario a JSON y a Markdown (un archivo `.md` por Nodex, dentro de un `.zip`).
+- **RF-16.3**: El sistema debe permitir importar un JSON exportado desde Nodex.
+- **RF-16.4**: El sistema debe mostrar el progreso de una importación y avisar de los elementos que no se hayan podido importar o que ya existían.
+
+### HU-17: Paleta de comandos
+
+- **RF-17.1**: El sistema debe abrir con `Ctrl+K` (`Cmd+K` en Mac) un buscador global que encuentre Nodexs y grupos.
+- **RF-17.2**: La paleta debe permitir lanzar acciones: crear un Nodex, ir al grafo, abrir un grupo y abrir los ajustes.
+- **RF-17.3**: La paleta debe manejarse por completo con el teclado.
+
+### HU-18: Guardar desde el navegador
+
+- **RF-18.1**: El sistema debe ofrecer un *bookmarklet* "Guardar en Nodex" que se instale arrastrándolo a la barra de marcadores.
+- **RF-18.2**: Al pulsarlo en cualquier web, debe abrir una ventana de Nodex con el título y la URL de la página ya rellenados, para guardarla como Nodex.
+
+### HU-19: Compartir grupos
+
+- **RF-19.1**: El sistema debe permitir generar un enlace público de solo lectura para un grupo.
+- **RF-19.2**: Quien abra el enlace debe ver los Nodexs del grupo sin necesidad de cuenta y sin poder modificarlos.
+- **RF-19.3**: El sistema debe permitir desactivar el enlace o generar uno nuevo, que invalida el anterior.
+
+### HU-20: Redescubre
+
+> Lo que se guarda y no se vuelve a mirar se pierde. Redescubre recupera cada día algunos Nodexs olvidados.
+
+- **RF-20.1**: El sistema debe registrar cuándo abre el usuario cada Nodex.
+- **RF-20.2**: El sistema debe mostrar cada día en el panel hasta 3 Nodexs que el usuario no abre desde hace 30 días o más, sin contar los de prioridad alta o urgente.
+- **RF-20.3**: El sistema debe dar preferencia a los Nodexs olvidados que se parezcan a lo que el usuario ha abierto en los últimos 7 días.
+- **RF-20.4**: El sistema debe permitir ocultar la sección hasta el día siguiente.
+
+### HU-21: Leer más tarde
+
+- **RF-21.1**: El sistema debe permitir marcar un enlace para leerlo más tarde y quitar la marca al leerlo.
+- **RF-21.2**: El sistema debe mostrar en el panel un filtro con los enlaces pendientes de leer, del más antiguo al más nuevo.
+- **RF-21.3**: El sistema debe estimar el tiempo de lectura de cada enlace y mostrarlo en su tarjeta y en su ventana.
+
+### HU-22: Vista del Nodex
+
+> Cada Nodex tiene su propia página, al estilo de Obsidian.
+
+- **RF-22.1**: Al abrir un Nodex, el sistema debe mostrar una página con su título, sus propiedades (enlace, prioridad, tarea, fecha límite, recordatorio, grupos, etiquetas, creado y modificado) y su contenido.
+- **RF-22.2**: El contenido debe mostrarse formateado en Markdown (títulos, listas, casillas, tablas, código, citas y enlaces) y poder editarse en texto plano, guardándose solo.
+- **RF-22.3**: Las propiedades y el título deben poder editarse directamente en la página.
+- **RF-22.4**: Crear un Nodex pide solo el título y, opcionalmente, las propiedades; el contenido se escribe después, en su página.
+- **RF-22.5**: El sistema debe permitir tener varios Nodexs abiertos en pestañas.
+- **RF-22.6**: El sistema debe permitir dividir la vista en dos paneles, cada uno con sus pestañas.
+
 ## 2. Requisitos no funcionales
 
 ### HU-06: Rendimiento y optimización de datos
@@ -92,6 +168,7 @@
 - **RNF-07.2**: Para conseguir una web usable se utilizarán las skills que se proporcionen.
 - **RNF-07.3**: Cualquier decisión notoria (color, tipografía, ubicación de elementos…) se consultará antes de aplicar el cambio.
 - **RNF-07.4**: La interfaz debe ser responsiva y adaptarse a móviles, tablets y monitores de escritorio.
+- **RNF-07.5**: La interfaz debe estar disponible en español e inglés, con el idioma elegido en los ajustes.
 
 ### HU-08: Dependencias y APIs de terceros
 

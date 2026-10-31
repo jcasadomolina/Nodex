@@ -19,14 +19,15 @@ datasource db {
 }
 
 model User {
-  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                     String
-  email                    String   @unique // se guarda siempre en minúsculas
-  passwordHash             String?  @map("password_hash") // null si solo entra con Google o GitHub
-  avatarUrl                String?  @map("avatar_url")
-  tutorialCompletedVersion Int?     @map("tutorial_completed_version")
-  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  email                    String    @unique // se guarda siempre en minúsculas
+  passwordHash             String?   @map("password_hash") // null si solo entra con Google o GitHub
+  avatarUrl                String?   @map("avatar_url")
+  tutorialCompletedVersion Int?      @map("tutorial_completed_version")
+  demoExpiresAt            DateTime? @map("demo_expires_at") @db.Timestamptz(6)
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   oauthAccounts     OAuthAccount[]
   pushSubscriptions PushSubscription[]
@@ -84,19 +85,21 @@ model Group {
 }
 
 model Nodex {
-  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String                      @map("user_id") @db.Uuid
-  type      String // note | link
-  title     String
-  content   String?
-  url       String?
-  source    String                      @default("manual") // manual | share
-  priority  Int?                        @db.SmallInt
-  metadata  Json                        @default("{}")
-  embedding Unsupported("vector(384)")?
-  createdAt DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt DateTime?                   @map("deleted_at") @db.Timestamptz(6)
+  id           String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String                      @map("user_id") @db.Uuid
+  type         String // note | link
+  title        String
+  content      String?
+  url          String?
+  source       String                      @default("manual") // manual | share
+  priority     Int?                        @db.SmallInt
+  metadata     Json                        @default("{}")
+  embedding    Unsupported("vector(384)")?
+  createdAt    DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?                   @map("deleted_at") @db.Timestamptz(6)
+  lastOpenedAt DateTime?                   @map("last_opened_at") @db.Timestamptz(6)
+  readLaterAt  DateTime?                   @map("read_later_at") @db.Timestamptz(6)
 
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   groups        GroupNodex[]
@@ -105,10 +108,25 @@ model Nodex {
   task          Task?
   reminder      Reminder?
   linkPreview   LinkPreview?
+  tags          NodexTag[]
 
   @@unique([id, userId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("nodexs")
+}
+
+// Etiquetas libres de cada Nodex (HU-13). Se guardan ya normalizadas
+// (minúsculas, sin espacios), así que la clave primaria evita duplicados.
+model NodexTag {
+  nodexId String @map("nodex_id") @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  name    String
+
+  nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@id([nodexId, name])
+  @@index([userId, name])
+  @@map("nodex_tags")
 }
 
 // Qué Nodexs hay en cada grupo. Un Nodex sin filas aquí es un huérfano.
@@ -217,19 +235,20 @@ model PushSubscription {
 }
 
 model LinkPreview {
-  nodexId       String    @id @map("nodex_id") @db.Uuid
-  userId        String    @map("user_id") @db.Uuid
-  url           String
-  status        String    @default("pending")
-  httpStatus    Int?      @map("http_status")
-  title         String?
-  description   String?
-  imageUrl      String?   @map("image_url")
-  siteName      String?   @map("site_name")
-  archiveUrl    String?   @map("archive_url")
-  lastCheckedAt DateTime? @map("last_checked_at") @db.Timestamptz(6)
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  nodexId        String    @id @map("nodex_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  url            String
+  status         String    @default("pending")
+  httpStatus     Int?      @map("http_status")
+  title          String?
+  description    String?
+  imageUrl       String?   @map("image_url")
+  siteName       String?   @map("site_name")
+  archiveUrl     String?   @map("archive_url")
+  lastCheckedAt  DateTime? @map("last_checked_at") @db.Timestamptz(6)
+  readingMinutes Int?      @map("reading_minutes") @db.SmallInt
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   nodex Nodex @relation(fields: [nodexId, userId], references: [id, userId], onDelete: Cascade)
 

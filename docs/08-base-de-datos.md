@@ -51,6 +51,7 @@ Todas las fechas son `timestamptz` (fecha y hora con zona horaria). `created_at`
 | `password_hash` | text | Contraseña cifrada (`RF-01.4`). Vacío si el usuario entra solo con Google o GitHub |
 | `avatar_url` | text | Opcional (`RF-02.3`) |
 | `tutorial_completed_version` | integer | Última versión del tutorial que ha visto (`RF-10.4`). `null` si nunca lo ha visto |
+| `demo_expires_at` | timestamptz | Solo en las cuentas del modo demo (HU-14): cuándo se borran. `null` en las cuentas normales. Migración `*_add_demo_expires_at` |
 | `created_at`, `updated_at` | timestamptz | |
 
 ### `oauth_accounts` (`RF-01.2`)
@@ -106,6 +107,8 @@ El nombre es único por usuario entre los grupos no borrados.
 | `embedding` | vector(384) | Vector que representa el significado del Nodex, calculado por la IA. `null` hasta que se calcula |
 | `created_at`, `updated_at` | timestamptz | |
 | `deleted_at` | timestamptz | Borrado lógico |
+| `last_opened_at` | timestamptz | Última vez que el usuario abrió el Nodex (HU-20, Redescubre). `null` si nunca se ha abierto. No cambia `updated_at` |
+| `read_later_at` | timestamptz | Cuándo se marcó el enlace para leer más tarde (HU-21). `null` si no está en la lista |
 
 ### `group_nodexs` (`RF-05.2`, `RF-04.4`)
 
@@ -206,9 +209,22 @@ Vista previa y estado del enlace de un Nodex: como mucho una fila por Nodex con 
 | `title`, `description`, `image_url`, `site_name` | text | Datos de la vista previa |
 | `archive_url` | text | Copia en archive.org, si el enlace está roto o no accesible |
 | `last_checked_at` | timestamptz | Última comprobación |
+| `reading_minutes` | smallint | Minutos estimados de lectura (HU-21); `null` si la página no parece un artículo |
 | `created_at`, `updated_at` | timestamptz | |
 
 Índices: `last_checked_at` (para el proceso periódico) y `(user_id, status)` (para la lista de rotos).
+
+### `nodex_tags` (HU-13)
+
+Etiquetas libres de cada Nodex. No hay una tabla de etiquetas aparte: una etiqueta existe mientras algún Nodex la use.
+
+| Columna | Tipo | Qué guarda |
+|---------|------|------------|
+| `nodex_id` | uuid | El Nodex. Parte de la clave primaria |
+| `user_id` | uuid | El dueño. Junto con `nodex_id` forma la clave foránea compuesta hacia `nodexs`, como en `group_nodexs`, para que no se pueda etiquetar el Nodex de otro usuario |
+| `name` | text | La etiqueta ya normalizada (minúsculas, sin espacios, 30 caracteres como máximo). Parte de la clave primaria, así que un Nodex no puede repetir etiqueta |
+
+Índice `(user_id, name)` para listar las etiquetas de un usuario (`GET /api/tags`). Al borrar un Nodex de verdad, sus etiquetas se borran en cascada.
 
 ## Aislamiento entre usuarios
 
@@ -237,13 +253,13 @@ En `ai_suggestions` las claves foráneas son simples: el grupo sugerido es opcio
 3. **Una tabla por funcionalidad:** el enriquecimiento, las sugerencias y las integraciones van en tablas propias enlazadas a `nodexs`, no como columnas dentro de `nodexs`.
 4. **Texto en vez de `ENUM`** para tipos y estados (`type`, `status`, `source`…). Los valores válidos se comprueban en el backend, y añadir uno no exige tocar la base.
 5. **`metadata` (JSONB)** para probar datos nuevos sin migración. Si un dato se consolida, pasa a ser una columna.
-6. **Borrado lógico** en `nodexs` y `groups`: borrar rellena `deleted_at` en vez de eliminar la fila, lo que deja la puerta abierta a una papelera.
+6. **Borrado lógico** en `nodexs` y `groups`: borrar rellena `deleted_at` en vez de eliminar la fila. La papelera (HU-15) permite restaurarlos o eliminarlos para siempre, y un proceso que corre cada hora elimina definitivamente lo que lleva más de 30 días borrado. El borrado definitivo arrastra en cascada las tablas relacionadas (etiquetas, tarea, recordatorio, vista previa, pertenencia a grupos); las sugerencias de IA que apuntaban a un grupo borrado se quedan sin grupo (`SET NULL`).
 7. **Ramas de Neon:** cada migración se prueba primero en una copia de la base (una rama) antes de aplicarse a la principal.
 
 ## Implementación
 
 - Esquema: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma). Los modelos usan PascalCase y los campos camelCase, como es habitual en TypeScript; `@@map` y `@map` los traducen a nombres en snake_case en la base.
-- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`; `*_add_tasks` crea la tabla `tasks`; `*_add_reminders_and_push` crea `reminders` y `push_subscriptions`; `*_add_link_previews` crea `link_previews`.
+- Migraciones: [`backend/prisma/migrations/`](../backend/prisma/migrations). La primera, `*_init`, crea todas las tablas; `*_add_tutorial_version` añade la columna del tutorial; `*_add_nodex_embeddings` activa pgvector y añade `nodexs.embedding`; `*_add_nodex_priority` añade `nodexs.priority`; `*_add_tasks` crea la tabla `tasks`; `*_add_reminders_and_push` crea `reminders` y `push_subscriptions`; `*_add_link_previews` crea `link_previews`; `*_add_nodex_tags` crea `nodex_tags`; `*_add_nodex_last_opened_at` añade `nodexs.last_opened_at`; `*_add_read_later` añade `nodexs.read_later_at` y `link_previews.reading_minutes`.
 - `priority` es la única excepción a la regla de "texto en vez de ENUM": se guarda como número para poder **ordenar** por ella (urgente > alta > media > baja). Con texto, el orden sería alfabético, que aquí no tiene sentido.
 - `embedding` es de un tipo que Prisma no conoce (`vector`), así que en el esquema aparece como `Unsupported("vector(384)")` y se lee y escribe con SQL (`$queryRaw` / `$executeRaw`).
 - Configuración de la CLI: [`backend/prisma.config.ts`](../backend/prisma.config.ts). Carga el `.env` de la raíz y usa `DIRECT_URL` para las migraciones. La aplicación se conectará con `DATABASE_URL` (pooling) en el bloque de backend.

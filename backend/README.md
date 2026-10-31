@@ -19,7 +19,7 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
    DIRECT_URL="...?sslmode=verify-full"     # directa: la usan las migraciones
    SESSION_SECRET="..."                     # mínimo 32 caracteres aleatorios
    PORT=4000                                # opcional, 4000 por defecto
-   APP_URL="http://localhost:4000"          # URL pública que ve el navegador
+   APP_URL="http://localhost:3000"          # URL pública que ve el navegador (la del frontend)
    GOOGLE_CLIENT_ID="..."                   # opcionales: sin ellas, el login con Google
    GOOGLE_CLIENT_SECRET="..."               #   o GitHub responde 503
    GITHUB_CLIENT_ID="..."
@@ -83,16 +83,20 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/auth/register` | Body `{ name, email, password }`. `201 { user }` e inicia sesión. `409` si el email ya existe |
 | `POST /api/auth/login` | Body `{ email, password }`. `200 { user }` e inicia sesión. `401` si las credenciales no son válidas |
 | `POST /api/auth/logout` | `204`. Cierra la sesión y borra la cookie |
-| `GET /api/auth/me` | `200 { user }` con el usuario de la sesión, o `401` |
-| `GET /api/me` | `200 { user }` con el perfil y `providers` (cuentas vinculadas: `google`, `github`) |
+| `GET /api/auth/me` | `200 { user }` con el usuario de la sesión, o `401`. `user.demoExpiresAt` tiene fecha si es una cuenta demo |
+| `POST /api/auth/demo` | `201 { user }`: crea una cuenta demo con datos de ejemplo e inicia sesión. `429` a partir de 5 por hora y por IP |
+| `POST /api/auth/demo/convert` | Body `{ name, email, password }`. `200 { user }`: la demo pasa a cuenta normal con sus datos. `403` si no es una demo, `409` si el email ya existe |
+| `GET /api/me` | `200 { user }` con el perfil, `hasPassword` (si tiene contraseña) y `providers` (cuentas vinculadas: `google`, `github`) |
 | `PATCH /api/me` | Body `{ name }`. `200 { user }` |
 | `PUT /api/me/avatar` | Formulario `multipart/form-data` con el campo `avatar` (JPG, PNG, WebP o GIF, máx. 5 MB). `200 { user }`. `413` si pesa demasiado, `502` si Cloudinary falla, `503` si no está configurado |
 | `DELETE /api/me/avatar` | `200 { user }` con `avatarUrl: null` |
 | `DELETE /api/me/providers/:provider` | `204`. Desvincula `google` o `github`. `409` si es el único método de inicio de sesión |
-| `GET /api/suggestions` | `200 { suggestions }`: sugerencias de la IA pendientes, con el Nodex y el grupo propuesto |
-| `POST /api/suggestions/refresh` | Calcula los vectores que falten y revisa todos los huérfanos. `200 { reviewed, pending }` |
+| `GET /api/suggestions` | `200 { suggestions, newGroups }`: sugerencias de la IA pendientes (Nodex → grupo existente) y propuestas de grupos nuevos (`{ name, nodexs }`) |
+| `POST /api/suggestions/refresh` | Calcula los vectores que falten y revisa todos los huérfanos y recalcula las propuestas de grupos nuevos. `200 { reviewed, pending, newGroups }` |
+| `POST /api/suggestions/new-groups/accept` | Body `{ name, groupName }`. `201 { group }`: crea el grupo y mete los Nodexs de la propuesta que siguen huérfanos. `409` si ya existe un grupo con ese nombre |
+| `POST /api/suggestions/new-groups/reject` | Body `{ name }`. `204`. Esos Nodexs no vuelven a salir en propuestas de grupo nuevo |
 | `POST /api/suggestions/:id/accept` | `204`. Mete el Nodex en el grupo sugerido |
-| `POST /api/suggestions/:id/reject` | `204`. Descarta la sugerencia; ese grupo no se vuelve a proponer para ese Nodex |
+| `POST /api/suggestions/:id/reject` | `204`. Descarta la sugerencia; ese grupo no se vuelve a proponer para ese Nodex. La búsqueda de otro grupo sigue en segundo plano |
 | `PUT /api/me/tutorial` | Body `{ version }` (entero ≥ 1). `200 { tutorialCompletedVersion }`. Marca qué versión del tutorial ha visto el usuario |
 | `GET /api/auth/google` · `GET /api/auth/github` | Redirige al login del proveedor. `503` si no está configurado |
 | `GET /api/auth/google/callback` · `GET /api/auth/github/callback` | El proveedor vuelve aquí. Inicia sesión y redirige a `APP_URL`, o a `APP_URL/login?error=<proveedor>` si falla |
@@ -108,12 +112,19 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `DELETE /api/groups/:id` | `204`. Lo envía a la papelera; sus Nodexs no se borran |
 | `POST /api/groups/:id/nodexs` | Body `{ nodexId }`. `204`. Si ya estaba en el grupo, no hace nada |
 | `DELETE /api/groups/:id/nodexs/:nodexId` | `204`. Saca el Nodex del grupo |
-| `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `priority=low\|medium\|high\|urgent`, `limit` (1–100, 50 por defecto) y `cursor`. Orden: `sort=recent` (por defecto) o `sort=priority` (más prioritarios primero; sin prioridad al final) |
-| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds? }`. `201 { nodex }`. Los enlaces necesitan `url` (`http` o `https`) |
+| `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `priority=low\|medium\|high\|urgent`, `readLater=true` (enlaces para leer más tarde, del más antiguo al más nuevo), `limit` (1–100, 50 por defecto) y `cursor`. Orden: `sort=recent` (por defecto) o `sort=priority` (más prioritarios primero; sin prioridad al final) |
+| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds?, tags?, readLater? }`. `readLater` solo se aplica a enlaces. `tags`: hasta 10; se normalizan (minúsculas, espacios a guiones, sin `#`, máximo 30 caracteres). `201 { nodex, duplicates }`. Los enlaces necesitan `url` (`http` o `https`). `duplicates`: Nodexs casi iguales ya guardados (misma URL o similitud ≥ 0,9), cada uno con `similarity`; el Nodex se crea igualmente |
+| `GET /api/nodexs/search` | `?q=` (1–200 caracteres) y `limit` (1–50, 20 por defecto). `200 { nodexs }` ordenados por `score`: mezcla el parecido de significado con la coincidencia de texto en título, contenido o URL |
+| `GET /api/nodexs/read-later/count` | `200 { count }`: enlaces marcados para leer más tarde |
+| `GET /api/nodexs/rediscover` | `200 { nodexs }`: hasta 3 Nodexs sin abrir desde hace 30 días (sin prioridad alta ni urgente), primero los parecidos a lo abierto en los últimos 7 días. La parte de azar cambia una vez al día (hora de España); la preferencia se actualiza con lo que abres |
+| `POST /api/nodexs/:id/open` | `204`. Marca el Nodex como abierto ahora (no cambia `updatedAt`) |
 | `GET /api/nodexs/:id` | `200 { nodex }` |
-| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority? }` (`priority: null` la quita). `200 { nodex }` |
+| `GET /api/nodexs/:id/related` | `?limit=` (1–20, 5 por defecto). `200 { nodexs }`: los más parecidos (similitud ≥ 0,45), cada uno con `similarity` |
+| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority?, tags?, readLater? }` (`priority: null` la quita; `tags` sustituye todas las etiquetas; `readLater: true` marca un enlace para leer más tarde sin cambiar la fecha si ya lo estaba, y `false` lo quita). El tipo sigue a la URL: poner una URL convierte una nota en enlace y quitarla (`url: null`) convierte el enlace en nota. `200 { nodex }` |
+| `GET /api/tags` | `200 { tags }`: las etiquetas en uso, cada una con `nodexCount`, por orden alfabético |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
+| `GET /api/board/related` | `200 { pairs }`: pares `{ a, b, similarity }` de Nodexs relacionados para el grafo (los 3 más parecidos de cada uno, con similitud ≥ 0,45, sin repetir el par) |
 | `PUT /api/tasks/:nodexId` | Body `{ status?, dueAt? }`. Convierte el Nodex en tarea (`201`) o la actualiza (`200`). `status`: `todo`, `doing` o `done`; `dueAt`: fecha ISO con zona horaria o `null` |
 | `DELETE /api/tasks/:nodexId` | `204`. Quita la personalidad de tarea; el Nodex sigue existiendo |
 | `GET /api/tasks/board` | `200 { columns: { todo, doing, done } }`: el tablero, cada columna ordenada |
@@ -128,8 +139,13 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `DELETE /api/push/subscriptions` | Body `{ endpoint }`. `204`. Deja de enviar notificaciones a ese dispositivo |
 | `GET /api/links/broken` | `200 { links }`: enlaces rotos del usuario, con la copia de archive.org si existe |
 | `POST /api/links/:nodexId/refresh` | Vuelve a comprobar el enlace ahora. `200 { preview }`. Máximo 10 por minuto |
+| `GET /api/trash` | `200 { nodexs, groups }`: Nodexs y grupos borrados (papelera), del más reciente al más antiguo. Los grupos incluyen `nodexCount` |
+| `POST /api/trash/nodexs/:id/restore` | `204`. Restaura el Nodex con sus grupos, etiquetas, tarea y recordatorio |
+| `POST /api/trash/groups/:id/restore` | `200 { group }`. Si el nombre ya está en uso, se restaura como «Nombre (restaurado)», «(restaurado 2)»… |
+| `DELETE /api/trash/nodexs/:id`, `DELETE /api/trash/groups/:id` | `204`. Elimina para siempre uno que esté en la papelera |
+| `DELETE /api/trash` | `200 { nodexs, groups }`: vacía la papelera y dice cuántos se han eliminado. Además, cada hora se elimina para siempre lo que lleve más de 30 días en la papelera |
 
-Cada `nodex` incluye `groupIds`: los grupos (no borrados) en los que está. Un grupo o Nodex de otro usuario, o un ID con formato incorrecto, responde `404`.
+Cada `nodex` incluye `groupIds`: los grupos (no borrados) en los que está, y `tags`: sus etiquetas, por orden alfabético. Un grupo o Nodex de otro usuario, o un ID con formato incorrecto, responde `404`.
 
 Cada `nodex` incluye también `task` (`{ status, dueAt, completedAt }`) si es una tarea, y `reminder` (`{ remindAt, sentAt, dismissedAt }`) si tiene recordatorio, y `linkPreview` (`{ status, title, description, imageUrl, siteName, archiveUrl, lastCheckedAt }`) si tiene URL; `null` en caso contrario.
 

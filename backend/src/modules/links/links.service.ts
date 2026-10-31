@@ -1,4 +1,4 @@
-import { parsePreview } from "../../lib/html-meta.js";
+import { parsePreview, readingMinutes } from "../../lib/html-meta.js";
 import { prisma } from "../../lib/prisma.js";
 import { BlockedUrlError, safeFetch } from "../../lib/safe-fetch.js";
 
@@ -10,6 +10,7 @@ export const previewFields = {
   siteName: true,
   archiveUrl: true,
   lastCheckedAt: true,
+  readingMinutes: true,
 } as const;
 
 async function findArchive(url: string) {
@@ -32,7 +33,11 @@ async function checkUrl(url: string) {
       return { status: "broken", httpStatus: page.status };
     }
     if (page.status >= 200 && page.status < 300) {
-      return { status: "ok", httpStatus: page.status, ...(page.body && parsePreview(page.body, page.finalUrl)) };
+      return {
+        status: "ok",
+        httpStatus: page.status,
+        ...(page.body && { ...parsePreview(page.body, page.finalUrl), readingMinutes: readingMinutes(page.body) }),
+      };
     }
     return { status: "unreachable", httpStatus: page.status };
   } catch (err) {
@@ -60,7 +65,7 @@ export async function refreshPreview(nodexId: string) {
   const needsArchive = result.status === "broken" || result.status === "unreachable";
   const archiveUrl = needsArchive ? (knownArchive ?? (await findArchive(nodex.url))) : null;
   const data = {
-    ...(urlChanged && { title: null, description: null, imageUrl: null, siteName: null }),
+    ...(urlChanged && { title: null, description: null, imageUrl: null, siteName: null, readingMinutes: null }),
     ...result,
     url: nodex.url,
     archiveUrl,

@@ -16,11 +16,12 @@ export const publicUser = {
   email: true,
   avatarUrl: true,
   tutorialCompletedVersion: true,
+  demoExpiresAt: true,
 } as const;
 
 const dummyHash = await argon2.hash("nodex-dummy-password");
 
-const authLimiter = rateLimit({
+export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: "draft-8",

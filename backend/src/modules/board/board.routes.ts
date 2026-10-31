@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
+import { findRelatedPairs } from "../ai/ai.service.js";
 import { nodexFields, toNodex } from "../nodexs/nodexs.routes.js";
 
 export const boardRouter = Router();
@@ -31,4 +32,8 @@ boardRouter.get("/", requireAuth, async (req, res) => {
     nodexs,
     orphanIds: nodexs.filter((n) => n.groupIds.length === 0).map((n) => n.id),
   });
+});
+
+boardRouter.get("/related", requireAuth, async (req, res) => {
+  res.json({ pairs: await findRelatedPairs(req.session.userId!, 3) });
 });

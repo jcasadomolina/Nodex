@@ -1,0 +1,3 @@
+TU-SUBDOMINIO.duckdns.org {
+	reverse_proxy localhost:4000
+}

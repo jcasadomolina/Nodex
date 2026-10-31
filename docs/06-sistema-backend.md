@@ -51,7 +51,9 @@ Cada rama sale de `develop` y vuelve a `develop` con un pull request.
 | `feature/recordatorios` | Personalidad recordatorio y notificaciones push | `RF-12.7` |
 | `feature/enlaces` | Vista previa de enlaces y comprobación de enlaces rotos | `RF-12.3` |
 | `feature/ia-busqueda` | Búsqueda por significado, relacionados y duplicados | `RF-05.7`–`RF-05.9` |
-| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos | `RF-04.3` |
+| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos (hecho: [especificación](disenos/2026-10-28-ia-grupos-nuevos-design.md)) | `RF-04.3` |
+
+Todas las ramas de la tabla están hechas. Después llegaron `feature/papelera` (HU-15), `feature/redescubre` (HU-20), `feature/leer-mas-tarde` (HU-21) y `feature/compartir` (`RF-05.6`). El estado general está en el [plan de implementación](02-plan-de-implementacion.md#estado-de-los-requisitos).
 
 ## Personalidades (HU-12): diseño
 
@@ -145,20 +147,20 @@ Solo se usa el email si el proveedor confirma que está **verificado**. Si no fu
 
 ### Registrar Nodex en Google y GitHub
 
-Ambos son gratuitos. Con las URLs de abajo funciona en local; para producción se añadirán las del dominio final.
+Ambos son gratuitos. Con las URLs de abajo funciona en local, a través del frontend (`localhost:3000`, que reenvía `/api` al backend); para producción se añadirán las del dominio final.
 
 **Google**
 1. Entra en [console.cloud.google.com](https://console.cloud.google.com) y crea un proyecto llamado `Nodex`.
 2. Abre **Google Auth Platform** y configura la pantalla de consentimiento: nombre `Nodex`, tu email de soporte y tipo de usuario **Externo**.
 3. Mientras la app esté en modo **prueba**, solo pueden entrar los usuarios que añadas en **Audiencia → Usuarios de prueba**. Añade tu cuenta.
 4. En **Clientes**, crea un cliente de tipo **Aplicación web** con este URI de redirección autorizado:
-   `http://localhost:4000/api/auth/google/callback`
+   `http://localhost:3000/api/auth/google/callback`
 5. Copia el ID y el secreto del cliente en `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
 
 **GitHub**
 1. Ve a **Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. Rellena: nombre `Nodex`, Homepage URL `http://localhost:4000`, Authorization callback URL:
-   `http://localhost:4000/api/auth/github/callback`
+2. Rellena: nombre `Nodex`, Homepage URL `http://localhost:3000`, Authorization callback URL:
+   `http://localhost:3000/api/auth/github/callback`
 3. Pulsa **Generate a new client secret**.
 4. Copia el Client ID y el secreto en `GITHUB_CLIENT_ID` y `GITHUB_CLIENT_SECRET`.
 
@@ -172,7 +174,7 @@ Ambos son gratuitos. Con las URLs de abajo funciona en local; para producción s
 | Tras cambiar el `.env` no cambia nada | Node solo lee el `.env` al arrancar; `watch` recarga con cambios de código, no del `.env` | Para el servidor (`Ctrl+C`) y vuelve a lanzar `npm run dev` |
 | Google muestra "Acceso bloqueado" | La app está en modo prueba y esa cuenta no es usuario de prueba | Añádela en **Audiencia → Usuarios de prueba** |
 
-Para probar: arranca con `npm run dev` y abre `http://localhost:4000/api/auth/google` en el navegador. Tras aceptar, acabarás en `http://localhost:4000/`, que responde `404` porque aún no hay frontend. Es normal: comprueba la sesión abriendo `http://localhost:4000/api/auth/me`.
+Para probar: arranca el backend y el frontend (`npm run dev` en cada carpeta), abre `http://localhost:3000/login` y pulsa "Continuar con Google" o "Continuar con GitHub". Tras aceptar, acabarás en el panel con la sesión iniciada.
 
 ## Grupos y Nodexs (`feature/grupos-nodexs`)
 
@@ -315,7 +317,7 @@ Es el estándar que permite a una web enviar notificaciones al móvil o al orden
 
 - **El servidor tiene que estar despierto.** Algunos alojamientos gratuitos "duermen" el servidor si nadie lo usa durante un rato; mientras duerme, el proceso no se ejecuta y los avisos llegarían tarde. Lo tendremos en cuenta al elegir el alojamiento. Una solución gratuita habitual es un servicio externo que llame al servidor cada pocos minutos.
 - **Un error del servicio push no se reintenta:** el recordatorio se marca como enviado antes de mandarlo. Así nunca llega dos veces, a cambio de que, si el servicio push falla justo en ese momento, ese aviso se pierda. Aun así seguiría apareciendo dentro de la app.
-- **Las notificaciones llegarán de verdad cuando exista el frontend**, que es quien pide permiso al usuario y registra el *service worker* de la PWA.
+- **El frontend** pide permiso, registra la suscripción y muestra el aviso desde el *service worker* (ver [frontend](09-frontend.md#notificaciones-push-rf-127)).
 
 ## Enlaces: vista previa y enlaces rotos (`feature/enlaces`)
 
@@ -383,6 +385,85 @@ Crear o editar un Nodex
 - **Dinero:** cero. El modelo corre en el propio servidor.
 - **Velocidad:** la primera vez que se usa, el modelo tarda unos segundos en cargarse. Después, unos **8 ms por Nodex**.
 - **Memoria:** con el modelo cargado, el proceso usa unos **570 MB de RAM**. Hay que tenerlo en cuenta al elegir el alojamiento: algunos planes gratuitos solo dan 512 MB.
+
+## Búsqueda, relacionados y duplicados (`feature/ia-busqueda`)
+
+Las tres funciones reutilizan el vector que ya se guarda en `nodexs.embedding`. No hay tablas nuevas: todo son consultas SQL con el operador `<=>` de pgvector, siempre filtradas por el usuario de la sesión.
+
+### Búsqueda híbrida (`RF-05.7`)
+
+`GET /api/nodexs/search?q=…` convierte la búsqueda en un vector y lo compara con todos los Nodexs del usuario. Pero los embeddings fallan con palabras sueltas, siglas o nombres propios ("react", "Alfama"), así que la búsqueda es **híbrida**: a la similitud se le suma un extra si el texto aparece tal cual.
+
+```
+puntuación = similitud de significado (0–1)
+           + 1    si el texto está en el título
+           + 0,5  si está en el contenido o en la URL
+se muestran los que llegan a 0,3, de mayor a menor
+```
+
+Así, lo que contiene la palabra exacta sale siempre arriba, y debajo aparece lo que habla de lo mismo con otras palabras ("comida casera de legumbres" encuentra las lentejas y los garbanzos). El texto se busca con `ILIKE`, que no distingue mayúsculas; los caracteres `%` y `_` se escapan para que se busquen literalmente.
+
+Si el modelo falla, la búsqueda no se rompe (`RNF-08`): se registra el error y se busca solo por texto.
+
+### Relacionados (`RF-05.8`)
+
+`GET /api/nodexs/:id/related` devuelve los Nodexs con similitud **≥ 0,45** respecto al que se está viendo, del más al menos parecido. Si el Nodex aún no tiene vector, la lista sale vacía.
+
+### Duplicados (`RF-05.9`)
+
+`POST /api/nodexs` acepta `source`: `manual` (por defecto) o `share`, cuando el Nodex llega desde el menú Compartir de la PWA (`RF-05.6`).
+
+Al crear un Nodex, `POST /api/nodexs` calcula su vector **en el momento** (no en segundo plano, como antes) y responde con `duplicates`: los Nodexs que ya tenía el usuario con la **misma URL** (sin contar la `/` final) o una similitud **≥ 0,9**. El Nodex se guarda igualmente: el frontend muestra el aviso y el usuario decide si lo borra.
+
+Para no hacer esperar al usuario, la comprobación tiene un límite de **3 segundos** (`Promise.race`). Si el modelo tarda más (por ejemplo, la primera vez, mientras se carga) o falla, la respuesta sale sin duplicados y el resto del trabajo (vector y sugerencia de grupo) sigue en segundo plano.
+
+### Calibración de los umbrales
+
+Se probó con 12 Nodexs de temas variados (cocina, programación, viajes, impuestos, música, deporte) y 6 casi duplicados:
+
+| Umbral | Datos que lo justifican |
+|--------|-------------------------|
+| Búsqueda ≥ 0,3 | Los aciertos estaban entre 0,30 y 0,65. Por debajo de 0,3 casi todo era ruido. Se cuela algún resultado dudoso al final de la lista (0,31), pero en una búsqueda es peor perder un acierto que mostrar uno de más |
+| Relacionados ≥ 0,45 | Los pares del mismo tema (dos recetas, dos viajes) daban 0,45–0,61. El ruido llegaba a 0,43 ("Discos de jazz" ↔ "Guiso de garbanzos") |
+| Duplicados ≥ 0,9 | La misma nota reescrita daba 0,95. Pero dos apuntes distintos de TypeScript daban 0,835, así que bajar a 0,85 avisaría de duplicados falsos. Los enlaces repetidos se detectan por la URL |
+
+**Limitación conocida:** este modelo distingue bien temas cotidianos, pero agrupa peor los técnicos. "programación web frontend" no encuentra el tutorial de React por significado (0,26), aunque "react" o "aprender a programar" sí. Es otra razón para que la búsqueda sea híbrida.
+
+### Por qué no hay índice HNSW
+
+Un índice HNSW acelera la búsqueda de vectores parecidos, pero es **aproximado** y se aplica antes del filtro por usuario: con muchos usuarios podría devolver menos resultados de los esperados. Cada consulta solo mira los Nodexs de un usuario (cientos o pocos miles), y compararlos todos uno a uno es rápido y exacto. Se añadirá si el volumen lo pide (ver [la base de datos](08-base-de-datos.md)).
+
+## Modo demo (`feature/modo-demo`)
+
+Diseño: [especificación](disenos/2026-10-30-modo-demo-design.md). Permite probar Nodex sin registrarse (HU-14). Todo vive en `modules/demo/`.
+
+### Cómo se crea una demo (`POST /api/auth/demo`)
+
+1. **Usuario temporal.** Se llama "Invitado", no tiene contraseña y su email es interno: `demo-<uuid>@demo.nodex.invalid`. `.invalid` es un dominio reservado que nunca existe, así que no choca con nadie. `demo_expires_at` queda a 24 horas.
+2. **Datos de ejemplo** (`demo.data.ts`). Son 26 Nodexs sobre aprender a programar, pensados para que se vea cada función:
+   - grupos;
+   - huérfanos para las sugerencias de la IA, y cuatro de CSS para que proponga un grupo nuevo;
+   - tareas, un recordatorio, etiquetas y "leer más tarde";
+   - Nodexs abiertos hace más de 30 días, para *Redescubre*.
+
+   Las fechas se guardan como "hace N días" y se calculan al crear la cuenta, así la demo siempre parece reciente.
+3. **Pocas consultas.** Los ids se generan en Node (`randomUUID`) y cada tabla se rellena con un solo `createMany`, todo dentro de una transacción. Crear los Nodexs uno a uno con sus relaciones anidadas hacía decenas de viajes a Neon y pasaba del límite de 5 s de las transacciones de Prisma.
+4. **IA.** Se calcula el vector de cada Nodex y su sugerencia de grupo, primero los que tienen grupo y luego los huérfanos, porque la sugerencia compara con el "centro" de cada grupo. Después se calculan las propuestas de grupos nuevos. Cada paso va en su `try/catch`: si la IA falla, la demo se crea igual (`RNF-08`). Las vistas previas de los enlaces se cargan en segundo plano.
+5. **Sesión.** Se abre como en un login normal. Con el modelo de IA ya cargado, la respuesta tarda unos 5 segundos. La primera demo tras arrancar el servidor tarda más, porque antes hay que cargar el modelo.
+
+Un límite de **5 demos por hora y por IP** evita que alguien llene la base creando cuentas.
+
+### Pasar a cuenta real (`POST /api/auth/demo/convert`)
+
+La misma cuenta recibe nombre, email y contraseña (validados como en el registro) y `demo_expires_at` vuelve a `null`. Los datos no se mueven: ya son suyos. La sesión se regenera, como al entrar.
+
+### Qué no se puede hacer en la demo
+
+`middleware/require-real-user.ts` responde `403` en la subida de foto (usa la cuenta de Cloudinary) y en la vinculación de Google o GitHub (una cuenta que se borra no debe quedarse con cuentas externas).
+
+### Limpieza (`demo.worker.ts`)
+
+Cada hora borra las demos caducadas. Al borrar el usuario, la base borra en cascada sus grupos, Nodexs, tareas y demás. Las **sesiones** se borran en la misma sentencia SQL, solo las de los usuarios que de verdad se han borrado: así una demo que se convierte justo en ese momento no pierde nada. La tabla `sessions` no está enlazada con `users`: el id del usuario va dentro del JSON de la sesión. Si no se borraran, la cookie seguiría pasando `requireAuth` y daría errores en vez de un `401`.
 
 ## Decisiones tomadas
 

@@ -12,7 +12,7 @@ linksRouter.use(requireAuth);
 
 const NODEX_NOT_FOUND = "Nodex no encontrado";
 
-const refreshLimiter = rateLimit({
+export const refreshLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 10,
   standardHeaders: "draft-8",
