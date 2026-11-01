@@ -384,7 +384,7 @@ Crear o editar un Nodex
 
 - **Dinero:** cero. El modelo corre en el propio servidor.
 - **Velocidad:** la primera vez que se usa, el modelo tarda unos segundos en cargarse. Después, unos **8 ms por Nodex**.
-- **Memoria:** con el modelo cargado, el proceso usa unos **570 MB de RAM**. Hay que tenerlo en cuenta al elegir el alojamiento: algunos planes gratuitos solo dan 512 MB.
+- **Memoria:** con la configuración original, el modelo cargado llevaba el proceso a unos **600 MB**. Para que quepa en los 512 MB de Render, `lib/embeddings.ts` usa 1 hilo y desactiva la reserva de memoria de onnxruntime (`enableCpuMemArena: false`): el backend se queda en unos 440 MB, con los mismos vectores y algo menos de velocidad (ver [Despliegue](11-despliegue.md)).
 
 ## Búsqueda, relacionados y duplicados (`feature/ia-busqueda`)
 
