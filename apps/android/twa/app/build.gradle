@@ -55,7 +55,7 @@ android {
     namespace "io.github.jcasadomolina.nodex"
     defaultConfig {
         applicationId "io.github.jcasadomolina.nodex"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 36
         versionCode(Integer.parseInt(project.findProperty("versionCode")?.toString() ?: "1"))
         versionName(project.findProperty("versionName")?.toString() ?: "0.0.0")
