@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
-import { processNodex, proposeNewGroups } from "../ai/ai.service.js";
+import { proposeNewGroups, suggestGroup } from "../ai/ai.service.js";
+import { toVector } from "../ai/vectors.js";
 import { refreshPreviewInBackground } from "../links/links.service.js";
 import { priorityToNumber } from "../nodexs/nodexs.schemas.js";
 import { DEMO_GROUPS, DEMO_NODEXS } from "./demo.data.js";
+import DEMO_EMBEDDINGS from "./demo.embeddings.json" with { type: "json" };
 
 export const DEMO_HOURS = 24;
 
@@ -77,21 +79,20 @@ export async function createDemoUser(now = new Date()) {
       ),
     });
 
-    const grouped = nodexs.filter((demo) => demo.groups.length).map((demo) => demo.id);
-    const orphans = nodexs.filter((demo) => !demo.groups.length).map((demo) => demo.id);
+    for (const [i, { id }] of nodexs.entries()) {
+      await tx.$executeRaw`UPDATE nodexs SET embedding = ${toVector(DEMO_EMBEDDINGS[i]!.embedding)}::vector WHERE id = ${id}::uuid`;
+    }
+
+    const orphanIds = nodexs.filter((demo) => !demo.groups.length).map((demo) => demo.id);
     const linkIds = nodexs.filter((demo) => demo.url).map((demo) => demo.id);
 
-    return { userId, nodexIds: [...grouped, ...orphans], linkIds };
+    return { userId, orphanIds, linkIds };
   });
 }
 
-export async function prepareDemoAi(userId: string, nodexIds: string[], linkIds: string[]) {
-  for (const nodexId of nodexIds) {
-    try {
-      await processNodex(userId, nodexId);
-    } catch (err) {
-      console.error(`Error de IA en la demo con el Nodex ${nodexId}:`, err);
-    }
+export async function prepareDemoAi(userId: string, orphanIds: string[], linkIds: string[]) {
+  for (const nodexId of orphanIds) {
+    await suggestGroup(userId, nodexId).catch((err) => console.error(`Error de IA en la demo con el Nodex ${nodexId}:`, err));
   }
   await proposeNewGroups(userId).catch((err) => console.error("Error de IA al proponer grupos en la demo:", err));
   linkIds.forEach(refreshPreviewInBackground);

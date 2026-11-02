@@ -3,11 +3,17 @@ import { expect, type Page } from "@playwright/test";
 
 export const PASSWORD = "contraseña-de-prueba";
 
+export const AI_OFF = {
+  cookies: [],
+  origins: [{ origin: "http://localhost:3100", localStorage: [{ name: "nodex-ai", value: "off" }] }],
+};
+
 export const unique = (text: string) => `${text} ${randomUUID().slice(0, 6)}`;
 
 export async function register(page: Page) {
   const email = `e2e-${randomUUID()}@ejemplo.com`;
   await page.goto("/registro");
+  await page.evaluate(() => localStorage.setItem("nodex-ai", "off"));
   await page.getByLabel("Nombre").fill("Ana");
   await page.getByLabel("Correo electrónico").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);

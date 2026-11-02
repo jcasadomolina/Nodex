@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { PASSWORD } from "./helpers";
+import { AI_OFF, PASSWORD } from "./helpers";
 
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: AI_OFF });
 
 test.setTimeout(240_000);
 

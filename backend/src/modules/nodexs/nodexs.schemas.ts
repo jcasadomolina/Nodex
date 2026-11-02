@@ -66,9 +66,17 @@ export const listNodexsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+const embeddingSchema = z.array(z.number().finite()).length(384);
+
 export const searchNodexsSchema = z.object({
   q: z.string().trim().min(1, "Escribe algo para buscar").max(200),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.number().int().min(1).max(50).default(20),
+  embedding: embeddingSchema.optional(),
+});
+
+export const saveEmbeddingSchema = z.object({
+  text: z.string(),
+  embedding: embeddingSchema,
 });
 
 export const relatedNodexsSchema = z.object({

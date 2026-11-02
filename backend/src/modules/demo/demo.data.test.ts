@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
+import { nodexText } from "../ai/vectors.js";
 import { createNodexSchema } from "../nodexs/nodexs.schemas.js";
+import DEMO_EMBEDDINGS from "./demo.embeddings.json" with { type: "json" };
 import { DEMO_GROUPS, DEMO_NODEXS } from "./demo.data.js";
 
 test("cada Nodex de ejemplo es válido", () => {
@@ -22,4 +24,12 @@ test("enseña todas las funciones", () => {
   expect(new Set(DEMO_NODEXS.flatMap((n) => (n.task ? [n.task.status] : []))).size).toBeGreaterThanOrEqual(3);
   expect(DEMO_NODEXS.some((n) => n.remindInHours !== undefined)).toBeTruthy();
   expect(DEMO_NODEXS.filter((n) => n.readLater && n.url).length).toBeGreaterThanOrEqual(2);
+});
+
+test("los vectores precalculados están al día (si falla: npm run demo:embeddings)", () => {
+  expect(DEMO_EMBEDDINGS).toHaveLength(DEMO_NODEXS.length);
+  DEMO_NODEXS.forEach(({ title, content, url }, i) => {
+    expect(DEMO_EMBEDDINGS[i]!.text, title).toBe(nodexText({ title, content: content ?? null, url: url ?? null }));
+    expect(DEMO_EMBEDDINGS[i]!.embedding).toHaveLength(384);
+  });
 });

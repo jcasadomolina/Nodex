@@ -3,6 +3,7 @@
 import { Monitor, Moon, Sun, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { AiSettings } from "@/components/ai-settings";
 import { Avatar } from "@/components/avatar";
 import { PushButton } from "@/components/push-button";
 import { Spinner } from "@/components/spinner";
@@ -54,6 +55,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <section className="grid gap-2">
           <h3 className="font-medium">Avisos de recordatorios</h3>
           <PushButton />
+        </section>
+
+        <section className="grid gap-2">
+          <h3 className="font-medium">IA en este dispositivo</h3>
+          <AiSettings />
         </section>
 
         <div className="grid gap-2 border-t pt-4">
