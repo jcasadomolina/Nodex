@@ -33,3 +33,9 @@ generated/
 e2e/.auth/
 e2e/test-results/
 e2e/playwright-report/
+
+# Apps nativas: compilaciones y la clave de firma de Android (nunca en el repo)
+target/
+.gradle/
+local.properties
+*.keystore

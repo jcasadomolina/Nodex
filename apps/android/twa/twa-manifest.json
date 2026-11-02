@@ -1,0 +1,56 @@
+{
+  "packageId": "io.github.jcasadomolina.nodex",
+  "host": "nodex-three.vercel.app",
+  "name": "Nodex",
+  "launcherName": "Nodex",
+  "display": "standalone",
+  "themeColor": "#F6F5F4",
+  "themeColorDark": "#1C1A18",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#F6F5F4",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://nodex-three.vercel.app/icon-512.png",
+  "maskableIconUrl": "https://nodex-three.vercel.app/icon-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "nodex.keystore",
+    "alias": "nodex"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "unknown",
+  "webManifestUrl": "https://nodex-three.vercel.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://nodex-three.vercel.app/",
+  "minSdkVersion": 21,
+  "shareTarget": {
+    "action": "https://nodex-three.vercel.app/compartir",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1"
+}

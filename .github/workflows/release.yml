@@ -1,0 +1,120 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths: ["apps/**", ".github/workflows/release.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.version.outputs.name }}
+      code: ${{ steps.version.outputs.code }}
+    steps:
+      - id: version
+        run: |
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            echo "name=0.0.0" >> "$GITHUB_OUTPUT"
+            echo "code=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Tag no válido: usa vX.Y.Z"
+            exit 1
+          fi
+          echo "name=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}" >> "$GITHUB_OUTPUT"
+          echo "code=$(( BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3] ))" >> "$GITHUB_OUTPUT"
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/android/twa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Compilar
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease -PversionCode=${{ needs.version.outputs.code }} -PversionName=${{ needs.version.outputs.name }}
+      - name: Firmar
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "Faltan los secrets de firma de Android"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/nodex.keystore"
+          TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$TOOLS/zipalign" -f -p 4 app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+          "$TOOLS/apksigner" sign --ks "$RUNNER_TEMP/nodex.keystore" --ks-pass env:KEYSTORE_PASSWORD \
+            --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASSWORD --out "$GITHUB_WORKSPACE/Nodex.apk" "$RUNNER_TEMP/aligned.apk"
+          "$TOOLS/apksigner" verify "$GITHUB_WORKSPACE/Nodex.apk"
+          rm "$RUNNER_TEMP/nodex.keystore"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nodex.apk
+          path: Nodex.apk
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - run: npm ci
+      - name: Compilar
+        shell: bash
+        run: |
+          npx tauri build --config '{"version":"${{ needs.version.outputs.name }}"}'
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe "$GITHUB_WORKSPACE/Nodex-setup.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nodex-setup.exe
+          path: Nodex-setup.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notas.md <<'NOTAS'
+          ## Instalar
+
+          **Android (`Nodex.apk`)**: descarga el archivo en el móvil y ábrelo. Si Android lo pide, permite "instalar apps de origen desconocido" para el navegador o el gestor de archivos.
+
+          **Windows (`Nodex-setup.exe`)**: descarga y ejecuta el instalador. Como no está firmado, Windows mostrará "Windows protegió tu PC": pulsa **Más información → Ejecutar de todas formas**.
+          NOTAS
+          gh release create "$GITHUB_REF_NAME" Nodex.apk Nodex-setup.exe --repo "$GITHUB_REPOSITORY" --title "Nodex $GITHUB_REF_NAME" --notes-file notas.md

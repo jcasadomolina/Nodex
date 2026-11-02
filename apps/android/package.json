@@ -1,0 +1,11 @@
+{
+  "name": "nodex-android",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "devDependencies": {
+    "@bubblewrap/core": "1.27.0"
+  }
+}
