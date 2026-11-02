@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, register, skipTutorial } from "./helpers";
+import { AI_OFF, PASSWORD, register, skipTutorial } from "./helpers";
 
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: AI_OFF });
 
 test("registrarse, cerrar sesión y volver a entrar", async ({ page }) => {
   const { email } = await register(page);

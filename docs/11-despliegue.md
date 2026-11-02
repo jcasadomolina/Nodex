@@ -4,7 +4,7 @@ Nodex se publica gratis, sin tarjeta, con estos servicios:
 
 ```
 Navegador ──► nodex-xxx.vercel.app (Vercel: frontend Next.js)
-                 └─ /api/* ──► https://nodex-api.onrender.com (Render: backend Express) ──► Neon
+                 └─ /api/* ──► https://nodex-api-pstg.onrender.com (Render: backend Express) ──► Neon
 cron-job.org ──► cada 10 min: /api/health (mantiene el backend despierto)
 ```
 
@@ -21,7 +21,7 @@ El navegador solo habla con Vercel, que reenvía `/api/*` al backend, igual que 
 
 La primera opción fue una máquina gratuita de Oracle Cloud, con RAM de sobra. Pero la cuenta gratuita solo permite una región, y en ella no había capacidad para máquinas ARM. Render no necesita tarjeta y se configura desde la web. A cambio tiene dos límites, y los dos se han resuelto:
 
-- **512 MB de memoria.** Con la configuración original, el modelo de IA llevaba el proceso a unos 600 MB. Ahora `lib/embeddings.ts` usa onnxruntime con **1 hilo** y **sin su reserva de memoria** (`enableCpuMemArena: false`). Así el modelo añade unos 300 MB en lugar de 480, y el backend completo se queda en unos 440 MB. La calidad es la misma: el modelo y los vectores no cambian. Lo que se pierde es velocidad cuando se calculan muchos vectores a la vez, por ejemplo al crear una demo.
+- **512 MB de memoria.** El modelo de IA solo ya llegaba a 550 MB de pico, y Render reiniciaba el servidor cada vez que calculaba un vector (por ejemplo, al crear una demo). Ningún ajuste de onnxruntime lo bajaba lo suficiente. Por eso la IA se calcula ahora **en el dispositivo del usuario** (ver [Frontend](09-frontend.md#ia-en-el-dispositivo)) y el backend, sin el modelo, se queda en unos 170 MB.
 - **Se duerme a los 15 minutos sin visitas.** Mientras duerme no se ejecutan las tareas de fondo, así que los recordatorios llegarían tarde. cron-job.org llama a `/api/health` cada 10 minutos y lo mantiene despierto. Render da 750 horas gratis al mes, suficientes para un servidor encendido todo el mes.
 
 ## Conceptos
@@ -41,7 +41,7 @@ Las cuentas las creas tú. Los secretos se escriben solo en los paneles de Rende
 
    | Campo | Valor |
    |-------|-------|
-   | Name | `nodex-api` (la URL será `https://nodex-api.onrender.com`) |
+   | Name | `nodex-api` (si el nombre ya está cogido, Render añade un sufijo: la nuestra es `https://nodex-api-pstg.onrender.com`) |
    | Region | **Frankfurt** (la más cercana) |
    | Branch | `main` |
    | Root Directory | `backend` |
@@ -68,13 +68,13 @@ Las cuentas las creas tú. Los secretos se escriben solo en los paneles de Rende
 4. En **Advanced**:
    - *Health Check Path*: `/api/health`;
    - *Auto-Deploy*: **After CI Checks Pass**. Así solo despliega si la CI de GitHub está en verde.
-5. Pulsa **Create Web Service** y espera al primer despliegue. Comprueba que `https://nodex-api.onrender.com/api/health` responde `{"status":"ok","database":"ok"}`.
+5. Pulsa **Create Web Service** y espera al primer despliegue. Comprueba que `https://nodex-api-pstg.onrender.com/api/health` responde `{"status":"ok","database":"ok"}`.
 
 ### 2. Frontend en Vercel
 
 1. Entra en [vercel.com/signup](https://vercel.com/signup), elige **Hobby** y regístrate con **Continue with GitHub**.
 2. **Add New… → Project**, importa `Nodex` y pon *Root Directory* en `frontend`.
-3. **Environment Variables:** `BACKEND_URL = https://nodex-api.onrender.com`.
+3. **Environment Variables:** `BACKEND_URL = https://nodex-api-pstg.onrender.com`.
 4. Pulsa **Deploy**. En *Settings → Git*, comprueba que la rama de producción es `main`.
 
 ### 3. Unirlos
@@ -88,7 +88,7 @@ Las cuentas las creas tú. Los secretos se escriben solo en los paneles de Rende
 
 1. Crea una cuenta en [cron-job.org](https://cron-job.org).
 2. **Create cronjob**:
-   - *URL*: `https://nodex-api.onrender.com/api/health`;
+   - *URL*: `https://nodex-api-pstg.onrender.com/api/health`;
    - *Execution schedule*: cada **10 minutos**.
 
 ## Publicar una versión
@@ -98,8 +98,9 @@ Haz merge de `develop` en `main` con **Create a merge commit**. GitHub ejecuta l
 ## Comprobaciones tras publicar
 
 - Abrir la URL de Vercel, registrarse, crear un Nodex y buscarlo.
-- "Probar sin registrarse": la primera demo tras un despliegue tarda más, porque descarga y carga el modelo.
-- **Memoria:** en Render, la pestaña *Metrics* muestra la memoria. Si roza los 512 MB o en *Events* aparecen reinicios por *out of memory*, hay que pasar al plan C: la API de embeddings de Google Gemini (ver más abajo).
+- "Probar sin registrarse": la demo debe crearse en uno o dos segundos (sus vectores van precalculados).
+- **IA:** aceptar el aviso de descarga, esperar a "Lista" en Ajustes y buscar algo por significado.
+- **Memoria:** en Render, la pestaña *Metrics* muestra la memoria. Tras crear una demo debe quedar lejos de los 512 MB.
 - **`trust proxy`:** falla 11 veces el login desde el PC; el intento 11 da "Demasiados intentos". Después, desde el móvil con datos (otra IP), el login debe funcionar. Si también se bloquea, el número de intermediarios no es 2 y hay que ajustarlo en `backend/src/app.ts`.
 - **PWA:** en el móvil, "Instalar aplicación" o "Añadir a pantalla de inicio", y probar el menú Compartir en Android.
 - **Avisos:** con las claves VAPID puestas, activarlos en Ajustes y crear un recordatorio a 2 minutos.
@@ -110,4 +111,4 @@ Haz merge de `develop` en `main` con **Create a merge commit**. GitHub ejecuta l
 - **Vercel Hobby** es para uso personal y no comercial.
 - **Neon gratis** da 0,5 GB y 100 horas de cómputo al mes. El aviso cada 10 minutos despierta también la base (el health consulta Neon), lo que gasta horas de cómputo. Si se acercan al límite, se puede espaciar el aviso.
 - **Foto de perfil:** pasa por el reenvío de Vercel, que limita las peticiones a unos 4,5 MB. Una foto de casi 5 MB podría fallar.
-- **Plan C, si la memoria no da:** la API de embeddings de Google Gemini, gratis y sin carga de memoria en el servidor. A cambio, necesita una clave, en el plan gratis Google puede usar los textos para mejorar sus productos, y habría que cambiar la dimensión de los vectores y recalcularlos todos.
+- **IA en el dispositivo:** cada dispositivo descarga el modelo (~120 MB) la primera vez, si el usuario lo acepta. En móviles baratos cada vector tarda algo más. La alternativa descartada fue la API de embeddings de Google Gemini: en el plan gratis Google puede usar los textos para mejorar sus productos.

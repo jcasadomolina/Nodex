@@ -48,7 +48,7 @@ Cada dato tiene una **clave** en la caché:
 | `["me"]` | `GET /auth/me` |
 | `["groups"]` | `GET /groups` |
 | `["nodexs", filtros]` | `GET /nodexs` (de 50 en 50, con `useInfiniteQuery`) |
-| `["search", texto]` | `GET /nodexs/search` |
+| `["search", texto, IA lista]` | `POST /nodexs/search` (con el vector si la IA está lista; al terminar de cargar, la búsqueda se repite sola) |
 | `["nodex", id]`, `["related", id]` | Un Nodex y sus relacionados |
 | `["tasks", "board"]`, `["tasks", "calendar", desde]` | `GET /tasks/board` y `GET /tasks/calendar` |
 | `["alerts", "due" \| "upcoming" \| "broken"]` | `GET /reminders?status=due` (cada 60 s), `?status=upcoming` y `GET /links/broken` |
@@ -138,9 +138,31 @@ Diseño: [especificación](disenos/2026-10-30-modo-demo-design.md).
 
 En la ventana del Nodex, el campo "Etiquetas" (`components/tag-input.tsx`) convierte lo que escribes en una etiqueta al pulsar `Enter` o escribir una coma, con la misma normalización que el backend. Las sugerencias salen de `GET /api/tags` con un `<datalist>`, el autocompletado nativo del navegador. Las tarjetas muestran las etiquetas como `#cocina`, y la búsqueda del panel también encuentra por etiqueta.
 
+## IA en el dispositivo
+
+Diseño: [especificación](disenos/2026-11-02-ia-en-el-dispositivo-design.md). Con el modelo dentro, el backend no cabía en los 512 MB de Render Free, así que los vectores se calculan en el navegador (y en la PWA, el APK o el `.exe`, que usan el mismo frontend). Las notas no salen del dispositivo para esto: solo se descarga el modelo.
+
+| Pieza | Qué hace |
+|-------|----------|
+| `lib/ai/embedding-worker.ts` | *Web Worker*: un hilo aparte que carga el modelo con `@huggingface/transformers` y calcula vectores. Así la pantalla no se congela mientras trabaja |
+| `lib/ai/ai.ts` | Lo único que usa el resto de la app: la preferencia del dispositivo (`localStorage`, clave `nodex-ai`: `on`, `off` o sin decidir), el estado del modelo (`off`, `loading` con porcentaje, `ready`) y `embed(texto)`, que devuelve el vector o `null` si la IA no está lista |
+| `lib/ai/sync.ts` | `syncPending()`: pide `GET /nodexs/pending-embeddings`, calcula cada vector y lo manda con `PUT /nodexs/:id/embedding`. Ignora el `409` (el Nodex cambió mientras se calculaba). Dos llamadas seguidas se encadenan para no mandar el mismo Nodex dos veces |
+| `components/ai-prompt.tsx` | En el layout: si la preferencia está sin decidir, muestra el aviso; si está en `on`, carga el modelo (ya está en la caché); cuando el modelo queda listo, sincroniza los pendientes |
+| `components/ai-settings.tsx` | La sección "IA en este dispositivo" de Ajustes |
+
+**Cuándo se sincroniza:** al quedar lista la IA, al crear un Nodex (se espera como mucho 3 segundos para poder enseñar los duplicados) y al editar el título, el contenido o la URL. Así también se completan los Nodexs creados con la IA desactivada o desde otro dispositivo.
+
+**El aviso:** la primera vez sale un *toast* fijo (no se cierra solo) que explica la descarga (~120 MB, una sola vez) con **Descargar** y **Ahora no**. Es un toast y no un diálogo para no tapar la app ni chocar con el tutorial. "Ahora no" guarda `off` y no vuelve a preguntar.
+
+**Ajustes:** el botón activa o desactiva la IA. Mientras descarga muestra la rueda y el porcentaje; al terminar dice "Lista". Desactivada, ofrece "Borrar el modelo", que borra la caché `transformers-cache` del navegador.
+
+**Si falla:** la descarga sin conexión deja la IA en `off` con un aviso de error, y se puede reintentar desde Ajustes. Guardar, editar y buscar por texto funcionan siempre.
+
+**Medido en local:** la descarga y la caché tardaron unos 18 segundos; tras recargar, el modelo se carga solo desde la caché.
+
 ## Sugerencias de la IA (`RF-04.2`)
 
-Al guardar un Nodex huérfano, el backend busca el grupo al que más se parece y, si destaca claramente, guarda una sugerencia. En el panel, junto a "Ordenar y filtrar", aparece un botón ✨ con el número de sugerencias pendientes (si no hay ninguna, no se muestra). Abre un Popover (`components/suggestions-button.tsx`) con una fila por sugerencia, "Título → Grupo":
+Cuando llega el vector de un Nodex huérfano (ver [IA en el dispositivo](#ia-en-el-dispositivo)), el backend busca el grupo al que más se parece y, si destaca claramente, guarda una sugerencia. En el panel, junto a "Ordenar y filtrar", aparece un botón ✨ con el número de sugerencias pendientes (si no hay ninguna, no se muestra). Abre un Popover (`components/suggestions-button.tsx`) con una fila por sugerencia, "Título → Grupo":
 
 - **✓ Aceptar** llama a `POST /suggestions/:id/accept` y mete el Nodex en el grupo.
 - **✕ Rechazar** llama a `POST /suggestions/:id/reject`; la IA no vuelve a proponer ese grupo para ese Nodex y busca otro.

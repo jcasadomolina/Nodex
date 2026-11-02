@@ -1,7 +1,11 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { embed, useAiStatus } from "../ai/ai";
+import { syncPending } from "../ai/sync";
 import { api, ApiError } from "../api";
 import type { BoardFilter, Nodex, NodexMatch, NodexResult, Priority, TaskInput } from "../types";
+
+const DUPLICATE_TIMEOUT_MS = 3000;
 
 export type NodexQuery = {
   filter: BoardFilter;
@@ -91,9 +95,11 @@ export function useMarkOpened() {
 }
 
 export function useSearch(q: string) {
+  const ready = useAiStatus().state === "ready";
   return useQuery({
-    queryKey: ["search", q],
-    queryFn: async () => (await api<{ nodexs: NodexResult[] }>(`/nodexs/search?q=${encodeURIComponent(q)}`)).nodexs,
+    queryKey: ["search", q, ready],
+    queryFn: async () =>
+      (await api<{ nodexs: NodexResult[] }>("/nodexs/search", { method: "POST", body: { q, embedding: (await embed(q)) ?? undefined } })).nodexs,
     enabled: q.length > 0,
   });
 }
@@ -115,6 +121,11 @@ export function useCreateNodex() {
   return useMutation({
     mutationFn: async ({ task, reminder, ...input }: NodexInput & { groupIds: string[]; task?: TaskInput; reminder?: string }) => {
       const result = await api<{ nodex: Nodex; duplicates: NodexMatch[] }>("/nodexs", { method: "POST", body: input });
+      const synced = await Promise.race([
+        syncPending().catch(() => new Map<string, NodexMatch[]>()),
+        new Promise<Map<string, NodexMatch[]>>((resolve) => setTimeout(() => resolve(new Map()), DUPLICATE_TIMEOUT_MS)),
+      ]);
+      result.duplicates = synced.get(result.nodex.id) ?? result.duplicates;
       if (task) {
         await api(`/tasks/${result.nodex.id}`, { method: "PUT", body: task }).catch(() =>
           toast.error("Nodex creado, pero no se ha podido guardar la tarea"),
@@ -188,7 +199,10 @@ export function useUpdateNodex() {
       if (reminder === null) await api(`/reminders/${id}`, { method: "DELETE" });
       if (reminder) await api(`/reminders/${id}`, { method: "PUT", body: { remindAt: reminder } });
     },
-    onSettled: (_data, _error, { id }) => invalidate(id),
+    onSettled: (_data, _error, { id, changes }) => {
+      if (changes.title !== undefined || changes.content !== undefined || changes.url !== undefined) syncPending().catch(() => {});
+      return invalidate(id);
+    },
   });
 }
 

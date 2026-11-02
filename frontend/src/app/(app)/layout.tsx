@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AiPrompt } from "@/components/ai-prompt";
 import { DemoBanner } from "@/components/demo-banner";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { Sidebar } from "@/components/sidebar";
@@ -39,6 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <AiPrompt />
     </>
   );
 }

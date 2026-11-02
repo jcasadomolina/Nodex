@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import { prisma } from "../../lib/prisma.js";
-import { anonymous, createGroup, createNodex, newUser, waitForEmbeddings, warmUpAi } from "../../test/helpers.js";
+import { embed } from "../../lib/embeddings.js";
+import { anonymous, createGroup, createNodex, embedPending, newUser, warmUpAi, type Agent } from "../../test/helpers.js";
 
 vi.mock("../links/links.service.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../links/links.service.js")>()),
@@ -120,14 +121,22 @@ describe("IA: búsqueda, relacionados y duplicados", () => {
     const { agent } = await newUser();
     const recipe = await createNodex(agent, { title: "Receta de lentejas con chorizo", content: "Cocer las lentejas con verdura y chorizo" });
     const git = await createNodex(agent, { title: "Configurar Git en Windows" });
-    await waitForEmbeddings([recipe.id, git.id]);
-    const res = await agent.get(`/api/nodexs/search?q=${encodeURIComponent("guiso de legumbres")}`);
+    await embedPending(agent);
+    const res = await agent.post("/api/nodexs/search").send({ q: "guiso de legumbres", embedding: await embed("guiso de legumbres") });
     expect(res.body.nodexs[0]?.id).toBe(recipe.id);
+  });
+
+  test("sin vector busca solo por texto", async () => {
+    const { agent } = await newUser();
+    const recipe = await createNodex(agent, { title: "Receta de lentejas con chorizo" });
+    await embedPending(agent);
+    expect((await agent.post("/api/nodexs/search").send({ q: "lentejas" })).body.nodexs.map((n: { id: string }) => n.id)).toEqual([recipe.id]);
+    expect((await agent.post("/api/nodexs/search").send({ q: "guiso de legumbres" })).body.nodexs).toEqual([]);
   });
 
   test("una búsqueda vacía da 400", async () => {
     const { agent } = await newUser();
-    expect((await agent.get("/api/nodexs/search?q=")).status).toBe(400);
+    expect((await agent.post("/api/nodexs/search").send({ q: "" })).status).toBe(400);
   });
 
   test("muestra los relacionados", async () => {
@@ -135,7 +144,7 @@ describe("IA: búsqueda, relacionados y duplicados", () => {
     const trip = await createNodex(agent, { title: "Viaje a Lisboa", content: "Vuelos, hotel y barrios que visitar en Lisboa" });
     const guide = await createNodex(agent, { title: "Qué ver en Lisboa", content: "Alfama, Belém y el tranvía 28" });
     const git = await createNodex(agent, { title: "Configurar Git en Windows" });
-    await waitForEmbeddings([trip.id, guide.id, git.id]);
+    await embedPending(agent);
     const res = await agent.get(`/api/nodexs/${trip.id}/related`);
     expect(res.body.nodexs.map((n: { id: string }) => n.id)).toEqual([guide.id]);
   });
@@ -146,6 +155,94 @@ describe("IA: búsqueda, relacionados y duplicados", () => {
     const res = await agent.post("/api/nodexs").send({ type: "link", title: "Otra vez", url: "https://ejemplo.com/articulo/" });
     expect(res.status).toBe(201);
     expect(res.body.duplicates.map((n: { id: string }) => n.id)).toContain(first.id);
+  });
+});
+
+describe("vectores calculados en el dispositivo", () => {
+  async function pending(agent: Agent) {
+    return (await agent.get("/api/nodexs/pending-embeddings")).body.nodexs as { id: string; text: string }[];
+  }
+
+  test("pendientes: solo los propios, sin la papelera, con su texto", async () => {
+    const { agent } = await newUser();
+    const { agent: other } = await newUser();
+    const recipe = await createNodex(agent, { title: "Receta de paella", content: "Arroz con marisco" });
+    const deleted = await createNodex(agent, { title: "Borrado" });
+    await agent.delete(`/api/nodexs/${deleted.id}`);
+    await createNodex(other, { title: "Ajeno" });
+
+    const list = await pending(agent);
+    expect(list.map((n) => n.id)).toEqual([recipe.id]);
+    expect(list[0]!.text.startsWith("Receta de paella")).toBe(true);
+  });
+
+  test("guardar el vector lo quita de pendientes", async () => {
+    const { agent } = await newUser();
+    await createNodex(agent, { title: "Receta de paella" });
+    await embedPending(agent);
+    expect(await pending(agent)).toEqual([]);
+  });
+
+  test("un vector que no son 384 números da 400", async () => {
+    const { agent } = await newUser();
+    await createNodex(agent, { title: "Receta de paella" });
+    const [{ id, text }] = await pending(agent) as [{ id: string; text: string }];
+    const put = (embedding: unknown) => agent.put(`/api/nodexs/${id}/embedding`).send({ text, embedding });
+    expect((await put([1, 2])).status).toBe(400);
+    expect((await put(Array(383).fill(0.1))).status).toBe(400);
+    expect((await put([...Array(383).fill(0.1), "x"])).status).toBe(400);
+  });
+
+  test("un Nodex ajeno o en la papelera da 404", async () => {
+    const { agent } = await newUser();
+    const { agent: other } = await newUser();
+    await createNodex(agent, { title: "Receta de paella" });
+    const [{ id, text }] = await pending(agent) as [{ id: string; text: string }];
+    const body = { text, embedding: await embed(text) };
+    expect((await other.put(`/api/nodexs/${id}/embedding`).send(body)).status).toBe(404);
+    await agent.delete(`/api/nodexs/${id}`);
+    expect((await agent.put(`/api/nodexs/${id}/embedding`).send(body)).status).toBe(404);
+  });
+
+  test("si el Nodex cambió mientras se calculaba, da 409 y sigue pendiente", async () => {
+    const { agent } = await newUser();
+    await createNodex(agent, { title: "Receta de paella" });
+    const [{ id, text }] = await pending(agent) as [{ id: string; text: string }];
+    await agent.patch(`/api/nodexs/${id}`).send({ title: "Receta de fideuá" });
+    expect((await agent.put(`/api/nodexs/${id}/embedding`).send({ text, embedding: await embed(text) })).status).toBe(409);
+    expect((await pending(agent)).map((n) => n.id)).toEqual([id]);
+  });
+
+  test("si el Nodex cambia entre la comprobación y el guardado, no se guarda el vector viejo", async () => {
+    const { agent } = await newUser();
+    await createNodex(agent, { title: "Receta de paella" });
+    const [{ id, text }] = await pending(agent) as [{ id: string; text: string }];
+    await agent.patch(`/api/nodexs/${id}`).send({ title: "Receta de fideuá" });
+    vi.spyOn(prisma.nodex, "findFirst").mockResolvedValueOnce({ title: "Receta de paella", content: null, url: null } as never);
+    expect((await agent.put(`/api/nodexs/${id}/embedding`).send({ text, embedding: await embed(text) })).status).toBe(409);
+    expect((await pending(agent)).map((n) => n.id)).toEqual([id]);
+  });
+
+  test("devuelve los duplicados por significado", async () => {
+    const { agent } = await newUser();
+    const data = { title: "Receta de paella valenciana", content: "Arroz, pollo, conejo y judía verde" };
+    const first = await createNodex(agent, data);
+    await embedPending(agent);
+    await createNodex(agent, data);
+    const [{ id, text }] = await pending(agent) as [{ id: string; text: string }];
+    const res = await agent.put(`/api/nodexs/${id}/embedding`).send({ text, embedding: await embed(text) });
+    expect(res.status).toBe(200);
+    expect(res.body.duplicates.map((n: { id: string }) => n.id)).toEqual([first.id]);
+  });
+
+  test("editar el texto vuelve a dejarlo pendiente, editar la prioridad no", async () => {
+    const { agent } = await newUser();
+    const nodex = await createNodex(agent, { title: "Receta de paella" });
+    await embedPending(agent);
+    await agent.patch(`/api/nodexs/${nodex.id}`).send({ priority: "high" });
+    expect(await pending(agent)).toEqual([]);
+    await agent.patch(`/api/nodexs/${nodex.id}`).send({ title: "Receta de fideuá" });
+    expect((await pending(agent)).map((n) => n.id)).toEqual([nodex.id]);
   });
 });
 
@@ -191,7 +288,7 @@ describe("aislamiento entre usuarios", () => {
     await createNodex(a, { title: "Receta secreta de croquetas" });
 
     expect((await b.get("/api/nodexs")).body.nodexs).toEqual([]);
-    expect((await b.get(`/api/nodexs/search?q=croquetas`)).body.nodexs).toEqual([]);
+    expect((await b.post("/api/nodexs/search").send({ q: "croquetas" })).body.nodexs).toEqual([]);
     expect((await b.get("/api/nodexs/read-later/count")).body).toEqual({ count: 0 });
   });
 });

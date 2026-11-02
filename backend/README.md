@@ -59,7 +59,7 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
 | `npm run build` | Compila TypeScript a JavaScript en `dist/` |
 | `npm start` | Arranca la versión compilada (producción) |
 | `npm run typecheck` | Comprueba los tipos sin generar archivos |
-| `npm run ai:backfill` | Calcula el vector de IA de los Nodexs que no lo tengan (antiguos o con error) |
+| `npm run demo:embeddings` | Recalcula los vectores de la demo (`demo.embeddings.json`). Hay que lanzarlo si cambias `demo.data.ts` |
 | `npm run push:keys` | Genera un par de claves VAPID para las notificaciones push (se hace una sola vez) |
 
 La primera vez que se usa la IA, el modelo (118 MB) se descarga en `.cache/models`, que no se sube a Git.
@@ -113,14 +113,16 @@ En local, el `.env` se carga con la opción `--env-file-if-exists` de Node. En p
 | `POST /api/groups/:id/nodexs` | Body `{ nodexId }`. `204`. Si ya estaba en el grupo, no hace nada |
 | `DELETE /api/groups/:id/nodexs/:nodexId` | `204`. Saca el Nodex del grupo |
 | `GET /api/nodexs` | `200 { nodexs, nextCursor }`. Filtros: `groupId`, `orphan=true`, `type=note\|link`, `priority=low\|medium\|high\|urgent`, `readLater=true` (enlaces para leer más tarde, del más antiguo al más nuevo), `limit` (1–100, 50 por defecto) y `cursor`. Orden: `sort=recent` (por defecto) o `sort=priority` (más prioritarios primero; sin prioridad al final) |
-| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds?, tags?, readLater? }`. `readLater` solo se aplica a enlaces. `tags`: hasta 10; se normalizan (minúsculas, espacios a guiones, sin `#`, máximo 30 caracteres). `201 { nodex, duplicates }`. Los enlaces necesitan `url` (`http` o `https`). `duplicates`: Nodexs casi iguales ya guardados (misma URL o similitud ≥ 0,9), cada uno con `similarity`; el Nodex se crea igualmente |
-| `GET /api/nodexs/search` | `?q=` (1–200 caracteres) y `limit` (1–50, 20 por defecto). `200 { nodexs }` ordenados por `score`: mezcla el parecido de significado con la coincidencia de texto en título, contenido o URL |
+| `POST /api/nodexs` | Body `{ type, title, content?, url?, priority?, groupIds?, tags?, readLater? }`. `readLater` solo se aplica a enlaces. `tags`: hasta 10; se normalizan (minúsculas, espacios a guiones, sin `#`, máximo 30 caracteres). `201 { nodex, duplicates }`. Los enlaces necesitan `url` (`http` o `https`). `duplicates`: Nodexs ya guardados con la misma URL, cada uno con `similarity`; el Nodex se crea igualmente. Se crea sin vector: queda en pendientes |
+| `POST /api/nodexs/search` | Body `{ q, limit?, embedding? }`: `q` de 1–200 caracteres, `limit` 1–50 (20 por defecto) y `embedding` el vector de `q` (384 números) si el navegador tiene la IA lista. `200 { nodexs }` ordenados por `score`: mezcla el parecido de significado con la coincidencia de texto en título, contenido o URL. Sin `embedding`, solo texto |
+| `GET /api/nodexs/pending-embeddings` | `200 { nodexs }`: hasta 50 Nodexs sin vector, cada uno `{ id, text }`, con el texto del que el navegador debe calcular el vector |
+| `PUT /api/nodexs/:id/embedding` | Body `{ text, embedding }` (384 números). Guarda el vector, sugiere grupo y responde `200 { duplicates }` (misma URL o similitud ≥ 0,9). `409` si el Nodex cambió y `text` ya no coincide |
 | `GET /api/nodexs/read-later/count` | `200 { count }`: enlaces marcados para leer más tarde |
 | `GET /api/nodexs/rediscover` | `200 { nodexs }`: hasta 3 Nodexs sin abrir desde hace 30 días (sin prioridad alta ni urgente), primero los parecidos a lo abierto en los últimos 7 días. La parte de azar cambia una vez al día (hora de España); la preferencia se actualiza con lo que abres |
 | `POST /api/nodexs/:id/open` | `204`. Marca el Nodex como abierto ahora (no cambia `updatedAt`) |
 | `GET /api/nodexs/:id` | `200 { nodex }` |
 | `GET /api/nodexs/:id/related` | `?limit=` (1–20, 5 por defecto). `200 { nodexs }`: los más parecidos (similitud ≥ 0,45), cada uno con `similarity` |
-| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority?, tags?, readLater? }` (`priority: null` la quita; `tags` sustituye todas las etiquetas; `readLater: true` marca un enlace para leer más tarde sin cambiar la fecha si ya lo estaba, y `false` lo quita). El tipo sigue a la URL: poner una URL convierte una nota en enlace y quitarla (`url: null`) convierte el enlace en nota. `200 { nodex }` |
+| `PATCH /api/nodexs/:id` | Body `{ title?, content?, url?, priority?, tags?, readLater? }` (`priority: null` la quita; `tags` sustituye todas las etiquetas; `readLater: true` marca un enlace para leer más tarde sin cambiar la fecha si ya lo estaba, y `false` lo quita). El tipo sigue a la URL: poner una URL convierte una nota en enlace y quitarla (`url: null`) convierte el enlace en nota. Si cambia el título, el contenido o la URL, el Nodex vuelve a pendientes. `200 { nodex }` |
 | `GET /api/tags` | `200 { tags }`: las etiquetas en uso, cada una con `nodexCount`, por orden alfabético |
 | `DELETE /api/nodexs/:id` | `204`. Lo envía a la papelera |
 | `GET /api/board` | `200 { groups, nodexs, orphanIds }`: todo lo necesario para dibujar el panel central. Cada grupo trae `nodexIds` |
@@ -174,9 +176,9 @@ Los errores siempre devuelven JSON con un campo `error`: `400` (datos no válido
 - `src/modules/links/`: vista previa de enlaces, comprobación periódica (`links.worker.ts`) y copias de archive.org.
 - `src/lib/safe-fetch.ts`: descarga páginas de forma segura (protección contra SSRF). `src/lib/html-meta.ts`: extrae título, descripción e imagen.
 - `src/lib/params.ts`: `parseId`, que convierte un ID mal formado en un `404`.
-- `src/lib/embeddings.ts`: carga el modelo de IA y convierte texto en vectores.
-- `src/modules/ai/`: cálculo de vectores, sugerencias de grupo y sus endpoints.
-- `src/scripts/ai-backfill.ts`: script de `npm run ai:backfill`.
+- `src/lib/embeddings.ts`: carga el modelo de IA en Node. Solo lo usan los tests y el script de la demo; en la app los vectores los calcula el navegador.
+- `src/modules/ai/`: guardado de vectores, sugerencias de grupo y sus endpoints. `vectors.ts` arma el texto del que sale cada vector.
+- `src/scripts/demo-embeddings.ts`: script de `npm run demo:embeddings`.
 - `src/lib/storage.ts`: subida y borrado de fotos en Cloudinary. Es el único archivo que conoce Cloudinary.
 - `src/lib/db-errors.ts`: `isUniqueViolation`, para detectar valores duplicados (código `P2002` de Prisma).
 - `src/modules/`: una carpeta por funcionalidad.

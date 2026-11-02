@@ -108,7 +108,7 @@ test("otro usuario no puede ver un Nodex ajeno", async () => {
   - `newUser()` registra un usuario con email aleatorio y devuelve su `agent`;
   - `anonymous()` hace peticiones sin sesión;
   - `createNodex()` y `createGroup()` crean datos;
-  - `warmUpAi()` y `waitForEmbeddings()` sirven para los tests de IA (ver más abajo).
+  - `warmUpAi()` y `embedPending()` sirven para los tests de IA (ver más abajo).
 - Cada test crea sus propios usuarios, así que **no hace falta vaciar la base** y los tests no dependen del orden. Se ha comprobado ejecutándolos en orden aleatorio (`npx vitest run --sequence.shuffle`).
 
 ### Qué se comprueba en cada endpoint
@@ -141,7 +141,8 @@ vi.mock("../../lib/safe-fetch.js", async (importOriginal) => ({
 
 La IA **no se simula**: así se prueba de verdad que la búsqueda, los relacionados, las sugerencias y la demo funcionan. Dos detalles:
 
-- Al crear un Nodex, la aplicación espera a su vector como mucho 3 segundos y después sigue en segundo plano. El primer Nodex de cada proceso tarda más, porque carga el modelo. Por eso los archivos de IA llaman a `warmUpAi()` en un `beforeAll`, y antes de buscar esperan a los vectores con `waitForEmbeddings()`.
+- En la app, los vectores los calcula el navegador. En los tests hace ese papel `embedPending(agent)`: pide `GET /api/nodexs/pending-embeddings`, calcula cada vector con el modelo en Node y lo manda con `PUT /api/nodexs/:id/embedding`, igual que el frontend. El primer cálculo de cada proceso tarda más, porque carga el modelo; por eso los archivos de IA llaman a `warmUpAi()` en un `beforeAll`.
+- La demo no carga el modelo: usa los vectores de `demo.embeddings.json`. Un test comprueba que siguen al día con `demo.data.ts`.
 - Los textos de prueba tienen que parecerse de verdad. Los relacionados exigen una similitud de 0,45 o más. Por ejemplo, "paella" y "arroz con pollo" solo llegan a 0,35, y "Viaje a Lisboa" y "Qué ver en Lisboa" a 0,78.
 
 ### Procesos de fondo y límites
@@ -219,7 +220,8 @@ Playwright arranca solo el backend (puerto 4100) contra la base de Docker y el f
 | `cuenta` | Registrarse, cerrar sesión, contraseña incorrecta y volver a entrar |
 | `nota` | Crear una nota con prioridad y etiqueta, escribir Markdown y comprobar que se guarda |
 | `grupo` | Crear un grupo, meter un Nodex y filtrar el panel |
-| `busqueda` | Buscar por significado |
+| `busqueda` | Buscar por texto con la IA desactivada |
+| `ia` | El aviso de descarga de la IA sale la primera vez y "Ahora no" se recuerda |
 | `tarea` | Convertir un Nodex en tarea y moverla de columna con el teclado |
 | `papelera` | Borrar, deshacer y restaurar desde la papelera |
 | `demo` | Probar sin registrarse, aceptar una sugerencia de la IA y crear la cuenta |
@@ -227,7 +229,8 @@ Playwright arranca solo el backend (puerto 4100) contra la base de Docker y el f
 
 Cosas a saber:
 
-- **Usuario compartido:** el login tiene un límite de 10 intentos cada 15 minutos por IP, y en estas pruebas todas las peticiones llegan desde la misma. Por eso `preparar.setup.ts` registra un usuario una vez y guarda su sesión (`storageState`), y los recorridos la reutilizan. Solo `cuenta` y `demo` empiezan sin sesión. Cada recorrido usa títulos únicos para no pisarse.
+- **Usuario compartido:** el login tiene un límite de 10 intentos cada 15 minutos por IP, y en estas pruebas todas las peticiones llegan desde la misma. Por eso `preparar.setup.ts` registra un usuario una vez y guarda su sesión (`storageState`), y los recorridos la reutilizan. Solo `cuenta`, `demo` e `ia` empiezan sin sesión.
+- **IA desactivada:** todos los recorridos menos `ia` entran con `nodex-ai = off` en `localStorage` (`AI_OFF` en `helpers.ts`, y `register()` lo pone al entrar en `/registro`). Así ninguna ejecución descarga los 120 MB del modelo. La IA real en el navegador se prueba a mano. Cada recorrido usa títulos únicos para no pisarse.
 - **Sin pausas fijas:** se espera a lo que se ve (`expect(...).toBeVisible()`), a los anuncios de accesibilidad del tablero, o a que la API confirme el guardado (`expect.poll`) antes de recargar.
 - **Selectores por rol y texto visible** (`getByRole`, `getByLabel`), como los usaría un lector de pantalla.
 - En la CI, el trabajo **e2e** se ejecuta después de backend y frontend, con 1 reintento. Si falla, sube el informe de Playwright como artefacto.

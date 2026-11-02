@@ -1,7 +1,7 @@
-import { setTimeout as wait } from "node:timers/promises";
-import { embed, toVector } from "../../lib/embeddings.js";
 import type { Prisma } from "../../../generated/prisma/client.js";
+import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
+import { nodexText, toVector } from "./vectors.js";
 import { boostPairs, clusterByNeighbors, MIN_NEW_GROUP_SIZE, MIN_PAIR_SIMILARITY, suggestName, type Pair } from "./new-groups.js";
 
 export const MIN_SIMILARITY = 0.35;
@@ -11,29 +11,6 @@ export const TITLE_MATCH_BONUS = 1;
 export const TEXT_MATCH_BONUS = 0.5;
 export const MIN_RELATED_SIMILARITY = 0.45;
 export const MIN_DUPLICATE_SIMILARITY = 0.9;
-const DUPLICATE_TIMEOUT_MS = 3000;
-
-function nodexText(nodex: { title: string; content: string | null; url: string | null }) {
-  const parts = [nodex.title, nodex.content?.slice(0, 2000)];
-  if (nodex.url) {
-    const { hostname, pathname, searchParams } = new URL(nodex.url);
-    const words = [pathname, ...searchParams.values()].join(" ").replace(/[/_.=+-]+/g, " ");
-    parts.push(hostname.replace(/^www\./, ""), words);
-  }
-  return parts.filter(Boolean).join(". ");
-}
-
-export async function updateEmbedding(nodexId: string) {
-  const nodex = await prisma.nodex.findUnique({
-    where: { id: nodexId },
-    select: { title: true, content: true, url: true },
-  });
-  if (!nodex) return;
-
-  const vector = toVector(await embed(nodexText(nodex)));
-  await prisma.$executeRaw`UPDATE nodexs SET embedding = ${vector}::vector WHERE id = ${nodexId}::uuid`;
-}
-
 export async function suggestGroup(userId: string, nodexId: string) {
   const [best, second] = await prisma.$queryRaw<{ group_id: string; similarity: number }[]>`
     WITH centroids AS (
@@ -81,18 +58,9 @@ export async function suggestGroup(userId: string, nodexId: string) {
   });
 }
 
-export async function processNodex(userId: string, nodexId: string) {
-  await updateEmbedding(nodexId);
-  await suggestGroup(userId, nodexId);
-}
-
-export function processInBackground(userId: string, nodexId: string) {
-  processNodex(userId, nodexId).catch((err) => console.error(`Error de IA con el Nodex ${nodexId}:`, err));
-}
-
 type Match = { id: string; similarity: number };
 
-async function findDuplicates(userId: string, nodexId: string) {
+export async function findDuplicates(userId: string, nodexId: string) {
   return prisma.$queryRaw<Match[]>`
     SELECT n.id, COALESCE(1 - (n.embedding <=> t.embedding), 1)::float AS similarity
     FROM nodexs n, nodexs t
@@ -109,17 +77,26 @@ async function findDuplicates(userId: string, nodexId: string) {
   `;
 }
 
-export function checkNewNodex(userId: string, nodexId: string) {
-  const check = (async () => {
-    await updateEmbedding(nodexId);
-    const duplicates = await findDuplicates(userId, nodexId);
-    await suggestGroup(userId, nodexId);
-    return duplicates;
-  })().catch((err) => {
-    console.error(`Error de IA con el Nodex ${nodexId}:`, err);
-    return [];
+export async function saveEmbedding(userId: string, nodexId: string, text: string, embedding: number[]) {
+  const nodex = await prisma.nodex.findFirst({
+    where: { id: nodexId, userId, deletedAt: null },
+    select: { title: true, content: true, url: true },
   });
-  return Promise.race([check, wait(DUPLICATE_TIMEOUT_MS, [] as Match[])]);
+  if (!nodex) throw new HttpError(404, "Nodex no encontrado");
+  if (nodexText(nodex) !== text) return null;
+
+  const saved = await prisma.$executeRaw`
+    UPDATE nodexs SET embedding = ${toVector(embedding)}::vector
+    WHERE id = ${nodexId}::uuid
+      AND deleted_at IS NULL
+      AND title = ${nodex.title}
+      AND content IS NOT DISTINCT FROM ${nodex.content}
+      AND url IS NOT DISTINCT FROM ${nodex.url}
+  `;
+  if (saved === 0) return null;
+  const duplicates = await findDuplicates(userId, nodexId);
+  await suggestGroup(userId, nodexId);
+  return duplicates;
 }
 
 export async function findRelatedPairs(userId: string, perNodex: number) {
@@ -157,13 +134,8 @@ export async function findRelated(userId: string, nodexId: string, limit: number
   `;
 }
 
-export async function searchNodexs(userId: string, query: string, limit: number) {
-  const vector = await embed(query)
-    .then(toVector)
-    .catch((err) => {
-      console.error("Error de IA en la búsqueda; se busca solo por texto:", err);
-      return null;
-    });
+export async function searchNodexs(userId: string, query: string, limit: number, embedding?: number[]) {
+  const vector = embedding ? toVector(embedding) : null;
   const pattern = `%${query.replace(/[\\%_]/g, "\\$&")}%`;
 
   return prisma.$queryRaw<{ id: string; score: number }[]>`

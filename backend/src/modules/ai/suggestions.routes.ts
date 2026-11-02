@@ -6,7 +6,7 @@ import { parseId } from "../../lib/params.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { createGroupSchema } from "../groups/groups.schemas.js";
-import { lockNewGroups, proposeNewGroups, suggestGroup, updateEmbedding } from "./ai.service.js";
+import { lockNewGroups, proposeNewGroups, suggestGroup } from "./ai.service.js";
 
 export const suggestionsRouter = Router();
 
@@ -66,13 +66,6 @@ suggestionsRouter.get("/", async (req, res) => {
 
 suggestionsRouter.post("/refresh", async (req, res) => {
   const userId = req.session.userId!;
-  const withoutEmbedding = await prisma.$queryRaw<{ id: string }[]>`
-    SELECT id FROM nodexs WHERE user_id = ${userId}::uuid AND deleted_at IS NULL AND embedding IS NULL
-  `;
-  for (const { id } of withoutEmbedding) {
-    await updateEmbedding(id);
-  }
-
   const orphans = await prisma.nodex.findMany({
     where: { userId, ...activeOrphan },
     select: { id: true },
