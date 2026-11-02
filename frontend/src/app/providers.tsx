@@ -1,7 +1,7 @@
 "use client";
 
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider, useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { ApiError } from "@/lib/api";
@@ -34,6 +34,18 @@ function createQueryClient() {
   return client;
 }
 
+function ThemeColor() {
+  const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    if (!resolvedTheme) return;
+    const color = resolvedTheme === "dark" ? "#1c1a18" : "#f6f5f4";
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute("content", color));
+  }, [resolvedTheme]);
+
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(createQueryClient);
 
@@ -44,6 +56,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeColor />
         {children}
         <Toaster richColors position="bottom-right" />
       </ThemeProvider>
