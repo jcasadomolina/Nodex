@@ -8,6 +8,7 @@ const envSchema = z.object({
   DATABASE_URL: z.url(),
   SESSION_SECRET: z.string().min(32),
   APP_URL: z.url().default("http://localhost:4000"),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(4),
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_CLIENT_ID: z.string().min(1).optional(),

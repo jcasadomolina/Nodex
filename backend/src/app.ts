@@ -23,7 +23,7 @@ import { trashRouter } from "./modules/trash/trash.routes.js";
 export const app = express();
 
 if (env.NODE_ENV === "production") {
-  app.set("trust proxy", 2);
+  app.set("trust proxy", env.TRUST_PROXY_HOPS);
 }
 
 app.use(helmet());

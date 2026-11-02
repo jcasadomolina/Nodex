@@ -27,7 +27,7 @@ La primera opción fue una máquina gratuita de Oracle Cloud, con RAM de sobra. 
 ## Conceptos
 
 - **Variables de entorno en el panel:** en Render y en Vercel no hay archivo `.env`. Las variables se escriben en su web y nunca se suben al repositorio.
-- **`trust proxy`:** Express recibe las peticiones a través de dos intermediarios: Vercel y el balanceador de Render. Con `app.set("trust proxy", 2)` se los salta y toma la IP real del visitante de la cabecera `X-Forwarded-For`. Sin esto, todos los visitantes parecerían el mismo y los límites (5 demos por hora, 10 intentos de login) serían para todo el mundo a la vez.
+- **`trust proxy`:** Express recibe las peticiones a través de varios intermediarios: Vercel y, dentro de Render, unos 3 más (Render va detrás de Cloudflare). Con `app.set("trust proxy", N)` se salta los `N` últimos y toma la IP real del visitante de la cabecera `X-Forwarded-For`. `N` sale de la variable `TRUST_PROXY_HOPS` (4 por defecto), así que se puede ajustar en el panel de Render sin tocar el código. Al principio había un `2` fijo y el límite acababa usando la IP de un servidor interno de Render. Sin esto, todos los visitantes parecerían el mismo y los límites (5 demos por hora, 10 intentos de login) serían para todo el mundo a la vez.
 - **Disco efímero:** cada despliegue de Render empieza con el disco vacío. El modelo de IA (unos 120 MB) se descarga en la primera petición que lo usa, así que esa tarda más.
 
 ## Paso a paso
@@ -62,6 +62,7 @@ Las cuentas las creas tú. Los secretos se escriben solo en los paneles de Rende
    | `SESSION_SECRET` | Uno nuevo, de 32 caracteres o más (por ejemplo, la salida de `openssl rand -base64 48`) |
    | `APP_URL` | La URL de Vercel. Al principio pon cualquiera y la cambias en el paso 3 |
    | `GOOGLE_*`, `GITHUB_*`, `CLOUDINARY_URL`, `VAPID_*` | Opcionales, igual que en local |
+   | `TRUST_PROXY_HOPS` | Opcional, 4 por defecto. Solo hay que tocarlo si la comprobación de `trust proxy` falla |
 
    No pongas `PORT`: Render lo da él solo y el backend lo lee.
 
@@ -101,7 +102,7 @@ Haz merge de `develop` en `main` con **Create a merge commit**. GitHub ejecuta l
 - "Probar sin registrarse": la demo debe crearse en uno o dos segundos (sus vectores van precalculados).
 - **IA:** aceptar el aviso de descarga, esperar a "Lista" en Ajustes y buscar algo por significado.
 - **Memoria:** en Render, la pestaña *Metrics* muestra la memoria. Tras crear una demo debe quedar lejos de los 512 MB.
-- **`trust proxy`:** falla 11 veces el login desde el PC; el intento 11 da "Demasiados intentos". Después, desde el móvil con datos (otra IP), el login debe funcionar. Si también se bloquea, el número de intermediarios no es 2 y hay que ajustarlo en `backend/src/app.ts`.
+- **`trust proxy`:** falla 11 veces el login desde el PC; el intento 11 da "Demasiados intentos". Después, desde el móvil con datos (otra IP), el login debe funcionar. Si también se bloquea, el número de intermediarios no es el de `TRUST_PROXY_HOPS` y hay que cambiarlo en *Environment*. Otra forma de comprobarlo sin hacer logins: la cabecera `RateLimit-Policy` de cualquier respuesta de `/api/auth/register` trae `pk`, un resumen de la clave del límite. Debe coincidir con el de tu IP pública (en base64, los 12 primeros caracteres del SHA-256 de la IP).
 - **PWA:** en el móvil, "Instalar aplicación" o "Añadir a pantalla de inicio", y probar el menú Compartir en Android.
 - **Avisos:** con las claves VAPID puestas, activarlos en Ajustes y crear un recordatorio a 2 minutos.
 
