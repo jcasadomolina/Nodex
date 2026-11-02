@@ -269,7 +269,7 @@ El service worker hace lo mínimo: al instalarse guarda `offline.html` en caché
 Otros detalles:
 
 - `proxy.ts` deja pasar sin sesión cualquier ruta con punto (`sw.js`, `manifest.webmanifest`, iconos, `offline.html`). Si no, el navegador recibiría una redirección a `/login` en lugar del archivo.
-- El color de la barra del sistema (`themeColor` en `layout.tsx`) sigue al tema claro u oscuro.
+- El color de la barra del sistema (la de la hora y la batería) sigue al tema **de Nodex**, no al del móvil. `themeColor` en `layout.tsx` solo sabe del tema del sistema, así que con el móvil en claro y Nodex en oscuro la barra salía clara con iconos blancos. Ahora `ThemeColor` (en `providers.tsx`) cambia la etiqueta `<meta name="theme-color">` cada vez que cambia el tema de la app.
 - Una PWA solo funciona con **HTTPS** (o en `localhost`). En el móvil se podrá instalar cuando la web esté alojada.
 - Para probarla: DevTools → Application → Manifest / Service workers. Ojo: la opción "Offline" de la pestaña Network no corta la red del service worker. Para ver la página sin conexión hay que parar el servidor y recargar.
 
