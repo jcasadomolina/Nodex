@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { app } from "../app.js";
 import { embed } from "../lib/embeddings.js";
-import { prisma } from "../lib/prisma.js";
 
 export type Agent = ReturnType<typeof request.agent>;
 
@@ -37,13 +36,13 @@ export function warmUpAi() {
   return embed("calentar el modelo");
 }
 
-export async function waitForEmbeddings(ids: string[]) {
-  for (let i = 0; i < 100; i++) {
-    const [row] = await prisma.$queryRaw<{ count: number }[]>`
-      SELECT count(*)::int AS count FROM nodexs WHERE id = ANY(${ids}::uuid[]) AND embedding IS NOT NULL
-    `;
-    if (row!.count === ids.length) return;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+export async function embedPending(agent: Agent) {
+  for (;;) {
+    const { nodexs } = (await agent.get("/api/nodexs/pending-embeddings")).body as { nodexs: { id: string; text: string }[] };
+    if (!nodexs.length) return;
+    for (const { id, text } of nodexs) {
+      const res = await agent.put(`/api/nodexs/${id}/embedding`).send({ text, embedding: await embed(text) });
+      if (res.status !== 200) throw new Error(`No se pudo guardar el vector: ${res.status} ${JSON.stringify(res.body)}`);
+    }
   }
-  throw new Error("Los vectores de la IA no se calcularon a tiempo");
 }

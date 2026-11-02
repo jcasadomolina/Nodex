@@ -20,7 +20,3 @@ export async function embed(text: string) {
   const output = await model(text, { pooling: "mean", normalize: true });
   return Array.from(output.data as Float32Array);
 }
-
-export function toVector(values: number[]) {
-  return `[${values.join(",")}]`;
-}

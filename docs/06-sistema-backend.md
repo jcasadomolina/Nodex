@@ -355,11 +355,12 @@ Un **embedding** es una lista de números (aquí, 384) que representa el **signi
 
 | Pieza | Qué es |
 |-------|--------|
-| `@huggingface/transformers` | Ejecuta el modelo dentro de Node, en la CPU, sin Python ni GPU |
-| Modelo `paraphrase-multilingual-MiniLM-L12-v2` (cuantizado) | Convierte texto en un vector de 384 números. Entiende español. 118 MB, licencia Apache-2.0. Se descarga solo la primera vez en `backend/.cache/models` (ignorada por Git) |
+| `@huggingface/transformers` | Ejecuta el modelo con JavaScript, sin Python ni GPU. Desde `feature/ia-en-el-dispositivo` corre en el **navegador** del usuario (ver más abajo); en el backend solo lo usan los tests y el script de la demo |
+| Modelo `paraphrase-multilingual-MiniLM-L12-v2` (cuantizado) | Convierte texto en un vector de 384 números. Entiende español. 118 MB, licencia Apache-2.0 |
 | pgvector | Extensión de PostgreSQL para guardar vectores (`nodexs.embedding`) y compararlos con el operador `<=>` |
-| `lib/embeddings.ts` | Carga el modelo una sola vez y expone `embed(texto)` |
-| `modules/ai/ai.service.ts` | Calcula vectores y genera sugerencias |
+| `modules/ai/vectors.ts` | `nodexText` (el texto del que sale el vector) y `toVector` (pasa la lista de números al formato de pgvector) |
+| `modules/ai/ai.service.ts` | Guarda vectores, busca duplicados y genera sugerencias |
+| `lib/embeddings.ts` | Solo para tests y scripts: carga el modelo en Node y expone `embed(texto)` |
 
 **Por qué este modelo y no `multilingual-e5-small`**, el que se propuso primero: en una prueba con textos en español, e5 daba a todo una similitud de alrededor de 0,85–0,90, hasta el punto de que "lentejas" se parecía más a "Introducción a TypeScript" que a "guiso de garbanzos". Este modelo separa bien los temas (0,56 frente a 0,10–0,23). Tienen el mismo tamaño y las mismas dimensiones.
 
@@ -367,8 +368,8 @@ Un **embedding** es una lista de números (aquí, 384) que representa el **signi
 
 ```
 Crear o editar un Nodex
-  → la respuesta sale al momento
-  → en segundo plano: título + contenido + palabras de la URL → vector → nodexs.embedding
+  → la respuesta sale al momento y el Nodex queda sin vector (pendiente)
+  → el navegador pide los pendientes, calcula el vector y lo manda (PUT /api/nodexs/:id/embedding)
   → si es huérfano:
       perfil de cada grupo = media de los vectores de sus Nodexs
       se compara el Nodex con cada perfil
@@ -378,13 +379,26 @@ Crear o editar un Nodex
 - **Umbrales** (`MIN_SIMILARITY = 0.35`, `MIN_MARGIN = 0.1`): el mejor grupo debe parecerse al menos 0,35, y 0,10 más que el segundo. Se calibraron con 3 grupos de 4 Nodexs y 10 huérfanos: los temas sin grupo (vuelos, la renta, jazz) no pasaban de 0,26, y los que sí encajaban estaban entre 0,39 y 0,66. Resultado: 6 sugerencias, todas correctas, ninguna equivocada. Se escapó una ("Buenas prácticas con PostgreSQL", 0,23): es preferible no sugerir a sugerir mal.
 - **Aprendizaje personal:** el perfil de cada grupo sale de los Nodexs **de ese usuario**. Cada vez que acepta una sugerencia o coloca un Nodex a mano, el perfil cambia y las siguientes sugerencias se ajustan a su forma de organizar. Los rechazos se recuerdan: no se vuelve a proponer el mismo grupo para el mismo Nodex.
 - **El usuario decide:** la IA nunca mueve nada sola. Aceptar mete el Nodex en el grupo con `added_by = 'ai'`.
-- **Tolerancia a fallos (`RNF-08`):** el cálculo va en segundo plano. Si falla, se registra el error y el Nodex queda sin vector; `POST /api/suggestions/refresh` o `npm run ai:backfill` lo recalculan después.
+- **Tolerancia a fallos (`RNF-08`):** si el navegador no tiene la IA activada o falla, el Nodex se queda pendiente y se completa la próxima vez que un dispositivo con la IA lista abra la app.
 
 ### Coste y rendimiento
 
-- **Dinero:** cero. El modelo corre en el propio servidor.
-- **Velocidad:** la primera vez que se usa, el modelo tarda unos segundos en cargarse. Después, unos **8 ms por Nodex**.
-- **Memoria:** con la configuración original, el modelo cargado llevaba el proceso a unos **600 MB**. Para que quepa en los 512 MB de Render, `lib/embeddings.ts` usa 1 hilo y desactiva la reserva de memoria de onnxruntime (`enableCpuMemArena: false`): el backend se queda en unos 440 MB, con los mismos vectores y algo menos de velocidad (ver [Despliegue](11-despliegue.md)).
+- **Dinero:** cero. El modelo corre en el dispositivo del usuario.
+- **Memoria del servidor:** con el modelo dentro, el backend llegaba a **550 MB** de pico y Render Free (512 MB) lo reiniciaba. Sin el modelo, crear una demo deja el proceso en unos **170 MB**.
+
+### IA en el dispositivo (`feature/ia-en-el-dispositivo`)
+
+Diseño: [especificación](disenos/2026-11-02-ia-en-el-dispositivo-design.md). El servidor ya no calcula vectores: solo los **guarda y compara** con SQL, que no necesita el modelo. Los calcula el navegador (ver [Frontend](09-frontend.md)).
+
+| Endpoint | Qué hace |
+|----------|----------|
+| `GET /api/nodexs/pending-embeddings` | Hasta 50 Nodexs del usuario sin vector y fuera de la papelera, cada uno con su `text` ya preparado por `nodexText`. Así la receta del texto vive en un solo sitio |
+| `PUT /api/nodexs/:id/embedding` | Recibe `{ text, embedding }`. Valida que son 384 números, guarda el vector, busca duplicados, sugiere grupo y responde `{ duplicates }` |
+| `PATCH /api/nodexs/:id` | Si cambia el título, el contenido o la URL, pone el vector a `NULL`: el Nodex vuelve a pendientes |
+
+**El `409`:** si el usuario edita un Nodex mientras su vector se calcula, el `PUT` llega con el texto viejo. El backend compara `text` con el `nodexText` actual y, si no coinciden, responde `409` sin guardar nada. El Nodex sigue pendiente y el siguiente ciclo lo recalcula con el texto nuevo. Así nunca se guarda un vector que no corresponde al contenido.
+
+**Seguridad:** las rutas filtran por el usuario de la sesión, así que nadie puede escribir vectores en Nodexs ajenos (`404`). Un vector sin sentido solo estropearía las sugerencias del propio usuario.
 
 ## Búsqueda, relacionados y duplicados (`feature/ia-busqueda`)
 
@@ -392,7 +406,7 @@ Las tres funciones reutilizan el vector que ya se guarda en `nodexs.embedding`. 
 
 ### Búsqueda híbrida (`RF-05.7`)
 
-`GET /api/nodexs/search?q=…` convierte la búsqueda en un vector y lo compara con todos los Nodexs del usuario. Pero los embeddings fallan con palabras sueltas, siglas o nombres propios ("react", "Alfama"), así que la búsqueda es **híbrida**: a la similitud se le suma un extra si el texto aparece tal cual.
+`POST /api/nodexs/search` recibe `{ q, embedding? }`: el navegador manda el vector de la búsqueda si tiene la IA lista (384 números no caben bien en una URL, por eso es `POST`). El backend lo compara con todos los Nodexs del usuario. Pero los embeddings fallan con palabras sueltas, siglas o nombres propios ("react", "Alfama"), así que la búsqueda es **híbrida**: a la similitud se le suma un extra si el texto aparece tal cual.
 
 ```
 puntuación = similitud de significado (0–1)
@@ -403,7 +417,7 @@ se muestran los que llegan a 0,3, de mayor a menor
 
 Así, lo que contiene la palabra exacta sale siempre arriba, y debajo aparece lo que habla de lo mismo con otras palabras ("comida casera de legumbres" encuentra las lentejas y los garbanzos). El texto se busca con `ILIKE`, que no distingue mayúsculas; los caracteres `%` y `_` se escapan para que se busquen literalmente.
 
-Si el modelo falla, la búsqueda no se rompe (`RNF-08`): se registra el error y se busca solo por texto.
+Sin vector (IA desactivada o aún descargándose), la búsqueda no se rompe (`RNF-08`): busca solo por texto.
 
 ### Relacionados (`RF-05.8`)
 
@@ -413,9 +427,10 @@ Si el modelo falla, la búsqueda no se rompe (`RNF-08`): se registra el error y 
 
 `POST /api/nodexs` acepta `source`: `manual` (por defecto) o `share`, cuando el Nodex llega desde el menú Compartir de la PWA (`RF-05.6`).
 
-Al crear un Nodex, `POST /api/nodexs` calcula su vector **en el momento** (no en segundo plano, como antes) y responde con `duplicates`: los Nodexs que ya tenía el usuario con la **misma URL** (sin contar la `/` final) o una similitud **≥ 0,9**. El Nodex se guarda igualmente: el frontend muestra el aviso y el usuario decide si lo borra.
+Un duplicado es un Nodex que el usuario ya tenía con la **misma URL** (sin contar la `/` final) o una similitud **≥ 0,9**. El Nodex se guarda igualmente: el frontend muestra el aviso y el usuario decide si lo borra.
 
-Para no hacer esperar al usuario, la comprobación tiene un límite de **3 segundos** (`Promise.race`). Si el modelo tarda más (por ejemplo, la primera vez, mientras se carga) o falla, la respuesta sale sin duplicados y el resto del trabajo (vector y sugerencia de grupo) sigue en segundo plano.
+- `POST /api/nodexs` responde con los duplicados **por URL**, que no necesitan vector. Así el aviso de enlace repetido funciona aunque la IA esté desactivada.
+- `PUT /api/nodexs/:id/embedding` responde con los duplicados por URL **y** por significado. El navegador espera esta respuesta como mucho **3 segundos** tras crear; si tarda más, se queda con los de `POST`.
 
 ### Calibración de los umbrales
 
@@ -448,8 +463,10 @@ Diseño: [especificación](disenos/2026-10-30-modo-demo-design.md). Permite prob
 
    Las fechas se guardan como "hace N días" y se calculan al crear la cuenta, así la demo siempre parece reciente.
 3. **Pocas consultas.** Los ids se generan en Node (`randomUUID`) y cada tabla se rellena con un solo `createMany`, todo dentro de una transacción. Crear los Nodexs uno a uno con sus relaciones anidadas hacía decenas de viajes a Neon y pasaba del límite de 5 s de las transacciones de Prisma.
-4. **IA.** Se calcula el vector de cada Nodex y su sugerencia de grupo, primero los que tienen grupo y luego los huérfanos, porque la sugerencia compara con el "centro" de cada grupo. Después se calculan las propuestas de grupos nuevos. Cada paso va en su `try/catch`: si la IA falla, la demo se crea igual (`RNF-08`). Las vistas previas de los enlaces se cargan en segundo plano.
-5. **Sesión.** Se abre como en un login normal. Con el modelo de IA ya cargado, la respuesta tarda unos 5 segundos. La primera demo tras arrancar el servidor tarda más, porque antes hay que cargar el modelo.
+4. **IA precalculada.** Los vectores de los 26 Nodexs están en `demo.embeddings.json` y se guardan en la misma transacción. Después se sugiere grupo a los huérfanos y se proponen grupos nuevos, sin cargar el modelo. Si algo falla, la demo se crea igual (`RNF-08`). Las vistas previas de los enlaces se cargan en segundo plano.
+5. **Sesión.** Se abre como en un login normal. Toda la demo tarda unos **0,2 segundos**.
+
+**Si cambias `demo.data.ts`**, regenera los vectores con `npm run demo:embeddings` (en `backend/`). Un test compara el texto guardado de cada Nodex con su `nodexText` actual y falla si se te olvida.
 
 Un límite de **5 demos por hora y por IP** evita que alguien llene la base creando cuentas.
 

@@ -4,7 +4,8 @@ import { HttpError } from "../../lib/http-error.js";
 import { parseId } from "../../lib/params.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { checkNewNodex, findRelated, processInBackground, searchNodexs } from "../ai/ai.service.js";
+import { findDuplicates, findRelated, saveEmbedding, searchNodexs } from "../ai/ai.service.js";
+import { nodexText } from "../ai/vectors.js";
 import { previewFields, refreshPreviewInBackground } from "../links/links.service.js";
 import { findForgotten, markOpened } from "./rediscover.js";
 import {
@@ -12,6 +13,7 @@ import {
   listNodexsSchema,
   priorityToName,
   relatedNodexsSchema,
+  saveEmbeddingSchema,
   searchNodexsSchema,
   updateNodexSchema,
 } from "./nodexs.schemas.js";
@@ -72,11 +74,30 @@ async function loadInOrder<T extends { id: string }>(userId: string, matches: T[
   });
 }
 
-nodexsRouter.get("/search", async (req, res) => {
+nodexsRouter.post("/search", async (req, res) => {
   const userId = req.session.userId!;
-  const { q, limit } = searchNodexsSchema.parse(req.query);
-  const matches = await searchNodexs(userId, q, limit);
+  const { q, limit, embedding } = searchNodexsSchema.parse(req.body);
+  const matches = await searchNodexs(userId, q, limit, embedding);
   res.json({ nodexs: await loadInOrder(userId, matches) });
+});
+
+nodexsRouter.get("/pending-embeddings", async (req, res) => {
+  const nodexs = await prisma.$queryRaw<{ id: string; title: string; content: string | null; url: string | null }[]>`
+    SELECT id, title, content, url FROM nodexs
+    WHERE user_id = ${req.session.userId!}::uuid AND deleted_at IS NULL AND embedding IS NULL
+    ORDER BY created_at, id
+    LIMIT 50
+  `;
+  res.json({ nodexs: nodexs.map((nodex) => ({ id: nodex.id, text: nodexText(nodex) })) });
+});
+
+nodexsRouter.put("/:id/embedding", async (req, res) => {
+  const userId = req.session.userId!;
+  const id = parseId(req.params.id, NODEX_NOT_FOUND);
+  const { text, embedding } = saveEmbeddingSchema.parse(req.body);
+  const duplicates = await saveEmbedding(userId, id, text, embedding);
+  if (!duplicates) throw new HttpError(409, "El Nodex ha cambiado");
+  res.json({ duplicates: await loadInOrder(userId, duplicates) });
 });
 
 nodexsRouter.get("/", async (req, res) => {
@@ -137,7 +158,7 @@ nodexsRouter.post("/", async (req, res) => {
     select: nodexFields,
   });
   if (nodex.url) refreshPreviewInBackground(nodex.id);
-  const duplicates = await loadInOrder(userId, await checkNewNodex(userId, nodex.id));
+  const duplicates = await loadInOrder(userId, await findDuplicates(userId, nodex.id));
   res.status(201).json({ nodex: toNodex(nodex), duplicates });
 });
 
@@ -195,7 +216,7 @@ nodexsRouter.patch("/:id", async (req, res) => {
     select: nodexFields,
   });
   if (data.title !== undefined || data.content !== undefined || data.url !== undefined) {
-    processInBackground(req.session.userId!, id);
+    await prisma.$executeRaw`UPDATE nodexs SET embedding = NULL WHERE id = ${id}::uuid`;
   }
   if (data.url !== undefined) refreshPreviewInBackground(id);
   res.json({ nodex: toNodex(nodex) });

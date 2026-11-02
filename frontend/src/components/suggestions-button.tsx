@@ -6,6 +6,7 @@ import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getPreference } from "@/lib/ai/ai";
 import { useRefreshing, useRefreshSuggestions, useResolveNewGroup, useResolveSuggestion, useSuggestions } from "@/lib/queries/suggestions";
 import type { NewGroupProposal, Suggestion } from "@/lib/types";
 
@@ -118,6 +119,7 @@ export function SuggestionsButton({ onOpen }: { onOpen: (id: string) => void }) 
       <PopoverContent align="end" className="max-h-[70dvh] w-80 overflow-y-auto">
         <p className="font-medium">Sugerencias de la IA</p>
         {total === 0 && <p className="text-sm text-muted-foreground">No hay sugerencias pendientes</p>}
+        {getPreference() === "off" && <p className="text-sm text-muted-foreground">La IA está desactivada en este dispositivo. Actívala en Ajustes.</p>}
         {list.length > 0 && (
           <ul className="divide-y">
             {list.map((suggestion) => (

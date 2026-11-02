@@ -29,6 +29,7 @@ describe("modo demo", { timeout: 120_000 }, () => {
     expect(board.body.nodexs).toHaveLength(26);
     const suggestions = await agent.get("/api/suggestions");
     expect(suggestions.body.suggestions.length).toBeGreaterThan(0);
+    expect((await agent.get("/api/nodexs/pending-embeddings")).body.nodexs).toEqual([]);
   });
 
   test("en la demo no se puede subir foto ni vincular cuentas", async () => {

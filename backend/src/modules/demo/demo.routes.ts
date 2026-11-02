@@ -21,8 +21,8 @@ export const demoLimiter = rateLimit({
 });
 
 demoRouter.post("/demo", demoLimiter, async (req, res) => {
-  const { userId, nodexIds, linkIds } = await createDemoUser();
-  await prepareDemoAi(userId, nodexIds, linkIds);
+  const { userId, orphanIds, linkIds } = await createDemoUser();
+  await prepareDemoAi(userId, orphanIds, linkIds);
   await startSession(req, userId);
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: publicUser });

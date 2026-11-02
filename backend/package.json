@@ -12,12 +12,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ai:backfill": "tsx --env-file-if-exists=../.env src/scripts/ai-backfill.ts",
+    "demo:embeddings": "tsx src/scripts/demo-embeddings.ts",
     "push:keys": "web-push generate-vapid-keys"
   },
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@huggingface/transformers": "4.3.1",
     "@types/connect-pg-simple": "7.0.3",
     "@types/express": "5.0.6",
     "@types/express-session": "1.19.0",
@@ -35,7 +36,6 @@
     "vitest": "5.0.5"
   },
   "dependencies": {
-    "@huggingface/transformers": "4.3.1",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "argon2": "0.45.1",

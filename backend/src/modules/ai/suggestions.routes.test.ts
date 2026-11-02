@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test, vi } from "vitest";
-import { anonymous, createGroup, createNodex, newUser, warmUpAi, type Agent } from "../../test/helpers.js";
+import { anonymous, createGroup, createNodex, embedPending, newUser, warmUpAi, type Agent } from "../../test/helpers.js";
 
 vi.mock("../links/links.service.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../links/links.service.js")>()),
@@ -13,6 +13,7 @@ async function kitchenWithOrphanRecipe(agent: Agent) {
   await createNodex(agent, { title: "Receta de lentejas con chorizo", content: "Cocer las lentejas con chorizo y verdura", groupIds: [kitchen.id] });
   await createNodex(agent, { title: "Garbanzos con espinacas", content: "Receta de garbanzos guisados con espinacas", groupIds: [kitchen.id] });
   const orphan = await createNodex(agent, { title: "Lentejas estofadas", content: "Receta de lentejas con chorizo, patata y zanahoria" });
+  await embedPending(agent);
   await agent.post("/api/suggestions/refresh");
   const { body } = await agent.get("/api/suggestions");
   const suggestion = body.suggestions.find((s: { nodex: { id: string } }) => s.nodex.id === orphan.id);
@@ -23,6 +24,7 @@ async function lisbonOrphans(agent: Agent) {
   await createNodex(agent, { title: "Viaje a Lisboa", content: "Vuelos, hotel y barrios que visitar en Lisboa" });
   await createNodex(agent, { title: "Qué ver en Lisboa", content: "Alfama, Belém y el tranvía 28 de Lisboa" });
   await createNodex(agent, { title: "Dónde comer en Lisboa", content: "Pastéis de Belém y restaurantes de Lisboa" });
+  await embedPending(agent);
   expect((await agent.post("/api/suggestions/refresh")).body.newGroups).toBe(1);
   const res = await agent.get("/api/suggestions");
   return res.body.newGroups as { name: string; nodexs: { id: string }[] }[];

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { anonymous, createGroup, createNodex, newUser, waitForEmbeddings, warmUpAi } from "../../test/helpers.js";
+import { anonymous, createGroup, createNodex, embedPending, newUser, warmUpAi } from "../../test/helpers.js";
 
 vi.mock("../links/links.service.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../links/links.service.js")>()),
@@ -29,7 +29,7 @@ describe("panel", () => {
     const trip = await createNodex(agent, { title: "Viaje a Lisboa", content: "Vuelos, hotel y barrios que visitar en Lisboa" });
     const guide = await createNodex(agent, { title: "Qué ver en Lisboa", content: "Alfama, Belém y el tranvía 28" });
     const git = await createNodex(agent, { title: "Configurar Git en Windows" });
-    await waitForEmbeddings([trip.id, guide.id, git.id]);
+    await embedPending(agent);
 
     const { pairs } = (await agent.get("/api/board/related")).body;
     expect(pairs).toHaveLength(1);
