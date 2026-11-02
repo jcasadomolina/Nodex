@@ -16,7 +16,12 @@ fn main() {
                 .inner_size(1200.0, 800.0)
                 .initialization_script("window.nodexDesktop = true;")
                 .on_new_window(move |url, _features| {
-                    let _ = handle.opener().open_url(url.as_str(), None::<&str>);
+                    if matches!(url.scheme(), "http" | "https" | "mailto") {
+                        let handle = handle.clone();
+                        std::thread::spawn(move || {
+                            let _ = handle.opener().open_url(url.as_str(), None::<&str>);
+                        });
+                    }
                     NewWindowResponse::Deny
                 })
                 .build()?;

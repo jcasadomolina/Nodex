@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   version:
@@ -33,6 +33,7 @@ jobs:
 
   android:
     needs: version
+    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -97,14 +98,21 @@ jobs:
         with:
           name: Nodex-setup.exe
           path: Nodex-setup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cargo.lock
+          path: apps/desktop/src-tauri/Cargo.lock
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [android, windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: Nodex*
           merge-multiple: true
       - name: Publicar
         env:
