@@ -20,6 +20,7 @@ Diseño de la base de datos: [docs/08-base-de-datos.md](../docs/08-base-de-datos
    SESSION_SECRET="..."                     # mínimo 32 caracteres aleatorios
    PORT=4000                                # opcional, 4000 por defecto
    APP_URL="http://localhost:3000"          # URL pública que ve el navegador (la del frontend)
+   TRUST_PROXY_HOPS=4                       # solo en producción: intermediarios delante del backend, 4 por defecto
    GOOGLE_CLIENT_ID="..."                   # opcionales: sin ellas, el login con Google
    GOOGLE_CLIENT_SECRET="..."               #   o GitHub responde 503
    GITHUB_CLIENT_ID="..."
