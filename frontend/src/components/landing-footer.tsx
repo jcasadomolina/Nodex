@@ -21,6 +21,13 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     ],
   },
   {
+    title: "Descargar",
+    links: [
+      { label: "Android (APK)", href: "https://github.com/jcasadomolina/Nodex/releases/latest/download/Nodex.apk" },
+      { label: "Windows", href: "https://github.com/jcasadomolina/Nodex/releases/latest/download/Nodex-setup.exe" },
+    ],
+  },
+  {
     title: "Proyecto",
     links: [{ label: "Código en GitHub", href: "https://github.com/jcasadomolina/Nodex" }, { label: "Guía de uso" }, { label: "Novedades" }],
   },
@@ -55,7 +62,7 @@ export function LandingFooter() {
   return (
     <footer className="border-t">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:px-8">
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
           {COLUMNS.map(({ title, links }) => (
             <nav key={title} aria-label={title} className="grid content-start gap-3 text-sm">
               <h2 className="font-mono text-xs tracking-[-0.02em] uppercase">{title}</h2>

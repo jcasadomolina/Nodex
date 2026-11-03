@@ -47,7 +47,7 @@ Después del modo demo:
 | Bloque de pruebas ([10-pruebas.md](10-pruebas.md)) | Hecho: unitarias, integración y end-to-end, con CI en cada PR |
 | Alojamiento (Vercel + Render, [11-despliegue.md](11-despliegue.md)) | Cuentas creadas el 01/11/2026. Oracle Cloud se descartó por falta de capacidad ARM en la región |
 | IA en el dispositivo ([diseño](disenos/2026-11-02-ia-en-el-dispositivo-design.md)) | Hecho en `feature/ia-en-el-dispositivo`: el modelo no cabía en los 512 MB de Render. Falta comprobarlo en producción |
-| Aplicación de escritorio, APK y distribución | Pendiente |
+| Aplicación de escritorio, APK y distribución ([12-apps.md](12-apps.md)) | Hecho en `feature/apps-nativas`: APK (TWA) y app de Windows (Tauri) en GitHub Releases. Pendiente: login de Google en escritorio por el navegador del sistema |
 
 ## Estado de los requisitos
 

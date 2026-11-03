@@ -15,6 +15,7 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Frontend](09-frontend.md) | Stack, conexión con el backend, pantallas y estados | En curso |
 | [Pruebas](10-pruebas.md) | Tipos de prueba, base de Docker, cómo ejecutarlas y CI | Completo |
 | [Despliegue](11-despliegue.md) | Vercel + Render: arquitectura y paso a paso | Completo |
+| [Apps](12-apps.md) | APK de Android (TWA), app de Windows (Tauri) y cómo publicar una versión | Completo |
 | [`disenos/`](disenos) y [`planes/`](planes) | Diseño aprobado y plan de trabajo de cada funcionalidad | Uno por rama |
 
 ## Glosario

@@ -16,6 +16,7 @@
   <a href="#funcionalidades">Funcionalidades</a> ·
   <a href="#capturas">Capturas</a> ·
   <a href="#tecnologías-utilizadas">Tecnologías</a> ·
+  <a href="#descargar">Descargar</a> ·
   <a href="#puesta-en-marcha">Puesta en marcha</a> ·
   <a href="docs/README.md">Documentación</a>
 </p>
@@ -26,7 +27,7 @@
 
 Aplicación web para guardar notas y enlaces en un solo sitio y dejar que una IA los ordene. Cada nota o enlace es un **Nodex**. Los Nodexs se agrupan, se relacionan entre sí por su significado y se pueden ver como un grafo.
 
-> **Estado:** en desarrollo. Las funcionalidades principales están hechas. Falta publicarla en Internet. Se podrá probar sin registrarse con el modo demo.
+> **Estado:** en desarrollo. Ya está publicada en [nodex-three.vercel.app](https://nodex-three.vercel.app), y se puede probar sin registrarse con el modo demo.
 
 ## Funcionalidades
 
@@ -132,11 +133,23 @@ Navegador ──► Next.js (frontend, :3000)
 
 El navegador solo habla con un dominio: Next.js reenvía `/api/*` al backend, así que la cookie de sesión viaja sola y no hace falta configurar CORS. Los datos de cada usuario están aislados de los demás.
 
+## Descargar
+
+Además de usarla en el navegador (o instalarla desde él como PWA), Nodex tiene apps que cargan la misma web:
+
+| Plataforma | Descarga | Cómo instalarla |
+|------------|----------|-----------------|
+| Android 7.0 o superior | [Nodex.apk](https://github.com/jcasadomolina/Nodex/releases/latest/download/Nodex.apk) | Ábrela en el móvil y permite "instalar apps de origen desconocido" |
+| Windows 10 y 11 | [Nodex-setup.exe](https://github.com/jcasadomolina/Nodex/releases/latest/download/Nodex-setup.exe) | Si Windows avisa de que "protegió tu PC", pulsa **Más información → Ejecutar de todas formas** (el instalador no está firmado) |
+
+Cómo están hechas y cómo se publica una versión: [docs/12-apps.md](docs/12-apps.md).
+
 ## Estructura
 
 ```
 backend/    API en Express: módulos por funcionalidad, esquema de Prisma y migraciones
 frontend/   Aplicación en Next.js
+apps/       APK de Android (TWA) y app de Windows (Tauri)
 docs/       Requisitos, decisiones técnicas y explicación de cada parte
 ```
 
