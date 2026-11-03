@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.jcasadomolina.nodex",
+      "sha256_cert_fingerprints": ["5E:7E:24:6E:BB:A1:74:E2:0D:81:9F:C6:6B:6B:D2:1C:08:BA:CA:33:28:91:D0:F4:DF:34:C2:5C:5E:DA:3E:E0"]
+    }
+  }
+]

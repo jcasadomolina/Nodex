@@ -24,6 +24,9 @@ Idioma de trabajo: **español**, en el código visible, la documentación y las 
 | [07-brief-de-diseno](docs/07-brief-de-diseno.md) | Estilo visual, color, tipografía y bocetos |
 | [08-base-de-datos](docs/08-base-de-datos.md) | Tablas, relaciones y reglas para cambiar el esquema |
 | [09-frontend](docs/09-frontend.md) | Cómo funciona cada pantalla y por qué |
+| [10-pruebas](docs/10-pruebas.md) | Tipos de prueba, cómo ejecutarlas y CI |
+| [11-despliegue](docs/11-despliegue.md) | Vercel + Render, paso a paso |
+| [12-apps](docs/12-apps.md) | APK de Android, app de Windows y cómo publicar una versión |
 | `docs/disenos/` y `docs/planes/` | Diseño aprobado y plan de cada rama. Los nuevos se guardan aquí con el formato `AAAA-MM-DD-tema-design.md` y `AAAA-MM-DD-tema.md` |
 
 ## Glosario

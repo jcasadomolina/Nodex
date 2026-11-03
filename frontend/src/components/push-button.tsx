@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { isDesktopApp } from "@/lib/platform";
 
 async function currentSubscription() {
   const registration = await navigator.serviceWorker.ready;
@@ -33,10 +34,15 @@ export function PushButton() {
   const [supported] = useState(() => typeof window !== "undefined" && "PushManager" in window && "serviceWorker" in navigator);
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [pending, setPending] = useState(false);
+  const [desktop] = useState(isDesktopApp);
 
   useEffect(() => {
-    if (supported) currentSubscription().then((subscription) => setEnabled(Boolean(subscription)));
-  }, [supported]);
+    if (supported && !desktop) currentSubscription().then((subscription) => setEnabled(Boolean(subscription)));
+  }, [supported, desktop]);
+
+  if (desktop) {
+    return <p className="text-sm text-muted-foreground">Los avisos al escritorio no están disponibles en la app. Úsalos desde el navegador o el móvil.</p>;
+  }
 
   if (!supported) {
     return <p className="text-sm text-muted-foreground">Para recibir avisos en el móvil, instala Nodex en la pantalla de inicio.</p>;
