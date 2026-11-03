@@ -1,7 +1,5 @@
 # Pruebas
 
-Diseño: [especificación](disenos/2026-10-30-pruebas-design.md) · Plan: [plan](planes/2026-10-30-pruebas.md).
-
 ## Qué es un test y para qué sirve
 
 Un **test** es un trozo de código que usa la aplicación y comprueba que hace lo que debe. Por ejemplo, "si creo un Nodex sin título, el servidor responde `400`". Se ejecutan en segundos, siempre igual, y avisan si un cambio rompe algo que antes funcionaba. A eso se le llama **regresión**.
