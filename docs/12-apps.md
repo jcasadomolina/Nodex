@@ -52,10 +52,12 @@ Se comprobaron con la app instalada, conectando con la depuración remota de Web
 | Cargar Nodex, sesión, demo | Funciona |
 | IA en el dispositivo | Funciona: descarga el modelo (unos 40 s) y busca por significado |
 | Enlaces externos | Se abren en el navegador del sistema y la app sigue en Nodex |
-| Login con Google | La página de Google carga dentro de la app. Falta comprobar el paso de la contraseña, donde Google a veces dice "navegador no seguro" |
+| Login con Google y GitHub | Funcionan dentro de la app |
 | Avisos push | **No funcionan**: WebView2 deniega el permiso sin preguntar. En la app, Ajustes explica que se usen desde el navegador o el móvil |
 
-**Ampliación futura:** login con Google abriendo el navegador del sistema y volviendo a la app con un enlace `nodex://`. Necesita que el backend entregue a la app una sesión nueva, porque la cookie se queda en el navegador.
+**Por qué los enlaces se abren en un hilo aparte:** llamar a Windows (`ShellExecute`) dentro del evento de WebView2 que pide la ventana nueva fallaba sin dar error. En `main.rs`, `open_url` se lanza con `std::thread::spawn`.
+
+**Ampliación futura:** login con Google abriendo el navegador del sistema y volviendo a la app con un enlace `nodex://`. Con el login dentro de la app funcionando ya no es urgente, pero sería más robusto si Google empezara a bloquear WebView2.
 
 ## Publicar una versión
 
