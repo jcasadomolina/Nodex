@@ -1,7 +1,5 @@
 # Apps para Android y Windows
 
-Diseño: [especificación](disenos/2026-11-02-apps-android-windows-design.md) · Plan: [plan](planes/2026-11-02-apps-android-windows.md)
-
 Nodex se puede instalar de tres formas, y las tres muestran la **misma web** (`https://nodex-three.vercel.app`):
 
 | Forma | Qué es | Dónde se consigue |

@@ -39,3 +39,7 @@ target/
 .gradle/
 local.properties
 *.keystore
+
+# Diseños y planes de cada rama: se quedan en local
+docs/disenos/
+docs/planes/

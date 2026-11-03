@@ -51,7 +51,7 @@ Cada rama sale de `develop` y vuelve a `develop` con un pull request.
 | `feature/recordatorios` | Personalidad recordatorio y notificaciones push | `RF-12.7` |
 | `feature/enlaces` | Vista previa de enlaces y comprobación de enlaces rotos | `RF-12.3` |
 | `feature/ia-busqueda` | Búsqueda por significado, relacionados y duplicados | `RF-05.7`–`RF-05.9` |
-| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos (hecho: [especificación](disenos/2026-10-28-ia-grupos-nuevos-design.md)) | `RF-04.3` |
+| `feature/ia-grupos-nuevos` | Proponer grupos nuevos a partir de huérfanos parecidos (hecho) | `RF-04.3` |
 
 Todas las ramas de la tabla están hechas. Después llegaron `feature/papelera` (HU-15), `feature/redescubre` (HU-20), `feature/leer-mas-tarde` (HU-21) y `feature/compartir` (`RF-05.6`). El estado general está en el [plan de implementación](02-plan-de-implementacion.md#estado-de-los-requisitos).
 
@@ -388,7 +388,7 @@ Crear o editar un Nodex
 
 ### IA en el dispositivo (`feature/ia-en-el-dispositivo`)
 
-Diseño: [especificación](disenos/2026-11-02-ia-en-el-dispositivo-design.md). El servidor ya no calcula vectores: solo los **guarda y compara** con SQL, que no necesita el modelo. Los calcula el navegador (ver [Frontend](09-frontend.md)).
+El servidor ya no calcula vectores: solo los **guarda y compara** con SQL, que no necesita el modelo. Los calcula el navegador (ver [Frontend](09-frontend.md)).
 
 | Endpoint | Qué hace |
 |----------|----------|
@@ -450,7 +450,7 @@ Un índice HNSW acelera la búsqueda de vectores parecidos, pero es **aproximado
 
 ## Modo demo (`feature/modo-demo`)
 
-Diseño: [especificación](disenos/2026-10-30-modo-demo-design.md). Permite probar Nodex sin registrarse (HU-14). Todo vive en `modules/demo/`.
+Permite probar Nodex sin registrarse (HU-14). Todo vive en `modules/demo/`.
 
 ### Cómo se crea una demo (`POST /api/auth/demo`)
 

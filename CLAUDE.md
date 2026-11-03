@@ -19,7 +19,6 @@ Idioma de trabajo: **español**, en el código visible, la documentación y las 
 | [02-plan-de-implementacion](docs/02-plan-de-implementacion.md) | Forma de trabajar, hoja de ruta y estado de los requisitos |
 | [03-requisitos-producto](docs/03-requisitos-producto.md) | Historias de usuario HU-01…HU-22 con sus RF y RNF |
 | [04-requisitos-tecnicos](docs/04-requisitos-tecnicos.md) | Stack y requisitos de la base de datos |
-| [05-flujo-de-la-aplicacion](docs/05-flujo-de-la-aplicacion.md) | Vacío: no inventes su contenido, proponlo y pide confirmación |
 | [06-sistema-backend](docs/06-sistema-backend.md) | Cómo funciona cada parte del backend y por qué |
 | [07-brief-de-diseno](docs/07-brief-de-diseno.md) | Estilo visual, color, tipografía y bocetos |
 | [08-base-de-datos](docs/08-base-de-datos.md) | Tablas, relaciones y reglas para cambiar el esquema |
@@ -27,7 +26,7 @@ Idioma de trabajo: **español**, en el código visible, la documentación y las 
 | [10-pruebas](docs/10-pruebas.md) | Tipos de prueba, cómo ejecutarlas y CI |
 | [11-despliegue](docs/11-despliegue.md) | Vercel + Render, paso a paso |
 | [12-apps](docs/12-apps.md) | APK de Android, app de Windows y cómo publicar una versión |
-| `docs/disenos/` y `docs/planes/` | Diseño aprobado y plan de cada rama. Los nuevos se guardan aquí con el formato `AAAA-MM-DD-tema-design.md` y `AAAA-MM-DD-tema.md` |
+| `docs/disenos/` y `docs/planes/` | Diseño aprobado y plan de cada rama. Solo en local: Git los ignora. Los nuevos se guardan aquí con el formato `AAAA-MM-DD-tema-design.md` y `AAAA-MM-DD-tema.md` |
 
 ## Glosario
 

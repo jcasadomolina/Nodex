@@ -8,7 +8,6 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Plan de implementación](02-plan-de-implementacion.md) | Forma de trabajar, hoja de ruta, estado de cada requisito y flujo Git | Completo |
 | [Requisitos de producto](03-requisitos-producto.md) | Historias de usuario HU-01…HU-22 con sus RF y RNF | Completo |
 | [Requisitos técnicos](04-requisitos-tecnicos.md) | Stack propuesto y requisitos de la base de datos | Completo |
-| [Flujo de la aplicación](05-flujo-de-la-aplicacion.md) | Pantallas y recorridos del usuario | Pendiente |
 | [Sistema de backend](06-sistema-backend.md) | Stack, estructura del código y plan por ramas | Al día |
 | [Brief de diseño](07-brief-de-diseno.md) | Estilo visual, color, tipografía, bocetos | Completo |
 | [Base de datos](08-base-de-datos.md) | PostgreSQL en Neon, tablas, relaciones y reglas de evolución | Completo |
@@ -16,7 +15,6 @@ Documentación de planificación que hay que tener presente al programar. El ori
 | [Pruebas](10-pruebas.md) | Tipos de prueba, base de Docker, cómo ejecutarlas y CI | Completo |
 | [Despliegue](11-despliegue.md) | Vercel + Render: arquitectura y paso a paso | Completo |
 | [Apps](12-apps.md) | APK de Android (TWA), app de Windows (Tauri) y cómo publicar una versión | Completo |
-| [`disenos/`](disenos) y [`planes/`](planes) | Diseño aprobado y plan de trabajo de cada funcionalidad | Uno por rama |
 
 ## Glosario
 
