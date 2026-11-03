@@ -2,7 +2,7 @@
 
 Interfaz web de Nodex: lo que ve y usa el usuario. Pide los datos a la API del backend ([Sistema de backend](06-sistema-backend.md)).
 
-Esta primera versión es el **esqueleto funcional**: login, registro, panel con grupos y Nodexs, prioridad y búsqueda, con la estructura de los [bocetos](bocetos/bocetos-v1.jpg) pero con colores y logo provisionales. Diseño y plan: [especificación](disenos/2026-10-24-frontend-esqueleto-design.md) y [plan](planes/2026-10-24-frontend-esqueleto.md).
+Esta primera versión es el **esqueleto funcional**: login, registro, panel con grupos y Nodexs, prioridad y búsqueda, con la estructura de los [bocetos](bocetos/bocetos-v1.jpg) pero con colores y logo provisionales.
 
 ## Stack (aprobado)
 
@@ -75,7 +75,7 @@ Al pulsar un Nodex (panel, grafo, tareas, campana, Redescubre, sugerencias o rel
 
 ### Página del Nodex (HU-22)
 
-Diseño: [especificación](disenos/2026-10-29-vista-nodex-design.md). `components/nodex-view.tsx`:
+`components/nodex-view.tsx`:
 
 - **Título** editable al pulsarlo; **propiedades** en una tabla como la de Obsidian, cada una guardándose al momento (solo envía su cambio). Los controles (prioridad, tarea, fecha, recordatorio, grupos) están en `components/nodex-fields.tsx` y los comparte la ventana de creación.
 - **Contenido en Markdown** con `react-markdown` + `remark-gfm` (`components/markdown.tsx`): tablas, casillas, tachado, código… No ejecuta HTML incrustado y descarta los enlaces `javascript:`. Los estilos están en `globals.css` (`.markdown`), con los colores del tema.
@@ -87,7 +87,7 @@ Diseño: [especificación](disenos/2026-10-29-vista-nodex-design.md). `component
 
 ### Pestañas (`RF-22.5`)
 
-Diseño: [especificación](disenos/2026-10-29-pestanas-nodex-design.md). Encima de la página del Nodex, `components/nodex-tabs.tsx` muestra los Nodexs abiertos, como en Obsidian:
+Encima de la página del Nodex, `components/nodex-tabs.tsx` muestra los Nodexs abiertos, como en Obsidian:
 
 - **Clic normal** abre en la pestaña activa (o activa la que ya lo tiene); **Ctrl/Cmd + clic o clic central** abre en una pestaña nueva (tarjetas, relacionados, tareas y grafo). `useOpenNodex()` (`lib/use-open-nodex.ts`) hace la navegación y, si toca, deja la marca de "pestaña nueva".
 - **Estado** (`lib/tabs.ts`): un almacén pequeño con `useSyncExternalStore`, guardado en `localStorage` (`nodex-tabs`). La URL manda: al montarse, la página llama a `showInTabs(id)`. La marca de "pestaña nueva" guarda el id del Nodex que se va a abrir, así que solo afecta a esa apertura. Cerrar la pestaña activa usa `router.replace` para no dejar en el historial una entrada que, al pulsar Atrás, sustituiría otra pestaña. El clic central no activa el autodesplazamiento del navegador (`preventDefault` en `mousedown`). Máximo 20 pestañas.
@@ -96,7 +96,7 @@ Diseño: [especificación](disenos/2026-10-29-pestanas-nodex-design.md). Encima 
 
 ### Dos paneles (`RF-22.6`)
 
-Diseño: [especificación](disenos/2026-10-29-dos-paneles-design.md). La página del Nodex se puede dividir en dos paneles, cada uno con sus pestañas:
+La página del Nodex se puede dividir en dos paneles, cada uno con sus pestañas:
 
 - **Abrir a la derecha:** botón "Dividir" (icono `SquareSplitHorizontal`) junto a "Abrir enlace" (↗) y "⋯"; "Abrir a la derecha" en el menú; o **Ctrl/Cmd + Alt + clic** en tarjetas, relacionados, tareas y grafo. `openTarget(event)` traduce el clic a `"active"`, `"newTab"` o `"right"`.
 - **Estado** (`lib/tabs.ts`): `{ left, right, split }`. El panel izquierdo sigue a la URL; el derecho solo vive en `localStorage` (no cambia la URL). Las pestañas guardadas con el formato anterior se convierten en `left`.
@@ -110,8 +110,6 @@ Diseño: [especificación](disenos/2026-10-29-dos-paneles-design.md). La página
 Se hace con **columnas CSS** (`columns-1 sm:columns-2 lg:columns-3 xl:columns-4`), sin librería. Las tarjetas se reparten **de arriba abajo por columnas**, no por filas. Para un panel de notas es aceptable, y se cambiará si hace falta un orden estricto por filas.
 
 ## La primera vez en Nodex
-
-Diseño: [especificación](disenos/2026-10-27-primera-vez-design.md).
 
 ### Pantalla de inicio (`/login` y `/registro`)
 
@@ -127,8 +125,6 @@ El layout de la app manda aquí a quien no ha completado el tutorial (`tutorialC
 
 ### Modo demo (HU-14)
 
-Diseño: [especificación](disenos/2026-10-30-modo-demo-design.md).
-
 - **Portada:** bajo el formulario de login, el botón "Probar sin registrarse" (`useStartDemo`). Muestra la rueda mientras el backend prepara la demo (unos segundos) y está desactivado para no crear dos. Como la cuenta no ha visto el tutorial, el layout la lleva a la bienvenida.
 - **Franja de demo** (`components/demo-banner.tsx`): sale arriba en todas las pantallas si `user.demoExpiresAt` tiene fecha. Dice "Estás en la demo · se borra en N h" ("Demo · N h" en móvil) y tiene el botón "Crear cuenta".
 - **Diálogo "Crea tu cuenta"** (`components/convert-dialog.tsx`, `useConvertDemo`): nombre, email y contraseña. Si el email ya existe, el error sale bajo ese campo sin borrar lo escrito. Al terminar, el usuario nuevo sustituye al de `["me"]` y la franja desaparece sola.
@@ -140,7 +136,7 @@ En la ventana del Nodex, el campo "Etiquetas" (`components/tag-input.tsx`) convi
 
 ## IA en el dispositivo
 
-Diseño: [especificación](disenos/2026-11-02-ia-en-el-dispositivo-design.md). Con el modelo dentro, el backend no cabía en los 512 MB de Render Free, así que los vectores se calculan en el navegador (y en la PWA, el APK o el `.exe`, que usan el mismo frontend). Las notas no salen del dispositivo para esto: solo se descarga el modelo.
+Con el modelo dentro, el backend no cabía en los 512 MB de Render Free, así que los vectores se calculan en el navegador (y en la PWA, el APK o el `.exe`, que usan el mismo frontend). Las notas no salen del dispositivo para esto: solo se descarga el modelo.
 
 | Pieza | Qué hace |
 |-------|----------|
@@ -184,7 +180,7 @@ En el Popover ✨, el apartado "Grupos nuevos" deja cambiar el nombre antes de p
 
 ## Tareas (`/tareas`, `RF-12.4` a `RF-12.6`)
 
-Diseño: [especificación](disenos/2026-10-28-tareas-design.md). Cualquier Nodex puede ser una tarea: en su ventana, el interruptor "Tarea" muestra el estado (Pendiente, En curso, Hecha) y una fecha límite opcional. La tarea se guarda dentro del mismo guardado del Nodex (`PUT` o `DELETE /tasks/:id`, solo si ha cambiado), así que hay un único botón y un único error. Las tarjetas del panel llevan la etiqueta "Tarea · 3 nov" o "Hecha".
+Cualquier Nodex puede ser una tarea: en su ventana, el interruptor "Tarea" muestra el estado (Pendiente, En curso, Hecha) y una fecha límite opcional. La tarea se guarda dentro del mismo guardado del Nodex (`PUT` o `DELETE /tasks/:id`, solo si ha cambiado), así que hay un único botón y un único error. Las tarjetas del panel llevan la etiqueta "Tarea · 3 nov" o "Hecha".
 
 | Pieza | Qué hace |
 |-------|----------|
@@ -198,7 +194,7 @@ Diseño: [especificación](disenos/2026-10-28-tareas-design.md). Cualquier Nodex
 
 ## Papelera (`/papelera`, HU-15)
 
-Diseño: [especificación](disenos/2026-10-29-papelera-design.md). Se llega desde Ajustes. Dos pestañas (Nodexs y Grupos) con "Restaurar" y "Eliminar para siempre" en cada fila, y "Vaciar papelera". Cada fila dice cuántos días le quedan antes de que el proceso del backend lo elimine (30 días).
+Se llega desde Ajustes. Dos pestañas (Nodexs y Grupos) con "Restaurar" y "Eliminar para siempre" en cada fila, y "Vaciar papelera". Cada fila dice cuántos días le quedan antes de que el proceso del backend lo elimine (30 días).
 
 - **Restaurar un grupo** cuyo nombre ya usa otro grupo lo renombra a «Nombre (restaurado)», «(restaurado 2)»… para no chocar con el índice único.
 - **Deshacer:** los avisos "Enviado a la papelera" (ventana del Nodex y menú del grupo) tienen un botón "Deshacer". Usa una función normal en vez de una mutación de TanStack Query porque la ventana ya se ha cerrado cuando pulsas el botón.
@@ -206,15 +202,13 @@ Diseño: [especificación](disenos/2026-10-29-papelera-design.md). Se llega desd
 
 ## Leer más tarde (HU-21)
 
-Diseño: [especificación](disenos/2026-10-29-leer-mas-tarde-design.md).
-
 - **Marcar:** en la ventana de un enlace, "Leer más tarde" / "Marcar como leído" hace `PATCH /nodexs/:id { readLater }` al momento, sin cerrar la ventana ni perder lo que estés escribiendo. Al crear un enlace hay un interruptor con el mismo nombre.
 - **Filtro:** el chip "Leer más tarde N" (`GET /nodexs/read-later/count`) aparece junto a "Huérfanos" cuando hay alguno y muestra los enlaces del más antiguo al más nuevo (`GET /nodexs?readLater=true`).
 - **Tiempo de lectura:** al descargar la vista previa, el backend (`readingMinutes` en `lib/html-meta.ts`) busca el contenido en `<article>`, `<main>` o `<body>`, quita scripts, menús y cabeceras, cuenta solo las palabras de los párrafos (`<p>`) y divide entre 200 por minuto. Con menos de 100 palabras no se muestra. Contar solo párrafos evita que tablas, listas de referencias o menús laterales inflen el tiempo. Se recorre el HTML con `indexOf` en una sola pasada: las expresiones regulares con `[\s\S]*?` tardaban unos 30 s con 1 MB de `<p>` sin cerrar y bloqueaban todo el servidor. Con este filtro, el orden por prioridad no se aplica: siempre va del más antiguo al más nuevo.
 
 ## Redescubre (HU-20)
 
-Diseño: [especificación](disenos/2026-10-28-redescubre-design.md). Encima de la rejilla del panel (solo en "Todos", sin prioridad ni búsqueda), `components/rediscover.tsx` muestra hasta 3 Nodexs olvidados de `GET /nodexs/rediscover`:
+Encima de la rejilla del panel (solo en "Todos", sin prioridad ni búsqueda), `components/rediscover.tsx` muestra hasta 3 Nodexs olvidados de `GET /nodexs/rediscover`:
 
 - **Olvidado:** sin abrir desde hace 30 días (o desde que se creó, si nunca se abrió) y sin prioridad alta ni urgente.
 - **Orden:** primero los parecidos a lo que has abierto en los últimos 7 días (embeddings), más un poco de azar que solo cambia de un día a otro (`md5(id + fecha en hora de España)`), para que la franja no cambie en cada recarga. Al abrir un Nodex la preferencia se actualiza, así que la franja puede cambiar durante el día.
@@ -230,7 +224,7 @@ Diseño: [especificación](disenos/2026-10-28-redescubre-design.md). Encima de l
 
 ## Avisos: recordatorios y enlaces rotos (`RF-12.3`, `RF-12.7`)
 
-Diseño: [especificación](disenos/2026-10-28-recordatorios-enlaces-design.md). La **campana** de la barra lateral (`components/alerts-button.tsx`) es el centro de avisos:
+La **campana** de la barra lateral (`components/alerts-button.tsx`) es el centro de avisos:
 
 - El número rojo cuenta los recordatorios vencidos y sin descartar. La consulta se repite cada 60 s mientras la pestaña está visible.
 - Al pulsarla, un Popover muestra "Ahora" (con Descartar), "Próximos" y "Enlaces rotos" (con "Ver copia" de archive.org si existe). "Abrir" navega a `/nodexs/:id`.
@@ -242,7 +236,7 @@ Las notificaciones push al móvil se activan en Ajustes: ver [Notificaciones pus
 
 ## Vista gráfica (`/grafo`, `RF-04.5`)
 
-Diseño: [especificación](disenos/2026-10-27-grafo-design.md). Funciona como el grafo de Obsidian: los grupos son nodos grandes y sus Nodexs se unen a ellos.
+Funciona como el grafo de Obsidian: los grupos son nodos grandes y sus Nodexs se unen a ellos.
 
 | Pieza | Qué hace |
 |-------|----------|
