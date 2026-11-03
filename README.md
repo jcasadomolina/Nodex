@@ -98,13 +98,10 @@ Las apps cargan la misma web, así que siempre tienen la última versión sin ac
 
 ## Arquitectura
 
-```
-Navegador / PWA / APK / app de Windows
-   │   la IA (embeddings) se calcula aquí, en un Web Worker
-   ▼
-Next.js en Vercel ── /api/* ──► Express en Render ──► PostgreSQL + pgvector (Neon)
-                                   └─ tareas de fondo: recordatorios, enlaces rotos, papelera, demos
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/stack-dark.png">
+  <img src="docs/readme/stack.png" alt="Stack de Nodex: el dispositivo (navegador, Android, Windows y Transformers.js) llama a Next.js en Vercel, que reenvía /api a Express y Prisma en Render, con PostgreSQL y pgvector en Neon y fotos en Cloudinary; GitHub Actions ejecuta Vitest y Playwright y despliega">
+</picture>
 
 | Parte | Tecnologías |
 |-------|-------------|
@@ -115,7 +112,7 @@ Next.js en Vercel ── /api/* ──► Express en Render ──► PostgreSQL
 | Apps | TWA (Bubblewrap) para Android y Tauri v2 para Windows |
 | Calidad | Vitest, Supertest y Playwright, con GitHub Actions en cada pull request |
 
-El navegador solo habla con un dominio: Next.js reenvía `/api/*` al backend, así que la cookie de sesión viaja sola y no hace falta CORS. Cada consulta filtra por el usuario de la sesión, de modo que los datos de cada usuario quedan aislados. El backend nunca carga el modelo de IA: solo guarda y compara vectores, y así cabe en los 512 MB del plan gratuito de Render.
+El navegador solo habla con un dominio: Next.js reenvía `/api/*` al backend, así que la cookie de sesión viaja sola y no hace falta CORS. Cada consulta filtra por el usuario de la sesión, de modo que los datos de cada usuario quedan aislados. El backend nunca carga el modelo de IA: solo guarda y compara vectores, y así cabe en los 512 MB del plan gratuito de Render. Además ejecuta tareas de fondo: recordatorios, comprobación de enlaces rotos y limpieza de la papelera y de las demos caducadas.
 
 ## Puesta en marcha
 
